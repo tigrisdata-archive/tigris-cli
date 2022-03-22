@@ -35,3 +35,6 @@ tigrisdb-cli delete "db1" "coll1" '{"Key1": "vK1"}'
 tigrisdb-cli drop collection db1 coll1
 tigrisdb-cli drop database db1
 ```
+
+# License
+This software is licensed under the [Apache 2.0](LICENSE).
