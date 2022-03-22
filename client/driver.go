@@ -24,11 +24,9 @@ import (
 // D is single instance of client
 var D driver.Driver
 
-const URL = "https://dev.tigrisdata.cloud:443/api"
-
 func Init(config config.Config) error {
 	driver.DefaultProtocol = driver.HTTP
-	drv, err := driver.NewDriver(context.Background(), URL, &driver.Config{Token: config.Token})
+	drv, err := driver.NewDriver(context.Background(), config.URL, &driver.Config{Token: config.Token})
 	if err != nil {
 		return err
 	}

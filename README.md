@@ -8,8 +8,6 @@ go install github.com/tigrisdata/tigrisdb-cli@latest
 
 # Example
 
-export TIGRISDB_TOKEN={token from [here](https://dev.tigrisdata.cloud/gms/login)}
-
 ```sh
 
 tigrisdb-cli create database db1

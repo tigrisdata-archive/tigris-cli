@@ -26,7 +26,7 @@ import (
 )
 
 var DefaultConfig = Config{
-	URL: "https://dev.tigrisdata.cloud:443/api",
+	URL: "api.apps.tigrisinternal.com",
 }
 
 type Config struct {
