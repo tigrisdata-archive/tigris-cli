@@ -1,5 +1,7 @@
 # TigrisDB command line interface utility
 
+[![Build Status](https://github.com/tigrisdata/tigrisdb/workflows/go-lint/badge.svg)]()
+
 # Install
 
 ```sh
