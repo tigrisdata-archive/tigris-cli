@@ -7,7 +7,7 @@ require (
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.10.1
-	github.com/tigrisdata/tigrisdb-client-go v0.0.0-20220324022033-740a4d6cc965
+	github.com/tigrisdata/tigrisdb-client-go v0.0.0-20220324225753-76fef4280270
 	gopkg.in/yaml.v2 v2.4.0
 )
 

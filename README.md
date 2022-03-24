@@ -33,16 +33,14 @@ tigrisdb-cli read "db1" "coll1" \
 tigrisdb-cli update "db1" "coll1" \
 		'{"Key1": "vK1"}' '{"$set" : {"Field1": 1000}}'
 
-tigrisdb-cli read "db1" "coll1" \
-		'{"$or" : [ {"Key1": "vK1"}, {"Key1": "vK2"} ]}'
+tigrisdb-cli read "db1" "coll1" '{}'
 #Output:
 #{"Key1": "vK1", "Field1": 1000}
 #{"Key1": "vK2", "Field1": 10}
 
 tigrisdb-cli delete "db1" "coll1" '{"Key1": "vK1"}'
 
-tigrisdb-cli read "db1" "coll1" \
-		'{"$or" : [ {"Key1": "vK1"}, {"Key1": "vK2"} ]}'
+tigrisdb-cli read "db1" "coll1" {}'
 #Output:
 #{"Key1": "vK2", "Field1": 10}
 
