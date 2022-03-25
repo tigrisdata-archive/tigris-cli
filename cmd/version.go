@@ -12,31 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package cmd
 
 import (
-	"context"
-
-	"github.com/tigrisdata/tigrisdb-cli/config"
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/spf13/cobra"
+	"github.com/tigrisdata/tigrisdb-cli/util"
 )
 
-// D is single instance of client
-var D driver.Driver
-
-func Init(config config.Config) error {
-	driver.DefaultProtocol = driver.HTTP
-	drv, err := driver.NewDriver(context.Background(), config.URL, &driver.Config{Token: config.Token})
-	if err != nil {
-		return err
-	}
-
-	D = drv
-
-	return nil
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "show tigrisdb-cli version",
+	Run: func(cmd *cobra.Command, args []string) {
+		util.Stdout("tigrisdb-cli version %s\n", util.Version)
+	},
 }
 
-// Get returns an instance of instance of client
-func Get() driver.Driver {
-	return D
+func init() {
+	rootCmd.AddCommand(versionCmd)
 }

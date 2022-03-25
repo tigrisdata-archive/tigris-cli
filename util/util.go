@@ -26,6 +26,7 @@ import (
 	"github.com/tigrisdata/tigrisdb-cli/config"
 )
 
+var Version string
 var DefaultTimeout = 5 * time.Second
 
 func LogConfigure() {
@@ -50,5 +51,5 @@ func GetContext(ctx context.Context) (context.Context, context.CancelFunc) {
 }
 
 func Stdout(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stdout, format, args)
+	fmt.Fprintf(os.Stdout, format, args...)
 }

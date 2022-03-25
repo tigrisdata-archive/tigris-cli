@@ -36,7 +36,7 @@ var readCmd = &cobra.Command{
 		}
 		var doc driver.Document
 		for it.Next(&doc) {
-			util.Stdout(string(doc))
+			util.Stdout("%s\n", string(doc))
 		}
 		if err := it.Err(); err != nil {
 			log.Fatal().Err(err).Msg("iterate documents failed")

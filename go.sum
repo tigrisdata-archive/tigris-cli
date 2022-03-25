@@ -294,10 +294,8 @@ github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMT
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/subosito/gotenv v1.2.0 h1:Slr1R9HxAlEKefgq5jn9U+DnETlIUa6HfgEzj0g5d7s=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
-github.com/tigrisdata/tigrisdb-client-go v0.0.0-20220320054121-935bc7ff3a45 h1:BDOiRxIESt7PKeeSQxgucoA2YXXa6W4F/gkPMM3kFxo=
-github.com/tigrisdata/tigrisdb-client-go v0.0.0-20220320054121-935bc7ff3a45/go.mod h1:lP4RhNml4kRHULYY+nb+nmvGz0THlwUx9w5BI7Qus7I=
-github.com/tigrisdata/tigrisdb-client-go v0.0.0-20220321074117-01ebb7e54cac h1:cDwsLWf/+BCitPELNqHHOpP29OeZbgzPl+V1ZJYcwG8=
-github.com/tigrisdata/tigrisdb-client-go v0.0.0-20220321074117-01ebb7e54cac/go.mod h1:lP4RhNml4kRHULYY+nb+nmvGz0THlwUx9w5BI7Qus7I=
+github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.2 h1:2+dp45BHwPf48pDb0s8nZfyUKjueVDQMTd2lEx7TcF4=
+github.com/tigrisdata/tigrisdb-client-go v1.0.0-alpha.2/go.mod h1:lP4RhNml4kRHULYY+nb+nmvGz0THlwUx9w5BI7Qus7I=
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
 github.com/ugorji/go v1.2.6/go.mod h1:anCg0y61KIhDlPZmnH+so+RQbysYVyDko0IMgJv0Nn0=
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
@@ -712,8 +710,6 @@ gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f/go.mod h1:Co6ibVJAznAaIkqp8
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
-gopkg.in/fsnotify.v1 v1.4.7 h1:xOHLXZwVvI9hhs+cLKq5+I5onOuwQLhQwiu63xxlHs4=
-gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMys=
 gopkg.in/ini.v1 v1.66.2 h1:XfR1dOYubytKy4Shzc2LHrrGhU0lDCfDGG1yLPmpgsI=
 gopkg.in/ini.v1 v1.66.2/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
