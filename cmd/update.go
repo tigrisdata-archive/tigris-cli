@@ -23,7 +23,7 @@ import (
 )
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update {db} {collection} {filter} {fields}",
 	Short: "update documents",
 	Long:  `update documents according to provided filter`,
 	Args:  cobra.MinimumNArgs(4),
@@ -31,7 +31,7 @@ var updateCmd = &cobra.Command{
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 
-		_, err := client.Get().Update(ctx, args[0], args[1], driver.Filter(args[2]), driver.Fields(args[3]), &driver.UpdateOptions{})
+		_, err := client.Get().Update(ctx, args[0], args[1], driver.Filter(args[2]), driver.Fields(args[3]))
 		if err != nil {
 			log.Fatal().Err(err).Msg("update documents failed")
 		}
@@ -39,5 +39,5 @@ var updateCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(updateCmd)
+	dbCmd.AddCommand(updateCmd)
 }

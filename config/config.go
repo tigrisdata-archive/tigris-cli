@@ -20,19 +20,21 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
 var DefaultConfig = Config{
-	URL: "localhost:8081",
+	URL:      "localhost:8081",
+	Timeout:  5 * time.Second,
+	Protocol: "grpc",
 }
 
 type Config struct {
-	Token   string `json:",omitempty"`
-	URL     string `json:"url,omitempty"`
-	Timeout time.Duration
+	Token    string        `json:"token,omitempty"`
+	URL      string        `json:"url,omitempty"`
+	Timeout  time.Duration `json:"timeout,omitempty"`
+	Protocol string        `json:"protocol,omitempty"`
 }
 
 var configPath = []string{
@@ -46,28 +48,19 @@ var envPrefix = "tigrisdb"
 
 func Load(name string, config interface{}) {
 	viper.SetConfigName(name)
-	viper.SetConfigType("yaml")
 
 	for _, v := range configPath {
 		viper.AddConfigPath(v)
 	}
 
 	// This is needed to automatically bind environment variables to config struct
+	// Viper will only bind environment variables to the keys it already knows about
 	b, err := yaml.Marshal(config)
 	if err != nil {
 		log.Err(err).Msg("marshal config")
 	}
-	//log.Debug().RawJSON("config", b).Msg("default config")
-	br := bytes.NewBuffer(b)
-	err = viper.MergeConfig(br)
-	if err != nil {
-		log.Err(err).Msg("merge config")
-	}
 
-	//spew.Dump(viper.AllKeys())
-
-	// This is needed to replace periods with underscores when mapping environment variables to multi-level
-	// config keys. For example, this will allow foundationdb.cluster_file to be mapped to FOUNDATIONDB_CLUSTER_FILE
+	// This is needed to replace periods with underscores when mapping environment variables to multi-level config keys
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// The environment variables have a higher priority as compared to config values defined in the config file.
@@ -75,13 +68,13 @@ func Load(name string, config interface{}) {
 	viper.SetEnvPrefix(envPrefix)
 	viper.AutomaticEnv()
 
-	pflag.Parse()
-	err = viper.BindPFlags(pflag.CommandLine)
+	br := bytes.NewBuffer(b)
+	err = viper.MergeConfig(br)
 	if err != nil {
-		log.Err(err).Msg("bind flags")
+		log.Err(err).Msg("merge config")
 	}
 
-	err = viper.ReadInConfig()
+	err = viper.MergeInConfig()
 	if err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			//log.Warn().Err(err).Msgf("config file not found")

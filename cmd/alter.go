@@ -25,5 +25,5 @@ var alterCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(alterCmd)
+	dbCmd.AddCommand(alterCmd)
 }

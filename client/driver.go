@@ -16,8 +16,12 @@ package client
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/tigrisdata/tigrisdb-cli/config"
+	"github.com/tigrisdata/tigrisdb-cli/util"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 
@@ -25,8 +29,37 @@ import (
 var D driver.Driver
 
 func Init(config config.Config) error {
-	driver.DefaultProtocol = driver.GRPC
-	drv, err := driver.NewDriver(context.Background(), config.URL, &driver.Config{Token: config.Token})
+	proto := strings.ToLower(strings.Trim(config.Protocol, " "))
+	if proto == "grpc" {
+		driver.DefaultProtocol = driver.GRPC
+	} else if proto == "https" || proto == "http" {
+		driver.DefaultProtocol = driver.HTTP
+	} else if proto != "" {
+		return fmt.Errorf("unknown protocol set by TIGRISDB_PROTOCOL: %s. allowed: grpc, http, https", proto)
+	}
+
+	// URL prefix has precedence over environment variable
+	url := config.URL
+	if strings.HasPrefix(config.URL, "http://") {
+		driver.DefaultProtocol = driver.HTTP
+	} else if strings.HasPrefix(config.URL, "https://") {
+		driver.DefaultProtocol = driver.HTTP
+	} else if strings.HasPrefix(config.URL, "grpc://") {
+		driver.DefaultProtocol = driver.GRPC
+		url = strings.TrimPrefix(config.URL, "grpc://")
+	}
+
+	//Client would use HTTPS if scheme is not explicitly specified
+	//Avoid this for localhost connections
+	if !strings.Contains(url, "://") && driver.DefaultProtocol == driver.HTTP &&
+		(strings.HasPrefix(url, "localhost") || strings.HasPrefix(url, "127.0.0.1")) {
+		url = "http://" + url
+	}
+
+	ctx, cancel := util.GetContext(context.Background())
+	defer cancel()
+
+	drv, err := driver.NewDriver(ctx, url, &driver.Config{Token: config.Token})
 	if err != nil {
 		return err
 	}
@@ -39,4 +72,21 @@ func Init(config config.Config) error {
 // Get returns an instance of client
 func Get() driver.Driver {
 	return D
+}
+
+func Transact(bctx context.Context, db string, fn func(ctx context.Context, tx driver.Tx)) {
+	ctx, cancel := util.GetContext(bctx)
+	defer cancel()
+
+	tx, err := Get().BeginTx(ctx, db)
+	if err != nil {
+		log.Fatal().Err(err).Msg("begin transaction failed")
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	fn(ctx, tx)
+
+	if err := tx.Commit(ctx); err != nil {
+		log.Fatal().Err(err).Msg("begin transaction failed")
+	}
 }

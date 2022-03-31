@@ -27,9 +27,11 @@ import (
 func main() {
 	util.LogConfigure()
 
-	config.Load("tigrisdb-cli1", &config.DefaultConfig)
+	config.Load("tigris", &config.DefaultConfig)
 
-	if len(os.Args) > 1 && os.Args[1] != "local" && os.Args[1] != "version" {
+	util.DefaultTimeout = config.DefaultConfig.Timeout
+
+	if len(os.Args) > 2 && (os.Args[1] == "db" && os.Args[2] != "local") {
 		if err := client.Init(config.DefaultConfig); err != nil {
 			log.Fatal().Err(err).Msg("tigrisdb client initialization failed")
 		}

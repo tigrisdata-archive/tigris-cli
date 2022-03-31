@@ -21,10 +21,9 @@ import (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list databases of the project or list database collections",
-	Long:  "list databases of the project or list database collections",
 	Args:  cobra.MinimumNArgs(1),
 }
 
 func init() {
-	rootCmd.AddCommand(listCmd)
+	dbCmd.AddCommand(listCmd)
 }

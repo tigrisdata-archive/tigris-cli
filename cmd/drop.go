@@ -25,5 +25,5 @@ var dropCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(dropCmd)
+	dbCmd.AddCommand(dropCmd)
 }

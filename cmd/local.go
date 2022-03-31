@@ -1,3 +1,17 @@
+// Copyright 2022 Tigris Data, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
 import (
@@ -5,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -13,20 +28,23 @@ import (
 	volumetypes "github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	tclient "github.com/tigrisdata/tigrisdb-cli/client"
+	"github.com/tigrisdata/tigrisdb-cli/config"
 )
 
 const (
 	ImagePath        = "tigrisdata/tigrisdb"
 	FDBImagePath     = "foundationdb/foundationdb:6.3.23"
 	volumeName       = "fdbdata"
-	FDBContainerName = "tigrisdb-cli-fdb"
-	ContainerName    = "tigrisdb-cli-server"
+	FDBContainerName = "tigrisdb-local-fdb"
+	ContainerName    = "tigrisdb-local-server"
 )
 
-var ImageTag = "1.0.0-alpha.4"
+var ImageTag = "1.0.0-alpha.6"
 
 func ensureVolume(cli *client.Client) {
 	ctx := context.Background()
@@ -123,6 +141,59 @@ func startContainer(cli *client.Client, cname string, image string, volumeMount 
 	return resp.ID
 }
 
+func execDockerCommand(cli *client.Client, container string, cmd []string) {
+	ctx := context.Background()
+
+	response, err := cli.ContainerExecCreate(ctx, container, types.ExecConfig{
+		Cmd: cmd,
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("error executing command in docker container")
+	}
+
+	execID := response.ID
+	if execID == "" {
+		log.Fatal().Msg("error executing command in docker container")
+	}
+
+	resp, err := cli.ContainerExecAttach(ctx, execID, types.ExecStartCheck{})
+	if err != nil {
+		log.Fatal().Err(err).Msg("error executing command in docker container")
+	}
+	defer resp.Close()
+}
+
+func waitServerUp() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	inited := false
+	var err error
+	for {
+		if !inited {
+			if err = tclient.Init(config.DefaultConfig); err == nil {
+				inited = true
+			}
+		} else {
+			_, err = tclient.Get().ListDatabases(ctx)
+			if err == nil {
+				break
+			}
+		}
+
+		time.Sleep(10 * time.Millisecond)
+
+		select {
+		case <-ctx.Done():
+			break
+		default:
+		}
+	}
+	if err != nil {
+		log.Fatal().Err(err).Msg("tigrisdb initialization failed")
+	}
+}
+
 var serverUpCmd = &cobra.Command{
 	Use:   "up [port] [version]",
 	Short: "Start an instance of TigrisDB for local development",
@@ -154,6 +225,10 @@ var serverUpCmd = &cobra.Command{
 		_ = startContainer(cli, FDBContainerName, FDBImagePath, "/var/fdb", "4500")
 		_ = startContainer(cli, ContainerName, ImagePath+":"+ImageTag, "/etc/foundationdb", rport)
 
+		execDockerCommand(cli, ContainerName, []string{"fdbcli", "--exec", "configure new single memory"})
+
+		waitServerUp()
+
 		fmt.Printf("TigrisDB is running at localhost:%s\n", port)
 		if port != "8081" {
 			fmt.Printf("run 'export TIGRISDB_URL=localhost:%s' for tigrisdb-cli to automatically connect\n", port)
@@ -177,13 +252,44 @@ var serverDownCmd = &cobra.Command{
 	},
 }
 
+var serverLogsCmd = &cobra.Command{
+	Use:   "logs",
+	Short: "Show logs of local TigrisDB instance",
+	Run: func(cmd *cobra.Command, args []string) {
+		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+		if err != nil {
+			log.Fatal().Err(err).Msg("error creating docker client")
+		}
+
+		ctx := context.Background()
+
+		follow, err := cmd.Flags().GetBool("follow")
+		if err != nil {
+			log.Fatal().Err(err).Msg("error getting 'follow' flag")
+		}
+
+		logs, err := cli.ContainerLogs(ctx, ContainerName, types.ContainerLogsOptions{
+			ShowStdout: true,
+			ShowStderr: true,
+			Follow:     follow,
+		})
+		if err != nil {
+			log.Fatal().Err(err).Msg("error reading container logs")
+		}
+
+		_, _ = stdcopy.StdCopy(os.Stdout, os.Stderr, logs)
+	},
+}
+
 var localCmd = &cobra.Command{
 	Use:   "local",
 	Short: "Starting and stopping local TigrisDB server",
 }
 
 func init() {
-	rootCmd.AddCommand(localCmd)
+	serverLogsCmd.Flags().BoolP("follow", "f", false, "follow logs output")
+	localCmd.AddCommand(serverLogsCmd)
 	localCmd.AddCommand(serverUpCmd)
 	localCmd.AddCommand(serverDownCmd)
+	dbCmd.AddCommand(localCmd)
 }

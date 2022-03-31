@@ -15,6 +15,9 @@
 package cmd
 
 import (
+	"context"
+	"encoding/json"
+
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
@@ -22,9 +25,26 @@ import (
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 
+func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) {
+	type Schema struct {
+		Name string
+	}
+	var schema Schema
+	if err := json.Unmarshal(raw, &schema); err != nil {
+		log.Fatal().Err(err).Msg("error parsing collection schema")
+	}
+	if schema.Name == "" {
+		log.Fatal().Msg("schema name is missing")
+	}
+	err := tx.CreateOrUpdateCollection(ctx, schema.Name, driver.Schema(raw))
+	if err != nil {
+		log.Fatal().Err(err).Msg("create collection failed")
+	}
+}
+
 var listCollectionsCmd = &cobra.Command{
-	Use:   "collections",
-	Short: "list collections",
+	Use:   "collections {db}",
+	Short: "list database collections",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
@@ -34,50 +54,56 @@ var listCollectionsCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("list collections failed")
 		}
 		for _, v := range resp {
-			util.Stdout(v)
+			util.Stdout("%s\n", v)
 		}
 	},
 }
 
 var createCollectionCmd = &cobra.Command{
-	Use:   "collection",
-	Short: "create collection",
-	Args:  cobra.MinimumNArgs(3),
+	Use:   "collection {db} {schema}...|-",
+	Short: "create collection(s)",
+	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		err := client.Get().CreateOrUpdateCollection(ctx, args[0], args[1], driver.Schema(args[2]), &driver.CollectionOptions{})
-		if err != nil {
-			log.Fatal().Err(err).Msg("create collection failed")
-		}
+		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
+			iterateInput(ctx, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+				for _, v := range docs {
+					createCollection(ctx, tx, driver.Schema(v))
+				}
+			})
+		})
 	},
 }
 
 var dropCollectionCmd = &cobra.Command{
-	Use:   "collection",
+	Use:   "collection {db}",
 	Short: "drop collection",
 	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		err := client.Get().DropCollection(ctx, args[0], args[1], &driver.CollectionOptions{})
-		if err != nil {
-			log.Fatal().Err(err).Msg("drop collection failed")
-		}
+		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
+			iterateInput(ctx, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+				for _, v := range docs {
+					err := tx.DropCollection(ctx, string(v))
+					if err != nil {
+						log.Fatal().Err(err).Msg("drop collection failed")
+					}
+				}
+			})
+		})
 	},
 }
 
 var alterCollectionCmd = &cobra.Command{
-	Use:   "collection",
-	Short: "alter collection",
+	Use:   "collection {db} {collection} {schema}",
+	Short: "update collection schema",
 	Args:  cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		err := client.Get().CreateOrUpdateCollection(ctx, args[0], args[1], driver.Schema(args[2]), &driver.CollectionOptions{})
-		if err != nil {
-			log.Fatal().Err(err).Msg("alter collection failed")
-		}
+		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
+			iterateInput(ctx, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+				for _, v := range docs {
+					createCollection(ctx, tx, driver.Schema(v))
+				}
+			})
+		})
 	},
 }
 
