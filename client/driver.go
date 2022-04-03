@@ -25,7 +25,7 @@ import (
 var D driver.Driver
 
 func Init(config config.Config) error {
-	driver.DefaultProtocol = driver.HTTP
+	driver.DefaultProtocol = driver.GRPC
 	drv, err := driver.NewDriver(context.Background(), config.URL, &driver.Config{Token: config.Token})
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func Init(config config.Config) error {
 	return nil
 }
 
-// Get returns an instance of instance of client
+// Get returns an instance of client
 func Get() driver.Driver {
 	return D
 }
