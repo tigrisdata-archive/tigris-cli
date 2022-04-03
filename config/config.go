@@ -26,7 +26,8 @@ import (
 )
 
 var DefaultConfig = Config{
-	URL: "api.apps.tigrisinternal.com",
+	Token: "e30K",
+	URL:   "api.apps.tigrisinternal.com",
 }
 
 type Config struct {
@@ -93,7 +94,4 @@ func Load(name string, config interface{}) {
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatal().Err(err).Msg("error unmarshalling config")
 	}
-
-	//log.Debug().Interface("config", &config).Msg("final")
-	//	spew.Dump(viper.AllKeys())
 }
