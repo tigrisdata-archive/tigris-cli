@@ -26,8 +26,7 @@ import (
 )
 
 var DefaultConfig = Config{
-	Token: "e30K",
-	URL:   "api.apps.tigrisinternal.com",
+	URL: "localhost:8081",
 }
 
 type Config struct {
