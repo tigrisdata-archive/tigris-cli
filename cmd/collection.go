@@ -46,7 +46,7 @@ var createCollectionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		err := client.Get().CreateCollection(ctx, args[0], args[1], driver.Schema(args[2]), &driver.CollectionOptions{})
+		err := client.Get().CreateOrUpdateCollection(ctx, args[0], args[1], driver.Schema(args[2]), &driver.CollectionOptions{})
 		if err != nil {
 			log.Fatal().Err(err).Msg("create collection failed")
 		}
@@ -74,7 +74,7 @@ var alterCollectionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		err := client.Get().AlterCollection(ctx, args[0], args[1], driver.Schema(args[2]), &driver.CollectionOptions{})
+		err := client.Get().CreateOrUpdateCollection(ctx, args[0], args[1], driver.Schema(args[2]), &driver.CollectionOptions{})
 		if err != nil {
 			log.Fatal().Err(err).Msg("alter collection failed")
 		}

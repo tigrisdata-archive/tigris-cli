@@ -30,7 +30,7 @@ var readCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		it, err := client.Get().Read(ctx, args[0], args[1], driver.Filter(args[2]), &driver.ReadOptions{})
+		it, err := client.Get().Read(ctx, args[0], args[1], driver.Filter(args[2]), driver.Fields{}, &driver.ReadOptions{})
 		if err != nil {
 			log.Fatal().Err(err).Msg("read documents failed")
 		}
