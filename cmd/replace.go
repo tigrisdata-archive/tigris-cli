@@ -25,24 +25,25 @@ import (
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 
-var insertCmd = &cobra.Command{
-	Use:   "insert {db} {collection} {document}...|{-}",
-	Short: "insert document",
-	Long: `insert one or multiple documents
+var replaceCmd = &cobra.Command{
+	Use:     "replace {db} {collection} {document}...|{-}",
+	Aliases: []string{"insert_or_replace"},
+	Short:   "replace document",
+	Long: `replace or insert one or multiple documents
 		from command line or standard input`,
 	Args: cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		iterateInput(cmd.Context(), 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 			ptr := unsafe.Pointer(&docs)
-			_, err := client.Get().Insert(ctx, args[0], args[1], *(*[]driver.Document)(ptr))
+			_, err := client.Get().Replace(ctx, args[0], args[1], *(*[]driver.Document)(ptr))
 			if err != nil {
-				log.Fatal().Err(err).Msg("insert documents failed")
+				log.Fatal().Err(err).Msg("replace documents failed")
 			}
 		})
 	},
 }
 
 func init() {
-	insertCmd.Flags().Int32VarP(&BatchSize, "batch_size", "b", BatchSize, "set batch size")
-	dbCmd.AddCommand(insertCmd)
+	replaceCmd.Flags().Int32VarP(&BatchSize, "batch_size", "b", BatchSize, "set batch size")
+	dbCmd.AddCommand(replaceCmd)
 }

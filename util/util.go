@@ -17,6 +17,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -32,7 +33,11 @@ var DefaultTimeout = 5 * time.Second
 func LogConfigure() {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	//Colored output to terminal and just JSON output to pipe
+	var output io.Writer = os.Stderr
+	if fileInfo, _ := os.Stdout.Stat(); fileInfo.Mode()&os.ModeCharDevice != 0 {
+		output = zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}
+	}
 	lvl, err := zerolog.ParseLevel("trace")
 	if err != nil {
 		log.Error().Err(err).Msg("error parsing log level. defaulting to info level")

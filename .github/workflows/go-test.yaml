@@ -1,14 +1,11 @@
-name: go-lint
+name: go-test
 on:
   push:
   workflow_call:
-    secrets:
-      CLIENT_DEPLOY_KEY:
-        required: true
 permissions:
   contents: read
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -17,9 +14,4 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.18'
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.45.2
-          skip-pkg-cache: true
-          skip-build-cache: true
+      - run: make test

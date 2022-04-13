@@ -15,15 +15,30 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
+	"github.com/tigrisdata/tigrisdb-cli/client"
+	"github.com/tigrisdata/tigrisdb-cli/util"
 )
 
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: "creates database or collection",
-	Args:  cobra.MinimumNArgs(1),
+var pingCmd = &cobra.Command{
+	Use:   "ping",
+	Short: "Check connection to the TigrisDB",
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+		_, err := client.Get().ListDatabases(ctx)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "FAILED\n")
+			os.Exit(1)
+		} else {
+			fmt.Fprintf(os.Stderr, "OK\n")
+		}
+	},
 }
 
 func init() {
-	dbCmd.AddCommand(createCmd)
+	dbCmd.AddCommand(pingCmd)
 }

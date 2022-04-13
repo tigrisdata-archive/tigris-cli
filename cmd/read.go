@@ -23,14 +23,25 @@ import (
 )
 
 var readCmd = &cobra.Command{
-	Use:   "read",
+	Use:   "read {db} {collection} [filter [fields]]",
 	Short: "read documents",
-	Long:  `read documents according to provided filter`,
-	Args:  cobra.MinimumNArgs(3),
+	Long: `read documents according to provided filter and fields
+if filter is not provided or has special {} value, read returns all documents in the collection
+if fields is not provided or has special {} value, read returns all the fields of the document
+`,
+	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		it, err := client.Get().Read(ctx, args[0], args[1], driver.Filter(args[2]), &driver.ReadOptions{})
+		filter := `{}`
+		fields := `{}`
+		if len(args) > 2 {
+			filter = args[2]
+		}
+		if len(args) > 3 {
+			fields = args[3]
+		}
+		it, err := client.Get().Read(ctx, args[0], args[1], driver.Filter(filter), driver.Fields(fields))
 		if err != nil {
 			log.Fatal().Err(err).Msg("read documents failed")
 		}
@@ -45,5 +56,5 @@ var readCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(readCmd)
+	dbCmd.AddCommand(readCmd)
 }

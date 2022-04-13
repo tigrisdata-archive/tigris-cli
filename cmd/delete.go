@@ -23,14 +23,14 @@ import (
 )
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete {db} {collection} {filter}",
 	Short: "delete documents",
 	Long:  `delete documents according to provided filter`,
 	Args:  cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		_, err := client.Get().Delete(ctx, args[0], args[1], driver.Filter(args[2]), &driver.DeleteOptions{})
+		_, err := client.Get().Delete(ctx, args[0], args[1], driver.Filter(args[2]))
 		if err != nil {
 			log.Fatal().Err(err).Msg("delete documents failed")
 		}
@@ -38,5 +38,5 @@ var deleteCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(deleteCmd)
+	dbCmd.AddCommand(deleteCmd)
 }

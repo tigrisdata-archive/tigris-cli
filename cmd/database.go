@@ -19,14 +19,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 
 var listDatabasesCmd = &cobra.Command{
 	Use:   "databases",
 	Short: "list databases",
-	Long:  `list databases`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 		resp, err := client.Get().ListDatabases(ctx)
@@ -34,19 +32,19 @@ var listDatabasesCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("list databases failed")
 		}
 		for _, v := range resp {
-			util.Stdout(v)
+			util.Stdout("%s\n", v)
 		}
 	},
 }
 
 var createDatabaseCmd = &cobra.Command{
-	Use:   "database",
+	Use:   "database {db}",
 	Short: "create database",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		err := client.Get().CreateDatabase(ctx, args[0], &driver.DatabaseOptions{})
+		err := client.Get().CreateDatabase(ctx, args[0])
 		if err != nil {
 			log.Fatal().Err(err).Msg("create database failed")
 		}
@@ -54,13 +52,13 @@ var createDatabaseCmd = &cobra.Command{
 }
 
 var dropDatabaseCmd = &cobra.Command{
-	Use:   "database",
+	Use:   "database {db}",
 	Short: "drop database",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		err := client.Get().DropDatabase(ctx, args[0], &driver.DatabaseOptions{})
+		err := client.Get().DropDatabase(ctx, args[0])
 		if err != nil {
 			log.Fatal().Err(err).Msg("drop database failed")
 		}
