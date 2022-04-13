@@ -31,15 +31,15 @@ db_tests() {
 
 	#reading schemas from command line parameters
 	$cli create collection db1 \
-		'{ "name" : "coll1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "int" }, "Field2": { "type": "int" } }, "primary_key": ["Key1"] }' \
-		'{ "name" : "coll111", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "int" } }, "primary_key": ["Key1"] }'
+		'{ "name" : "coll1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }' \
+		'{ "name" : "coll111", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }'
 
 	#reading schemas from stream
-	echo '{ "name" : "coll2", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "int" }, "Field2": { "type": "int" } }, "primary_key": ["Key1"] }' | $cli create collection db1 -
+	echo '{ "name" : "coll2", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }' | $cli create collection db1 -
 	#reading array of schemas
-	echo '[{ "name" : "coll3", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "int" } }, "primary_key": ["Key1"] }, { "name" : "coll4", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "int" } }, "primary_key": ["Key1"] }]' | $cli create collection db1 -
+	echo '[{ "name" : "coll3", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }, { "name" : "coll4", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]' | $cli create collection db1 -
 #reading schemas from command line array
-	$cli create collection db1 '[{ "name" : "coll5", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "int" } }, "primary_key": ["Key1"] }, { "name" : "coll6", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "int" } }, "primary_key": ["Key1"] }]' '{ "name" : "coll7", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "int" } }, "primary_key": ["Key1"] }'
+	$cli create collection db1 '[{ "name" : "coll5", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }, { "name" : "coll6", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]' '{ "name" : "coll7", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }'
 
 	#FIXME: implement after server implements it
 	#$cli describe collection db1 coll1

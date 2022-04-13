@@ -44,7 +44,7 @@ const (
 	ContainerName    = "tigrisdb-local-server"
 )
 
-var ImageTag = "1.0.0-alpha.6"
+var ImageTag = "1.0.0-alpha.7"
 
 func ensureVolume(cli *client.Client) {
 	ctx := context.Background()
