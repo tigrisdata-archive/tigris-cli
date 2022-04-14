@@ -24,7 +24,7 @@ import (
 	"os"
 	"unicode"
 
-	"github.com/rs/zerolog/log"
+	"github.com/tigrisdata/tigrisdb-cli/util"
 )
 
 var BatchSize int32 = 100
@@ -39,7 +39,7 @@ func detectArray(r *bufio.Reader) bool {
 			if err == io.EOF {
 				return false
 			}
-			log.Fatal().Err(err).Msg("error reading input")
+			util.Error(err, "error reading input")
 			return false
 		}
 		if !unicode.IsSpace(c) {
@@ -49,7 +49,7 @@ func detectArray(r *bufio.Reader) bool {
 
 	err = r.UnreadRune()
 	if err != nil {
-		log.Fatal().Err(err).Msg("error reading input")
+		util.Error(err, "error reading input")
 	}
 
 	return c == '['
@@ -59,7 +59,7 @@ func iterateArray(r []byte) []json.RawMessage {
 	arr := make([]json.RawMessage, 0)
 	err := json.Unmarshal(r, &arr)
 	if err != nil {
-		log.Fatal().Err(err).Msg("reading parsing array of documents")
+		util.Error(err, "reading parsing array of documents")
 	}
 	return arr
 }
@@ -79,7 +79,7 @@ func iterateStream(ctx context.Context, args []string, r io.Reader, fn func(ctx2
 		}
 	}
 	if err := s.Err(); err != nil {
-		log.Fatal().Err(err).Msg("reading documents from stdin")
+		util.Error(err, "reading documents from stdin")
 	}
 }
 
@@ -91,7 +91,7 @@ func iterateInput(ctx context.Context, docsPosition int, args []string, fn func(
 		if detectArray(r) {
 			buf, err := ioutil.ReadAll(r)
 			if err != nil {
-				log.Fatal().Err(err).Msg("error reading documents")
+				util.Error(err, "error reading documents")
 			}
 			docs := iterateArray(buf)
 			fn(ctx, args, docs)

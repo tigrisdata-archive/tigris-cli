@@ -129,7 +129,7 @@ Operations can be provided in the command line or from standard input`,
 				for _, iop := range ops {
 					var op TxOp
 					if err := json.Unmarshal(iop, &op); err != nil {
-						log.Fatal().Err(err).Msg("begin transaction failed")
+						util.Error(err, "begin transaction failed")
 					}
 
 					if op.Operation != "" {

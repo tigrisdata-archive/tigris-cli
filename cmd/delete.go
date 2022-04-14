@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
@@ -32,7 +31,7 @@ var deleteCmd = &cobra.Command{
 		defer cancel()
 		_, err := client.Get().Delete(ctx, args[0], args[1], driver.Filter(args[2]))
 		if err != nil {
-			log.Fatal().Err(err).Msg("delete documents failed")
+			util.Error(err, "delete documents failed")
 		}
 	},
 }

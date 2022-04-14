@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
@@ -29,7 +28,7 @@ var listDatabasesCmd = &cobra.Command{
 		defer cancel()
 		resp, err := client.Get().ListDatabases(ctx)
 		if err != nil {
-			log.Fatal().Err(err).Msg("list databases failed")
+			util.Error(err, "list databases failed")
 		}
 		for _, v := range resp {
 			util.Stdout("%s\n", v)
@@ -46,7 +45,7 @@ var createDatabaseCmd = &cobra.Command{
 		defer cancel()
 		err := client.Get().CreateDatabase(ctx, args[0])
 		if err != nil {
-			log.Fatal().Err(err).Msg("create database failed")
+			util.Error(err, "create database failed")
 		}
 	},
 }
@@ -60,7 +59,7 @@ var dropDatabaseCmd = &cobra.Command{
 		defer cancel()
 		err := client.Get().DropDatabase(ctx, args[0])
 		if err != nil {
-			log.Fatal().Err(err).Msg("drop database failed")
+			util.Error(err, "drop database failed")
 		}
 	},
 }

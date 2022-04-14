@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rs/zerolog/log"
 	"github.com/tigrisdata/tigrisdb-cli/config"
 	"github.com/tigrisdata/tigrisdb-cli/util"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
@@ -80,13 +79,13 @@ func Transact(bctx context.Context, db string, fn func(ctx context.Context, tx d
 
 	tx, err := Get().BeginTx(ctx, db)
 	if err != nil {
-		log.Fatal().Err(err).Msg("begin transaction failed")
+		util.Error(err, "begin transaction failed")
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	fn(ctx, tx)
 
 	if err := tx.Commit(ctx); err != nil {
-		log.Fatal().Err(err).Msg("begin transaction failed")
+		util.Error(err, "commit transaction failed")
 	}
 }
