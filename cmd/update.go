@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
@@ -33,7 +32,7 @@ var updateCmd = &cobra.Command{
 
 		_, err := client.Get().Update(ctx, args[0], args[1], driver.Filter(args[2]), driver.Fields(args[3]))
 		if err != nil {
-			log.Fatal().Err(err).Msg("update documents failed")
+			util.Error(err, "update documents failed")
 		}
 	},
 }

@@ -34,6 +34,7 @@ import (
 	"github.com/spf13/cobra"
 	tclient "github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/config"
+	"github.com/tigrisdata/tigrisdb-cli/util"
 )
 
 const (
@@ -51,7 +52,7 @@ func ensureVolume(cli *client.Client) {
 
 	volumes, err := cli.VolumeList(ctx, filters.NewArgs())
 	if err != nil {
-		log.Fatal().Err(err).Msg("error listing volumes")
+		util.Error(err, "error listing volumes")
 	}
 
 	found := false
@@ -67,7 +68,7 @@ func ensureVolume(cli *client.Client) {
 			Name:   volumeName,
 		})
 		if err != nil {
-			log.Fatal().Err(err).Msg("error creating docker volume")
+			util.Error(err, "error creating docker volume")
 		}
 	}
 }
@@ -148,7 +149,7 @@ func execDockerCommand(cli *client.Client, container string, cmd []string) {
 		Cmd: cmd,
 	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("error executing command in docker container")
+		util.Error(err, "error executing command in docker container")
 	}
 
 	execID := response.ID
@@ -158,7 +159,7 @@ func execDockerCommand(cli *client.Client, container string, cmd []string) {
 
 	resp, err := cli.ContainerExecAttach(ctx, execID, types.ExecStartCheck{})
 	if err != nil {
-		log.Fatal().Err(err).Msg("error executing command in docker container")
+		util.Error(err, "error executing command in docker container")
 	}
 	defer resp.Close()
 }
@@ -190,7 +191,7 @@ func waitServerUp() {
 		}
 	}
 	if err != nil {
-		log.Fatal().Err(err).Msg("tigrisdb initialization failed")
+		util.Error(err, "tigrisdb initialization failed")
 	}
 }
 
@@ -200,7 +201,7 @@ var serverUpCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
-			log.Fatal().Err(err).Msg("error creating docker client")
+			util.Error(err, "error creating docker client")
 		}
 
 		ensureVolume(cli)
@@ -242,7 +243,7 @@ var serverDownCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
-			log.Fatal().Err(err).Msg("error creating docker client")
+			util.Error(err, "error creating docker client")
 		}
 
 		stopContainer(cli, FDBContainerName)
@@ -258,14 +259,14 @@ var serverLogsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
-			log.Fatal().Err(err).Msg("error creating docker client")
+			util.Error(err, "error creating docker client")
 		}
 
 		ctx := context.Background()
 
 		follow, err := cmd.Flags().GetBool("follow")
 		if err != nil {
-			log.Fatal().Err(err).Msg("error getting 'follow' flag")
+			util.Error(err, "error getting 'follow' flag")
 		}
 
 		logs, err := cli.ContainerLogs(ctx, ContainerName, types.ContainerLogsOptions{
@@ -274,7 +275,7 @@ var serverLogsCmd = &cobra.Command{
 			Follow:     follow,
 		})
 		if err != nil {
-			log.Fatal().Err(err).Msg("error reading container logs")
+			util.Error(err, "error reading container logs")
 		}
 
 		_, _ = stdcopy.StdCopy(os.Stdout, os.Stderr, logs)

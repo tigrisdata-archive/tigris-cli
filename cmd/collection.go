@@ -17,8 +17,8 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
@@ -31,14 +31,14 @@ func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) {
 	}
 	var schema Schema
 	if err := json.Unmarshal(raw, &schema); err != nil {
-		log.Fatal().Err(err).Msg("error parsing collection schema")
+		util.Error(err, "error parsing collection schema")
 	}
 	if schema.Name == "" {
-		log.Fatal().Msg("schema name is missing")
+		util.Error(fmt.Errorf("schema name is missing"), "create collection failed")
 	}
 	err := tx.CreateOrUpdateCollection(ctx, schema.Name, driver.Schema(raw))
 	if err != nil {
-		log.Fatal().Err(err).Msg("create collection failed")
+		util.Error(err, "create collection failed")
 	}
 }
 
@@ -51,7 +51,7 @@ var listCollectionsCmd = &cobra.Command{
 		defer cancel()
 		resp, err := client.Get().ListCollections(ctx, args[0])
 		if err != nil {
-			log.Fatal().Err(err).Msg("list collections failed")
+			util.Error(err, "list collections failed")
 		}
 		for _, v := range resp {
 			util.Stdout("%s\n", v)
@@ -84,7 +84,7 @@ var dropCollectionCmd = &cobra.Command{
 				for _, v := range docs {
 					err := tx.DropCollection(ctx, string(v))
 					if err != nil {
-						log.Fatal().Err(err).Msg("drop collection failed")
+						util.Error(err, "drop collection failed")
 					}
 				}
 			})

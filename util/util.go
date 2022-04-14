@@ -58,3 +58,8 @@ func GetContext(ctx context.Context) (context.Context, context.CancelFunc) {
 func Stdout(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stdout, format, args...)
 }
+
+func Error(err error, _ string) {
+	fmt.Fprintf(os.Stderr, "%v\n", err)
+	os.Exit(1)
+}

@@ -19,9 +19,9 @@ import (
 	"encoding/json"
 	"unsafe"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
+	"github.com/tigrisdata/tigrisdb-cli/util"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 
@@ -36,7 +36,7 @@ var insertCmd = &cobra.Command{
 			ptr := unsafe.Pointer(&docs)
 			_, err := client.Get().Insert(ctx, args[0], args[1], *(*[]driver.Document)(ptr))
 			if err != nil {
-				log.Fatal().Err(err).Msg("insert documents failed")
+				util.Error(err, "insert documents failed")
 			}
 		})
 	},

@@ -17,7 +17,6 @@ package main
 import (
 	"os"
 
-	"github.com/rs/zerolog/log"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/cmd"
 	"github.com/tigrisdata/tigrisdb-cli/config"
@@ -33,7 +32,7 @@ func main() {
 
 	if len(os.Args) > 2 && (os.Args[1] == "db" && os.Args[2] != "local") {
 		if err := client.Init(config.DefaultConfig); err != nil {
-			log.Fatal().Err(err).Msg("tigrisdb client initialization failed")
+			util.Error(err, "tigrisdb client initialization failed")
 		}
 	}
 

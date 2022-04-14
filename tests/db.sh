@@ -167,8 +167,14 @@ EOF
 {"Key1": "vK300", "Field1": 30}'
 	diff -w -u <(echo "$exp_out") <(echo "$out")
 
-	#negative tests
+	db_negative_tests
+	db_errors_tests
 
+	$cli drop collection db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7
+	$cli drop database db1
+}
+
+db_negative_tests() {
 	#broken json
 	echo '{"Key1": "vK10", "Fiel' | $cli insert db1 coll1 - && exit 1
 	$cli insert db1 coll1 '{"Key1": "vK10", "Fiel' && exit 1
@@ -188,8 +194,40 @@ EOF
 	$cli drop database && exit 1
 	$cli list collections && exit 1
 
-	$cli drop collection db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7
-	$cli drop database db1
+	true
+}
+
+error() {
+	exp_out=$1
+	shift
+	out=$("$@" 2>&1 || true)
+	diff -u <(echo "$exp_out") <(echo "$out")
+}
+
+# shellcheck disable=SC2086
+db_errors_tests() {
+	error "database doesn't exists 'db2'" $cli drop database db2
+	error "database doesn't exists 'db2'" $cli drop collection db2 coll1
+
+	error "database doesn't exists 'db2'" $cli create collection db2 \
+		'{ "name" : "coll1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
+
+	error "database doesn't exists 'db2'" $cli list collections db2
+	error "database doesn't exists 'db2'" $cli insert db2 coll1 '{}'
+	error "database doesn't exists 'db2'" $cli read db2 coll1 '{}'
+	error "database doesn't exists 'db2'" $cli update db2 coll1 '{}' '{}'
+	error "database doesn't exists 'db2'" $cli delete db2 coll1 '{}'
+
+	$cli create database db2
+	error "collection doesn't exists 'coll1'" $cli insert db2 coll1 '{}'
+	error "collection doesn't exists 'coll1'" $cli read db2 coll1 '{}'
+	error "collection doesn't exists 'coll1'" $cli update db2 coll1 '{}' '{}'
+	error "collection doesn't exists 'coll1'" $cli delete db2 coll1 '{}'
+
+	error "schema name is missing" $cli create collection db1 \
+		'{ "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
+
+	$cli drop database db2
 }
 
 unset TIGRISDB_PROTOCOL

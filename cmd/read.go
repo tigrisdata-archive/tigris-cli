@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
@@ -43,14 +42,14 @@ if fields is not provided or has special {} value, read returns all the fields o
 		}
 		it, err := client.Get().Read(ctx, args[0], args[1], driver.Filter(filter), driver.Fields(fields))
 		if err != nil {
-			log.Fatal().Err(err).Msg("read documents failed")
+			util.Error(err, "read documents failed")
 		}
 		var doc driver.Document
 		for it.Next(&doc) {
 			util.Stdout("%s\n", string(doc))
 		}
 		if err := it.Err(); err != nil {
-			log.Fatal().Err(err).Msg("iterate documents failed")
+			util.Error(err, "iterate documents failed")
 		}
 	},
 }
