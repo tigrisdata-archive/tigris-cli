@@ -5,13 +5,23 @@
 
 # Install
 
+## macOS
+
 ```sh
-go install github.com/tigrisdata/tigrisdb-cli@latest
+curl -sSL https://github.com/tigrisdata/tigrisdb-cli/releases/download/v1.0.0-alpha.4/tigris-v1.0.0-alpha.4-darwin-amd64.tar.gz | sudo tar -xz -C /usr/local/bin
+```
+
+## Linux
+
+```sh
+curl -sSL https://github.com/tigrisdata/tigrisdb-cli/releases/download/v1.0.0-alpha.4/tigris-v1.0.0-alpha.4-linux-amd64.tar.gz | sudo tar -xz -C /usr/local/bin
 ```
 
 # Example
 
 ```sh
+tigirs db local up # brings local TigrisDB up on localhost:8081
+
 tigris db create database db1
 tigris db create collection db1 \
 	'{ "name" : "coll1", "properties": {
@@ -52,6 +62,8 @@ tigris db read "db1" "coll1" '{}'
 
 tigris db drop collection db1 coll1
 tigris db drop database db1
+
+tigris db local down
 ```
 
 # License
