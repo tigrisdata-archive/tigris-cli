@@ -30,6 +30,7 @@ func skipClientInit(args []string) bool {
 		"completion": true,
 		"docs":       true,
 		"config":     true,
+		"scaffold":   true,
 	}
 
 	return len(args) > 1 && skip[args[1]]
