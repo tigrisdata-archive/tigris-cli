@@ -36,7 +36,7 @@ func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) {
 	if schema.Name == "" {
 		util.Error(fmt.Errorf("schema name is missing"), "create collection failed")
 	}
-	err := tx.CreateOrUpdateCollection(ctx, schema.Name, driver.Schema(raw))
+	err := tx.CreateOrUpdateCollection(ctx, schema.Name, raw)
 	if err != nil {
 		util.Error(err, "create collection failed")
 	}
@@ -62,10 +62,10 @@ var listCollectionsCmd = &cobra.Command{
 var createCollectionCmd = &cobra.Command{
 	Use:   "collection {db} {schema}...|-",
 	Short: "create collection(s)",
-	Args:  cobra.MinimumNArgs(2),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
-			iterateInput(ctx, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 				for _, v := range docs {
 					createCollection(ctx, tx, driver.Schema(v))
 				}
@@ -80,7 +80,7 @@ var dropCollectionCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
-			iterateInput(ctx, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 				for _, v := range docs {
 					err := tx.DropCollection(ctx, string(v))
 					if err != nil {
@@ -95,10 +95,10 @@ var dropCollectionCmd = &cobra.Command{
 var alterCollectionCmd = &cobra.Command{
 	Use:   "collection {db} {collection} {schema}",
 	Short: "update collection schema",
-	Args:  cobra.MinimumNArgs(3),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
-			iterateInput(ctx, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 				for _, v := range docs {
 					createCollection(ctx, tx, driver.Schema(v))
 				}

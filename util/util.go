@@ -30,12 +30,17 @@ import (
 var Version string
 var DefaultTimeout = 5 * time.Second
 
+func IsTTY(f *os.File) bool {
+	fileInfo, _ := f.Stat()
+	return (fileInfo.Mode() & os.ModeCharDevice) != 0
+}
+
 func LogConfigure() {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	//Colored output to terminal and just JSON output to pipe
 	var output io.Writer = os.Stderr
-	if fileInfo, _ := os.Stdout.Stat(); fileInfo.Mode()&os.ModeCharDevice != 0 {
+	if IsTTY(os.Stdout) {
 		output = zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}
 	}
 	lvl, err := zerolog.ParseLevel("trace")

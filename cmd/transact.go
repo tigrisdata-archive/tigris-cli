@@ -116,16 +116,16 @@ func execTxOp(ctx context.Context, db string, tp string, op *Op) {
 }
 
 var transactCmd = &cobra.Command{
-	Use:     "transact {db} begin|commit|rollback|{operation}...|-",
+	Use:     "transact {db} {operation}...|-",
 	Aliases: []string{"tx"},
 	Short:   "run a set of operations in a transaction",
 	Long: `Run a set of operations in a transaction
 Operations can be provided in the command line or from standard input`,
-	Args: cobra.MinimumNArgs(2),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		db := args[0]
 		client.Transact(cmd.Context(), db, func(ctx context.Context, tx driver.Tx) {
-			iterateInput(cmd.Context(), 1, args, func(ctx context.Context, args []string, ops []json.RawMessage) {
+			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, ops []json.RawMessage) {
 				for _, iop := range ops {
 					var op TxOp
 					if err := json.Unmarshal(iop, &op); err != nil {
