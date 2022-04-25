@@ -27,16 +27,16 @@ import (
 
 func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) {
 	type Schema struct {
-		Name string
+		Title string
 	}
 	var schema Schema
 	if err := json.Unmarshal(raw, &schema); err != nil {
 		util.Error(err, "error parsing collection schema")
 	}
-	if schema.Name == "" {
+	if schema.Title == "" {
 		util.Error(fmt.Errorf("schema name is missing"), "create collection failed")
 	}
-	err := tx.CreateOrUpdateCollection(ctx, schema.Name, raw)
+	err := tx.CreateOrUpdateCollection(ctx, schema.Title, raw)
 	if err != nil {
 		util.Error(err, "create collection failed")
 	}
