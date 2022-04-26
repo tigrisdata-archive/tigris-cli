@@ -172,6 +172,7 @@ EOF
 
 	db_negative_tests
 	db_errors_tests
+	db_generate_schema_test
 
 	$cli drop collection db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7
 	$cli drop database db1
@@ -231,6 +232,11 @@ db_errors_tests() {
 		'{ "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
 
 	$cli drop database db2
+}
+
+db_generate_schema_test() {
+  error "sampledb created with the collections" $cli generate sample-schema --create
+  $cli drop database sampledb
 }
 
 unset TIGRISDB_PROTOCOL

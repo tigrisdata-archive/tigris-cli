@@ -266,7 +266,7 @@ var serverLogsCmd = &cobra.Command{
 
 		follow, err := cmd.Flags().GetBool("follow")
 		if err != nil {
-			util.Error(err, "error getting 'follow' flag")
+			util.Error(err, "error reading 'follow' option")
 		}
 
 		logs, err := cli.ContainerLogs(ctx, ContainerName, types.ContainerLogsOptions{
