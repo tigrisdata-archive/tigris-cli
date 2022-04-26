@@ -172,6 +172,7 @@ EOF
 
 	db_negative_tests
 	db_errors_tests
+	db_generate_schema_test
 
 	$cli drop collection db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7
 	$cli drop database db1
@@ -231,6 +232,17 @@ db_errors_tests() {
 		'{ "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
 
 	$cli drop database db2
+}
+
+db_generate_schema_test() {
+  $cli create database productdb
+
+  $cli generate sample-schema
+  $cli create collection productdb < users.json
+  $cli create collection productdb < products.json
+  $cli create collection productdb < orders.json
+
+  $cli drop database productdb
 }
 
 unset TIGRISDB_PROTOCOL

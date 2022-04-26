@@ -5,7 +5,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/util"
 	"io/ioutil"
-	"os"
 )
 
 var schemas = map[string][]byte{
@@ -126,7 +125,7 @@ var sampleSchemaCmd = &cobra.Command{
 	Short: "Generate sample schema consisting of three collections: products, users, orders",
 	Run: func(cmd *cobra.Command, args []string) {
 		for name, schema := range schemas {
-			if err := ioutil.WriteFile(fmt.Sprintf("%v.json", name), schema, os.ModePerm); err != nil {
+			if err := ioutil.WriteFile(fmt.Sprintf("%v.json", name), schema, 0644); err != nil {
 				util.Error(err, "error generating sample schema file")
 			}
 		}
