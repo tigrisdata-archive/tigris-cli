@@ -250,23 +250,23 @@ db_generate_schema_test() {
   $cli drop database sampledb
 }
 
-unset TIGRISDB_PROTOCOL
-unset TIGRISDB_URL
+unset TIGRIS_PROTOCOL
+unset TIGRIS_URL
 db_tests
 
-export TIGRISDB_PROTOCOL=http
+export TIGRIS_PROTOCOL=http
 db_tests
-export TIGRISDB_PROTOCOL=grpc
+export TIGRIS_PROTOCOL=grpc
 db_tests
-export TIGRISDB_URL=localhost:8081
-export TIGRISDB_PROTOCOL=grpc
+export TIGRIS_URL=localhost:8081
+export TIGRIS_PROTOCOL=grpc
 db_tests
-export TIGRISDB_URL=localhost:8081
-export TIGRISDB_PROTOCOL=http
+export TIGRIS_URL=localhost:8081
+export TIGRIS_PROTOCOL=http
 db_tests
-export TIGRISDB_URL=http://localhost:8081
+export TIGRIS_URL=http://localhost:8081
 db_tests
-export TIGRISDB_URL=grpc://localhost:8081
+export TIGRIS_URL=grpc://localhost:8081
 db_tests
 
 $cli local down
