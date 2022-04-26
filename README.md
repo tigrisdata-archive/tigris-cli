@@ -46,7 +46,7 @@ Available Commands:
   replace     replace document
   transact    run a set of operations in a transaction
   update      update documents
-  version     show tigrisdb-cli version
+  version     show tigris cli version
 
 Flags:
   -h, --help   help for tigris
