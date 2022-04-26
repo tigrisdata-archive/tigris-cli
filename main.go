@@ -32,7 +32,7 @@ func main() {
 
 	if len(os.Args) > 1 && (os.Args[1] != "local") {
 		if err := client.Init(config.DefaultConfig); err != nil {
-			util.Error(err, "tigrisdb client initialization failed")
+			util.Error(err, "tigris client initialization failed")
 		}
 	}
 

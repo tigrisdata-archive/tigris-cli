@@ -22,7 +22,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "tigris",
-	Short: "tigris is a command line interface of TigrisDB database",
+	Short: "tigris is a command line interface of Tigris data platform",
 }
 
 var dbCmd = rootCmd
