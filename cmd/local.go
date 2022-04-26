@@ -191,13 +191,13 @@ func waitServerUp() {
 		}
 	}
 	if err != nil {
-		util.Error(err, "tigrisdb initialization failed")
+		util.Error(err, "tigris initialization failed")
 	}
 }
 
 var serverUpCmd = &cobra.Command{
 	Use:   "up [port] [version]",
-	Short: "Start an instance of TigrisDB for local development",
+	Short: "Start an instance of Tigris for local development",
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
@@ -230,16 +230,16 @@ var serverUpCmd = &cobra.Command{
 
 		waitServerUp()
 
-		fmt.Printf("TigrisDB is running at localhost:%s\n", port)
+		fmt.Printf("Tigris is running at localhost:%s\n", port)
 		if port != "8081" {
-			fmt.Printf("run 'export TIGRISDB_URL=localhost:%s' for tigrisdb-cli to automatically connect\n", port)
+			fmt.Printf("run 'export TIGRISDB_URL=localhost:%s' for tigris cli to automatically connect\n", port)
 		}
 	},
 }
 
 var serverDownCmd = &cobra.Command{
 	Use:   "down",
-	Short: "Stop local TigrisDB instance",
+	Short: "Stop local Tigris instance",
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
@@ -249,13 +249,13 @@ var serverDownCmd = &cobra.Command{
 		stopContainer(cli, FDBContainerName)
 		stopContainer(cli, ContainerName)
 
-		fmt.Printf("TigrisDB stopped\n")
+		fmt.Printf("Tigris stopped\n")
 	},
 }
 
 var serverLogsCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "Show logs of local TigrisDB instance",
+	Short: "Show logs of local Tigris instance",
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
@@ -284,7 +284,7 @@ var serverLogsCmd = &cobra.Command{
 
 var localCmd = &cobra.Command{
 	Use:   "local",
-	Short: "Starting and stopping local TigrisDB server",
+	Short: "Starting and stopping local Tigris server",
 }
 
 func init() {

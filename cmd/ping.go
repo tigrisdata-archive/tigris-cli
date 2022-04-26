@@ -25,7 +25,7 @@ import (
 
 var pingCmd = &cobra.Command{
 	Use:   "ping",
-	Short: "Check connection to the TigrisDB",
+	Short: "Check connection to Tigris",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()

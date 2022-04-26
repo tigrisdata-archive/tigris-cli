@@ -145,7 +145,7 @@ var sampleSchemaCmd = &cobra.Command{
 				}
 			})
 
-			util.Stdout("%v created with the collections", sampleDBName)
+			util.Stdout("%v created with the collections\n", sampleDBName)
 		} else {
 			stdout, err := cmd.Flags().GetBool("stdout")
 			if err != nil {
