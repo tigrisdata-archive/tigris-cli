@@ -23,7 +23,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "show tigrisdb-cli version",
 	Run: func(cmd *cobra.Command, args []string) {
-		util.Stdout("tigrisdb-cli version %s\n", util.Version)
+		util.Stdout("tigris version %s\n", util.Version)
 	},
 }
 

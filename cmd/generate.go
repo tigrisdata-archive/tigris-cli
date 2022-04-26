@@ -143,6 +143,8 @@ var sampleSchemaCmd = &cobra.Command{
 					createCollection(ctx, tx, schema)
 				}
 			})
+
+			util.Stdout("%v created with the collections", sampleDBName)
 		} else {
 			for name, schema := range schemas {
 				if err := ioutil.WriteFile(fmt.Sprintf("%v.json", name), schema, 0644); err != nil {

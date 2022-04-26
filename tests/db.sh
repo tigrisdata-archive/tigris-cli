@@ -235,14 +235,8 @@ db_errors_tests() {
 }
 
 db_generate_schema_test() {
-  $cli create database productdb
-
-  $cli generate sample-schema
-  $cli create collection productdb < users.json
-  $cli create collection productdb < products.json
-  $cli create collection productdb < orders.json
-
-  $cli drop database productdb
+  error "sampledb created with the collections" $cli generate sample-schema --create
+  $cli drop database sampledb
 }
 
 unset TIGRISDB_PROTOCOL
