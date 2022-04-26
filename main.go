@@ -30,7 +30,7 @@ func main() {
 
 	util.DefaultTimeout = config.DefaultConfig.Timeout
 
-	if len(os.Args) > 2 && (os.Args[1] == "db" && os.Args[2] != "local") {
+	if len(os.Args) > 1 && (os.Args[1] != "local") {
 		if err := client.Init(config.DefaultConfig); err != nil {
 			util.Error(err, "tigrisdb client initialization failed")
 		}

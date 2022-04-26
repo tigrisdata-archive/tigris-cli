@@ -25,6 +25,8 @@ var rootCmd = &cobra.Command{
 	Short: "tigris is a command line interface of TigrisDB database",
 }
 
+var dbCmd = rootCmd
+
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {

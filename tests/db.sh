@@ -15,7 +15,7 @@
 
 set -ex
 
-cli="./tigris db"
+cli="./tigris"
 
 make
 
