@@ -30,7 +30,7 @@ var updateCmd = &cobra.Command{
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 
-		_, err := client.Get().Update(ctx, args[0], args[1], driver.Filter(args[2]), driver.Fields(args[3]))
+		_, err := client.Get().Update(ctx, args[0], args[1], driver.Filter(args[2]), driver.Update(args[3]))
 		if err != nil {
 			util.Error(err, "update documents failed")
 		}

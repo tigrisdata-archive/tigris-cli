@@ -5,6 +5,10 @@
 *.so
 *.dylib
 tigrisdb-cli
+tigris
+
+# JSON files
+*.json
 
 # Test binary, built with `go test -c`
 *.test

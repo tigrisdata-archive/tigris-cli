@@ -70,7 +70,7 @@ func execTxOp(ctx context.Context, db string, tp string, op *Op) {
 		ptr := unsafe.Pointer(&op.Documents)
 		_, err = client.Get().Insert(ctx, db, op.Collection, *(*[]driver.Document)(ptr))
 	case Update:
-		_, err = client.Get().Update(ctx, db, op.Collection, driver.Filter(op.Filter), driver.Fields(op.Fields))
+		_, err = client.Get().Update(ctx, db, op.Collection, driver.Filter(op.Filter), driver.Update(op.Fields))
 	case Delete:
 		_, err = client.Get().Delete(ctx, db, op.Collection, driver.Filter(op.Filter))
 	case Replace, InsertOrReplace:
@@ -98,7 +98,7 @@ func execTxOp(ctx context.Context, db string, tp string, op *Op) {
 		if len(op.Fields) > 0 {
 			fields = op.Fields
 		}
-		it, err := client.Get().Read(ctx, db, op.Collection, driver.Filter(filter), driver.Fields(fields))
+		it, err := client.Get().Read(ctx, db, op.Collection, driver.Filter(filter), driver.Projection(fields))
 		if err != nil {
 			log.Fatal().Err(err).Str("op", op.Operation).Msgf("transact operation failed")
 		}
@@ -116,16 +116,16 @@ func execTxOp(ctx context.Context, db string, tp string, op *Op) {
 }
 
 var transactCmd = &cobra.Command{
-	Use:     "transact {db} begin|commit|rollback|{operation}...|-",
+	Use:     "transact {db} {operation}...|-",
 	Aliases: []string{"tx"},
 	Short:   "run a set of operations in a transaction",
 	Long: `Run a set of operations in a transaction
 Operations can be provided in the command line or from standard input`,
-	Args: cobra.MinimumNArgs(2),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		db := args[0]
 		client.Transact(cmd.Context(), db, func(ctx context.Context, tx driver.Tx) {
-			iterateInput(cmd.Context(), 1, args, func(ctx context.Context, args []string, ops []json.RawMessage) {
+			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, ops []json.RawMessage) {
 				for _, iop := range ops {
 					var op TxOp
 					if err := json.Unmarshal(iop, &op); err != nil {

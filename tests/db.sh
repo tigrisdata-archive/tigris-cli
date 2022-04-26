@@ -15,7 +15,7 @@
 
 set -ex
 
-cli="./tigris db"
+cli="./tigris"
 
 make
 
@@ -29,20 +29,32 @@ db_tests() {
 
 	$cli create database db1
 
+	coll1='{"title":"coll1","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"},"Field2":{"type":"integer"}},"primary_key":["Key1"]}'
+	coll111='{"title":"coll111","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"}},"primary_key":["Key1"]}'
+
 	#reading schemas from command line parameters
-	$cli create collection db1 \
-		'{ "name" : "coll1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }' \
-		'{ "name" : "coll111", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }'
+	$cli create collection db1 "$coll1" "$coll111"
+
+	out=$($cli describe collection db1 coll1)
+	diff -w -u <(echo '{"collection":"coll1","metadata":{},"schema":'"$coll1"'}') <(echo "$out")
+
+	out=$($cli describe database db1)
+	# The output order is not-deterministic, try both combinations:
+	diff -u <(echo '{"db":"db1","metadata":{},"collections":[{"collection":"coll1","metadata":{},"schema":'"$coll1"'},{"collection":"coll111","metadata":{},"schema":'"$coll111"'}]}') <(echo "$out") ||
+	diff -u <(echo '{"db":"db1","metadata":{},"collections":[{"collection":"coll111","metadata":{},"schema":'"$coll111"'},{"collection":"coll1","metadata":{},"schema":'"$coll1"'}]}') <(echo "$out")
 
 	#reading schemas from stream
-	echo '{ "name" : "coll2", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }' | $cli create collection db1 -
+	# \n at the end to test empty line skipping
+	# this also test multi-line streams
+	echo -e '{ "title" : "coll2",
+	"properties": { "Key1": { "type": "string" },
+	"Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }\n        \n\n' | $cli create collection db1 -
 	#reading array of schemas
-	echo '[{ "name" : "coll3", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }, { "name" : "coll4", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]' | $cli create collection db1 -
-#reading schemas from command line array
-	$cli create collection db1 '[{ "name" : "coll5", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }, { "name" : "coll6", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]' '{ "name" : "coll7", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }'
-
-	#FIXME: implement after server implements it
-	#$cli describe collection db1 coll1
+	echo '[{ "title" : "coll3", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }, { "title" : "coll4", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]' | $cli create collection db1 -
+	#reading schemas from command line array
+	$cli create collection db1 '[{ "title" : "coll5", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }, { "title" : "coll6", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]' '{ "title" : "coll7", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }'
+	# allow to skip - in non interactive input
+	$cli create collection db1 <<< '[{ "title" : "coll8", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }, { "title" : "coll9", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]'
 
 	$cli list databases
 	$cli list collections db1
@@ -65,13 +77,13 @@ db_tests() {
 		'[{"Key1": "vK2", "Field1": 10}]'
 
 	#insert from standard input stream
-	cat <<EOF | $cli insert "db1" "coll1" -
+	cat <<EOF | $cli insert "db1" "coll1"
 {"Key1": "vK10", "Field1": 10}
 {"Key1": "vK20", "Field1": 20}
 {"Key1": "vK30", "Field1": 30}
 EOF
 
-	cat <<EOF | $cli replace "db1" "coll1" -
+	cat <<EOF | $cli replace "db1" "coll1"
 {"Key1": "vK100", "Field1": 100}
 {"Key1": "vK200", "Field1": 200}
 {"Key1": "vK300", "Field1": 300}
@@ -169,6 +181,7 @@ EOF
 
 	db_negative_tests
 	db_errors_tests
+	db_generate_schema_test
 
 	$cli drop collection db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7
 	$cli drop database db1
@@ -185,10 +198,10 @@ db_negative_tests() {
 	#not enough arguments
 	$cli read "db1" && exit 1
 	$cli update "db1" "coll1" '{"Key1": "vK1"}' && exit 1
-	$cli replace db1 coll1 && exit 1
-	$cli insert db1 coll1 && exit 1
+	$cli replace db1 && exit 1
+	$cli insert db1 && exit 1
 	$cli delete db1 coll1 && exit 1
-	$cli create collection db1 && exit 1
+	$cli create collection && exit 1
 	$cli create database && exit 1
 	$cli drop collection db1 && exit 1
 	$cli drop database && exit 1
@@ -207,27 +220,32 @@ error() {
 # shellcheck disable=SC2086
 db_errors_tests() {
 	error "database doesn't exists 'db2'" $cli drop database db2
-	error "database doesn't exists 'db2'" $cli drop collection db2 coll1
+	error "database doesn't exist 'db2'" $cli drop collection db2 coll1
 
-	error "database doesn't exists 'db2'" $cli create collection db2 \
-		'{ "name" : "coll1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
+	error "database doesn't exist 'db2'" $cli create collection db2 \
+		'{ "title" : "coll1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
 
-	error "database doesn't exists 'db2'" $cli list collections db2
-	error "database doesn't exists 'db2'" $cli insert db2 coll1 '{}'
-	error "database doesn't exists 'db2'" $cli read db2 coll1 '{}'
-	error "database doesn't exists 'db2'" $cli update db2 coll1 '{}' '{}'
-	error "database doesn't exists 'db2'" $cli delete db2 coll1 '{}'
+	error "database doesn't exist 'db2'" $cli list collections db2
+	error "database doesn't exist 'db2'" $cli insert db2 coll1 '{}'
+	error "database doesn't exist 'db2'" $cli read db2 coll1 '{}'
+	error "database doesn't exist 'db2'" $cli update db2 coll1 '{}' '{}'
+	error "database doesn't exist 'db2'" $cli delete db2 coll1 '{}'
 
 	$cli create database db2
-	error "collection doesn't exists 'coll1'" $cli insert db2 coll1 '{}'
-	error "collection doesn't exists 'coll1'" $cli read db2 coll1 '{}'
-	error "collection doesn't exists 'coll1'" $cli update db2 coll1 '{}' '{}'
-	error "collection doesn't exists 'coll1'" $cli delete db2 coll1 '{}'
+	error "collection doesn't exist 'coll1'" $cli insert db2 coll1 '{}'
+	error "collection doesn't exist 'coll1'" $cli read db2 coll1 '{}'
+	error "collection doesn't exist 'coll1'" $cli update db2 coll1 '{}' '{}'
+	error "collection doesn't exist 'coll1'" $cli delete db2 coll1 '{}'
 
 	error "schema name is missing" $cli create collection db1 \
 		'{ "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
 
 	$cli drop database db2
+}
+
+db_generate_schema_test() {
+  error "sampledb created with the collections" $cli generate sample-schema --create
+  $cli drop database sampledb
 }
 
 unset TIGRISDB_PROTOCOL

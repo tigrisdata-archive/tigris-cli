@@ -26,14 +26,14 @@ import (
 )
 
 var replaceCmd = &cobra.Command{
-	Use:     "replace {db} {collection} {document}...|{-}",
+	Use:     "replace {db} {collection} {document}...|-",
 	Aliases: []string{"insert_or_replace"},
 	Short:   "replace document",
 	Long: `replace or insert one or multiple documents
 		from command line or standard input`,
-	Args: cobra.MinimumNArgs(3),
+	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		iterateInput(cmd.Context(), 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+		iterateInput(cmd.Context(), cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 			ptr := unsafe.Pointer(&docs)
 			_, err := client.Get().Replace(ctx, args[0], args[1], *(*[]driver.Document)(ptr))
 			if err != nil {

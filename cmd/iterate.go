@@ -19,11 +19,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"unicode"
 
+	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/util"
 )
 
@@ -65,12 +67,17 @@ func iterateArray(r []byte) []json.RawMessage {
 }
 
 func iterateStream(ctx context.Context, args []string, r io.Reader, fn func(ctx2 context.Context, args []string, docs []json.RawMessage)) {
-	s := bufio.NewScanner(r)
+	dec := json.NewDecoder(r)
 	for {
 		docs := make([]json.RawMessage, 0, BatchSize)
 		var i int32
-		for ; i < BatchSize && s.Scan(); i++ {
-			docs = append(docs, s.Bytes())
+		for ; i < BatchSize && dec.More(); i++ {
+			var v json.RawMessage
+			err := dec.Decode(&v)
+			if err != nil {
+				util.Error(err, "reading documents from stream of documents")
+			}
+			docs = append(docs, v)
 		}
 		if i > 0 {
 			fn(ctx, args, docs)
@@ -78,15 +85,26 @@ func iterateStream(ctx context.Context, args []string, r io.Reader, fn func(ctx2
 			break
 		}
 	}
-	if err := s.Err(); err != nil {
-		util.Error(err, "reading documents from stdin")
-	}
 }
 
 // iterateInput reads repeated command parameters from standard input or args
 // Support newline delimited stream of objects and arrays of objects
-func iterateInput(ctx context.Context, docsPosition int, args []string, fn func(ctx2 context.Context, args []string, docs []json.RawMessage)) {
-	if args[docsPosition] == "-" {
+func iterateInput(ctx context.Context, cmd *cobra.Command, docsPosition int, args []string, fn func(ctx2 context.Context, args []string, docs []json.RawMessage)) {
+	if len(args) > docsPosition && args[docsPosition] != "-" {
+		docs := make([]json.RawMessage, 0, len(args))
+		for _, v := range args[docsPosition:] {
+			if detectArray(bufio.NewReader(bytes.NewReader([]byte(v)))) {
+				docs = append(docs, iterateArray([]byte(v))...)
+			} else {
+				docs = append(docs, json.RawMessage(v))
+			}
+		}
+		fn(ctx, args, docs)
+	} else if len(args) <= docsPosition && util.IsTTY(os.Stdin) {
+		fmt.Fprintf(os.Stderr, "not enougn arguments\n")
+		_ = cmd.Usage()
+		os.Exit(1)
+	} else {
 		r := bufio.NewReader(os.Stdin)
 		if detectArray(r) {
 			buf, err := ioutil.ReadAll(r)
@@ -98,15 +116,5 @@ func iterateInput(ctx context.Context, docsPosition int, args []string, fn func(
 		} else {
 			iterateStream(ctx, args, r, fn)
 		}
-	} else {
-		docs := make([]json.RawMessage, 0, len(args))
-		for _, v := range args[docsPosition:] {
-			if detectArray(bufio.NewReader(bytes.NewReader([]byte(v)))) {
-				docs = append(docs, iterateArray([]byte(v))...)
-			} else {
-				docs = append(docs, json.RawMessage(v))
-			}
-		}
-		fn(ctx, args, docs)
 	}
 }

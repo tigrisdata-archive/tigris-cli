@@ -22,12 +22,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
+	api "github.com/tigrisdata/tigrisdb-client-go/api/server/v1"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 
 func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) {
 	type Schema struct {
-		Name string
+		Name string `json:"title"`
 	}
 	var schema Schema
 	if err := json.Unmarshal(raw, &schema); err != nil {
@@ -36,10 +37,44 @@ func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) {
 	if schema.Name == "" {
 		util.Error(fmt.Errorf("schema name is missing"), "create collection failed")
 	}
-	err := tx.CreateOrUpdateCollection(ctx, schema.Name, driver.Schema(raw))
+	err := tx.CreateOrUpdateCollection(ctx, schema.Name, raw)
 	if err != nil {
 		util.Error(err, "create collection failed")
 	}
+}
+
+type DescribeCollectionResponse struct {
+	Collection string                  `json:"collection,omitempty"`
+	Metadata   *api.CollectionMetadata `json:"metadata,omitempty"`
+	Schema     json.RawMessage         `json:"schema,omitempty"`
+}
+
+var describeCollectionCmd = &cobra.Command{
+	Use:   "collection {db} {collection}",
+	Short: "describe collection",
+	Long:  "describe collection returns collection metadata, including schema",
+	Args:  cobra.MinimumNArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+		resp, err := client.Get().DescribeCollection(ctx, args[0], args[1])
+		if err != nil {
+			util.Error(err, "describe collection failed")
+		}
+
+		tr := DescribeCollectionResponse{
+			Collection: resp.Collection,
+			Metadata:   resp.Metadata,
+			Schema:     resp.Schema,
+		}
+
+		b, err := json.Marshal(tr)
+		if err != nil {
+			util.Error(err, "describe collection failed")
+		}
+
+		util.Stdout("%s\n", string(b))
+	},
 }
 
 var listCollectionsCmd = &cobra.Command{
@@ -62,10 +97,10 @@ var listCollectionsCmd = &cobra.Command{
 var createCollectionCmd = &cobra.Command{
 	Use:   "collection {db} {schema}...|-",
 	Short: "create collection(s)",
-	Args:  cobra.MinimumNArgs(2),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
-			iterateInput(ctx, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 				for _, v := range docs {
 					createCollection(ctx, tx, driver.Schema(v))
 				}
@@ -80,7 +115,7 @@ var dropCollectionCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
-			iterateInput(ctx, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 				for _, v := range docs {
 					err := tx.DropCollection(ctx, string(v))
 					if err != nil {
@@ -95,10 +130,10 @@ var dropCollectionCmd = &cobra.Command{
 var alterCollectionCmd = &cobra.Command{
 	Use:   "collection {db} {collection} {schema}",
 	Short: "update collection schema",
-	Args:  cobra.MinimumNArgs(3),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
-			iterateInput(ctx, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 				for _, v := range docs {
 					createCollection(ctx, tx, driver.Schema(v))
 				}
@@ -112,4 +147,5 @@ func init() {
 	createCmd.AddCommand(createCollectionCmd)
 	listCmd.AddCommand(listCollectionsCmd)
 	alterCmd.AddCommand(alterCollectionCmd)
+	describeCmd.AddCommand(describeCollectionCmd)
 }

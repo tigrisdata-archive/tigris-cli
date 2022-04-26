@@ -45,7 +45,7 @@ const (
 	ContainerName    = "tigrisdb-local-server"
 )
 
-var ImageTag = "1.0.0-alpha.7"
+var ImageTag = "latest"
 
 func ensureVolume(cli *client.Client) {
 	ctx := context.Background()
@@ -266,7 +266,7 @@ var serverLogsCmd = &cobra.Command{
 
 		follow, err := cmd.Flags().GetBool("follow")
 		if err != nil {
-			util.Error(err, "error getting 'follow' flag")
+			util.Error(err, "error reading 'follow' option")
 		}
 
 		logs, err := cli.ContainerLogs(ctx, ContainerName, types.ContainerLogsOptions{

@@ -18,13 +18,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var dbCmd = &cobra.Command{
-	Use:   "db",
-	Short: "Database related commands",
-	Long: `Database related commands.
-Inluding database, collection and documents management`,
+var describeCmd = &cobra.Command{
+	Use:   "describe",
+	Short: "describe database or collection",
+	Args:  cobra.MinimumNArgs(1),
 }
 
 func init() {
-	rootCmd.AddCommand(dbCmd)
+	dbCmd.AddCommand(describeCmd)
 }
