@@ -1,11 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigrisdb-client-go/driver"
 	"io/ioutil"
 )
+
+const sampleDBName = "sampledb"
 
 var schemas = map[string][]byte{
 	"products": []byte(`{
@@ -124,9 +129,25 @@ var sampleSchemaCmd = &cobra.Command{
 	Use:   "sample-schema",
 	Short: "Generate sample schema consisting of three collections: products, users, orders",
 	Run: func(cmd *cobra.Command, args []string) {
-		for name, schema := range schemas {
-			if err := ioutil.WriteFile(fmt.Sprintf("%v.json", name), schema, 0644); err != nil {
-				util.Error(err, "error generating sample schema file")
+		create, err := cmd.Flags().GetBool("create")
+		if err != nil {
+			util.Error(err, "error reading the 'create' option")
+		}
+
+		if create {
+			if err := client.Get().CreateDatabase(cmd.Context(), sampleDBName); err != nil {
+				util.Error(err, "create database failed")
+			}
+			client.Transact(cmd.Context(), sampleDBName, func(ctx context.Context, tx driver.Tx) {
+				for _, schema := range schemas {
+					createCollection(ctx, tx, schema)
+				}
+			})
+		} else {
+			for name, schema := range schemas {
+				if err := ioutil.WriteFile(fmt.Sprintf("%v.json", name), schema, 0644); err != nil {
+					util.Error(err, "error generating sample schema file")
+				}
 			}
 		}
 	},
@@ -138,6 +159,7 @@ var generateCmd = &cobra.Command{
 }
 
 func init() {
+	sampleSchemaCmd.Flags().BoolP("create", "c", false, "create the sample database and collections")
 	generateCmd.AddCommand(sampleSchemaCmd)
 	dbCmd.AddCommand(generateCmd)
 }
