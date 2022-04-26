@@ -12,33 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
 import (
-	"os"
-
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/cmd"
-	"github.com/tigrisdata/tigrisdb-cli/config"
+	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 	"github.com/tigrisdata/tigrisdb-cli/util"
 )
 
-func main() {
-	util.LogConfigure()
-
-	config.Load("tigris", &config.DefaultConfig)
-
-	util.DefaultTimeout = config.DefaultConfig.Timeout
-
-	if len(os.Args) > 1 &&
-		os.Args[1] != "local" &&
-		os.Args[1] != "version" &&
-		os.Args[1] != "completion" &&
-		os.Args[1] != "docs" {
-		if err := client.Init(config.DefaultConfig); err != nil {
-			util.Error(err, "tigris client initialization failed")
+var docsCmd = &cobra.Command{
+	Use:   "docs {output directory}",
+	Short: "Generates CLI's documentation in Markdown format",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		err := doc.GenMarkdownTree(rootCmd, args[0])
+		if err != nil {
+			util.Error(err, "error generating Markdown documentation")
 		}
-	}
+	},
+}
 
-	cmd.Execute()
+func init() {
+	rootCmd.AddCommand(docsCmd)
 }
