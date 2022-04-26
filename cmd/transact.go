@@ -70,7 +70,7 @@ func execTxOp(ctx context.Context, db string, tp string, op *Op) {
 		ptr := unsafe.Pointer(&op.Documents)
 		_, err = client.Get().Insert(ctx, db, op.Collection, *(*[]driver.Document)(ptr))
 	case Update:
-		_, err = client.Get().Update(ctx, db, op.Collection, driver.Filter(op.Filter), driver.Fields(op.Fields))
+		_, err = client.Get().Update(ctx, db, op.Collection, driver.Filter(op.Filter), driver.Update(op.Fields))
 	case Delete:
 		_, err = client.Get().Delete(ctx, db, op.Collection, driver.Filter(op.Filter))
 	case Replace, InsertOrReplace:
@@ -98,7 +98,7 @@ func execTxOp(ctx context.Context, db string, tp string, op *Op) {
 		if len(op.Fields) > 0 {
 			fields = op.Fields
 		}
-		it, err := client.Get().Read(ctx, db, op.Collection, driver.Filter(filter), driver.Fields(fields))
+		it, err := client.Get().Read(ctx, db, op.Collection, driver.Filter(filter), driver.Projection(fields))
 		if err != nil {
 			log.Fatal().Err(err).Str("op", op.Operation).Msgf("transact operation failed")
 		}

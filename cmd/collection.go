@@ -22,24 +22,59 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
+	api "github.com/tigrisdata/tigrisdb-client-go/api/server/v1"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 
 func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) {
 	type Schema struct {
-		Title string
+		Name string `json:"title"`
 	}
 	var schema Schema
 	if err := json.Unmarshal(raw, &schema); err != nil {
 		util.Error(err, "error parsing collection schema")
 	}
-	if schema.Title == "" {
+	if schema.Name == "" {
 		util.Error(fmt.Errorf("schema name is missing"), "create collection failed")
 	}
-	err := tx.CreateOrUpdateCollection(ctx, schema.Title, raw)
+	err := tx.CreateOrUpdateCollection(ctx, schema.Name, raw)
 	if err != nil {
 		util.Error(err, "create collection failed")
 	}
+}
+
+type DescribeCollectionResponse struct {
+	Collection string                  `json:"collection,omitempty"`
+	Metadata   *api.CollectionMetadata `json:"metadata,omitempty"`
+	Schema     json.RawMessage         `json:"schema,omitempty"`
+}
+
+var describeCollectionCmd = &cobra.Command{
+	Use:   "collection {db} {collection}",
+	Short: "describe collection",
+	Long:  "describe collection returns collection metadata, including schema",
+	Args:  cobra.MinimumNArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+		resp, err := client.Get().DescribeCollection(ctx, args[0], args[1])
+		if err != nil {
+			util.Error(err, "describe collection failed")
+		}
+
+		tr := DescribeCollectionResponse{
+			Collection: resp.Collection,
+			Metadata:   resp.Metadata,
+			Schema:     resp.Schema,
+		}
+
+		b, err := json.Marshal(tr)
+		if err != nil {
+			util.Error(err, "describe collection failed")
+		}
+
+		util.Stdout("%s\n", string(b))
+	},
 }
 
 var listCollectionsCmd = &cobra.Command{
@@ -112,4 +147,5 @@ func init() {
 	createCmd.AddCommand(createCollectionCmd)
 	listCmd.AddCommand(listCollectionsCmd)
 	alterCmd.AddCommand(alterCollectionCmd)
+	describeCmd.AddCommand(describeCollectionCmd)
 }

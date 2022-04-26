@@ -40,7 +40,7 @@ if fields is not provided or has special {} value, read returns all the fields o
 		if len(args) > 3 {
 			fields = args[3]
 		}
-		it, err := client.Get().Read(ctx, args[0], args[1], driver.Filter(filter), driver.Fields(fields))
+		it, err := client.Get().Read(ctx, args[0], args[1], driver.Filter(filter), driver.Projection(fields))
 		if err != nil {
 			util.Error(err, "read documents failed")
 		}

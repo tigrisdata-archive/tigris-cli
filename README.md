@@ -8,13 +8,13 @@
 ## macOS
 
 ```sh
-curl -sSL https://github.com/tigrisdata/tigrisdb-cli/releases/download/v1.0.0-alpha.4/tigris-v1.0.0-alpha.4-darwin-amd64.tar.gz | sudo tar -xz -C /usr/local/bin
+curl -sSL https://tigris.dev/cli-macos | sudo tar -xz -C /usr/local/bin
 ```
 
 ## Linux
 
 ```sh
-curl -sSL https://github.com/tigrisdata/tigrisdb-cli/releases/download/v1.0.0-alpha.4/tigris-v1.0.0-alpha.4-linux-amd64.tar.gz | sudo tar -xz -C /usr/local/bin
+curl -sSL https://tigris.dev/cli-linux | sudo tar -xz -C /usr/local/bin
 ```
 
 # Example

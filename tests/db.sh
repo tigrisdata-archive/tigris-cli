@@ -29,23 +29,32 @@ db_tests() {
 
 	$cli create database db1
 
+	coll1='{"title":"coll1","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"},"Field2":{"type":"integer"}},"primary_key":["Key1"]}'
+	coll111='{"title":"coll111","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"}},"primary_key":["Key1"]}'
+
 	#reading schemas from command line parameters
-	$cli create collection db1 \
-		'{ "title" : "coll1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }' \
-		'{ "title" : "coll111", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }'
+	$cli create collection db1 "$coll1" "$coll111"
+
+	out=$($cli describe collection db1 coll1)
+	diff -w -u <(echo '{"collection":"coll1","metadata":{},"schema":'"$coll1"'}') <(echo "$out")
+
+	out=$($cli describe database db1)
+	# The output order is not-deterministic, try both combinations:
+	diff -u <(echo '{"db":"db1","metadata":{},"collections":[{"collection":"coll1","metadata":{},"schema":'"$coll1"'},{"collection":"coll111","metadata":{},"schema":'"$coll111"'}]}') <(echo "$out") ||
+	diff -u <(echo '{"db":"db1","metadata":{},"collections":[{"collection":"coll111","metadata":{},"schema":'"$coll111"'},{"collection":"coll1","metadata":{},"schema":'"$coll1"'}]}') <(echo "$out")
 
 	#reading schemas from stream
 	# \n at the end to test empty line skipping
-	echo -e '{ "title" : "coll2", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }\n        \n\n' | $cli create collection db1 -
+	# this also test multi-line streams
+	echo -e '{ "title" : "coll2",
+	"properties": { "Key1": { "type": "string" },
+	"Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }\n        \n\n' | $cli create collection db1 -
 	#reading array of schemas
 	echo '[{ "title" : "coll3", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }, { "title" : "coll4", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]' | $cli create collection db1 -
 	#reading schemas from command line array
 	$cli create collection db1 '[{ "title" : "coll5", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }, { "title" : "coll6", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]' '{ "title" : "coll7", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }'
 	# allow to skip - in non interactive input
 	$cli create collection db1 <<< '[{ "title" : "coll8", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }, { "title" : "coll9", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]'
-
-	#FIXME: implement after server implements it
-	#$cli describe collection db1 coll1
 
 	$cli list databases
 	$cli list collections db1

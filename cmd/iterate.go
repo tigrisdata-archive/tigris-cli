@@ -23,7 +23,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
 	"unicode"
 
 	"github.com/spf13/cobra"
@@ -68,24 +67,23 @@ func iterateArray(r []byte) []json.RawMessage {
 }
 
 func iterateStream(ctx context.Context, args []string, r io.Reader, fn func(ctx2 context.Context, args []string, docs []json.RawMessage)) {
-	s := bufio.NewScanner(r)
+	dec := json.NewDecoder(r)
 	for {
 		docs := make([]json.RawMessage, 0, BatchSize)
 		var i int32
-		for ; i < BatchSize && s.Scan(); i++ {
-			if len(s.Bytes()) == 0 || len(strings.TrimSpace(s.Text())) == 0 {
-				continue
+		for ; i < BatchSize && dec.More(); i++ {
+			var v json.RawMessage
+			err := dec.Decode(&v)
+			if err != nil {
+				util.Error(err, "reading documents from stream of documents")
 			}
-			docs = append(docs, s.Bytes())
+			docs = append(docs, v)
 		}
 		if i > 0 {
 			fn(ctx, args, docs)
 		} else {
 			break
 		}
-	}
-	if err := s.Err(); err != nil {
-		util.Error(err, "reading documents from stdin")
 	}
 }
 

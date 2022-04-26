@@ -3,11 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
-	"io/ioutil"
 )
 
 const sampleDBName = "sampledb"
@@ -146,9 +147,17 @@ var sampleSchemaCmd = &cobra.Command{
 
 			util.Stdout("%v created with the collections", sampleDBName)
 		} else {
+			stdout, err := cmd.Flags().GetBool("stdout")
+			if err != nil {
+				util.Error(err, "error reading the 'stdout' option")
+			}
 			for name, schema := range schemas {
-				if err := ioutil.WriteFile(fmt.Sprintf("%v.json", name), schema, 0644); err != nil {
-					util.Error(err, "error generating sample schema file")
+				if stdout {
+					util.Stdout("%s\n", string(schema))
+				} else {
+					if err := ioutil.WriteFile(fmt.Sprintf("%v.json", name), schema, 0644); err != nil {
+						util.Error(err, "error generating sample schema file")
+					}
 				}
 			}
 		}
@@ -162,6 +171,7 @@ var generateCmd = &cobra.Command{
 
 func init() {
 	sampleSchemaCmd.Flags().BoolP("create", "c", false, "create the sample database and collections")
+	sampleSchemaCmd.Flags().BoolP("stdout", "s", false, "dump sample schemas to stdout")
 	generateCmd.AddCommand(sampleSchemaCmd)
 	dbCmd.AddCommand(generateCmd)
 }

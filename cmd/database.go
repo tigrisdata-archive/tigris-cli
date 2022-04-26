@@ -15,9 +15,12 @@
 package cmd
 
 import (
+	"encoding/json"
+
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigrisdb-cli/client"
 	"github.com/tigrisdata/tigrisdb-cli/util"
+	api "github.com/tigrisdata/tigrisdb-client-go/api/server/v1"
 )
 
 var listDatabasesCmd = &cobra.Command{
@@ -36,10 +39,62 @@ var listDatabasesCmd = &cobra.Command{
 	},
 }
 
+type DescribeDatabaseResponse struct {
+	Db          string                        `json:"db,omitempty"`
+	Metadata    *api.DatabaseMetadata         `json:"metadata,omitempty"`
+	Collections []*DescribeCollectionResponse `json:"collections,omitempty"`
+}
+
+var describeDatabaseCmd = &cobra.Command{
+	Use:   "database {db}",
+	Short: "describe database",
+	Long:  "describe database returns metadata for all the collections in the database",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+		resp, err := client.Get().DescribeDatabase(ctx, args[0])
+		if err != nil {
+			util.Error(err, "describe collection failed")
+		}
+
+		schemaOnly, err := cmd.Flags().GetBool("schema-only")
+		if err != nil {
+			util.Error(err, "error reading the 'schema-only' option")
+		}
+
+		if schemaOnly {
+			for _, v := range resp.Collections {
+				util.Stdout("%s\n", string(v.Schema))
+			}
+		} else {
+			tr := DescribeDatabaseResponse{
+				Db:       resp.Db,
+				Metadata: resp.Metadata,
+			}
+
+			for _, v := range resp.Collections {
+				tr.Collections = append(tr.Collections, &DescribeCollectionResponse{
+					Collection: v.Collection,
+					Metadata:   v.Metadata,
+					Schema:     v.Schema,
+				})
+			}
+
+			b, err := json.Marshal(tr)
+			if err != nil {
+				util.Error(err, "describe database failed")
+			}
+
+			util.Stdout("%s\n", string(b))
+		}
+	},
+}
+
 var createDatabaseCmd = &cobra.Command{
 	Use:   "database {db}",
 	Short: "create database",
-	Args:  cobra.MinimumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
@@ -53,7 +108,7 @@ var createDatabaseCmd = &cobra.Command{
 var dropDatabaseCmd = &cobra.Command{
 	Use:   "database {db}",
 	Short: "drop database",
-	Args:  cobra.MinimumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
@@ -65,7 +120,9 @@ var dropDatabaseCmd = &cobra.Command{
 }
 
 func init() {
+	describeDatabaseCmd.Flags().BoolP("schema-only", "s", false, "dump only schema of all database collections")
 	dropCmd.AddCommand(dropDatabaseCmd)
 	createCmd.AddCommand(createDatabaseCmd)
 	listCmd.AddCommand(listDatabasesCmd)
+	describeCmd.AddCommand(describeDatabaseCmd)
 }

@@ -16,27 +16,14 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/util"
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 
-var updateCmd = &cobra.Command{
-	Use:   "update {db} {collection} {filter} {fields}",
-	Short: "update documents",
-	Long:  `update documents according to provided filter`,
-	Args:  cobra.MinimumNArgs(4),
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-
-		_, err := client.Get().Update(ctx, args[0], args[1], driver.Filter(args[2]), driver.Update(args[3]))
-		if err != nil {
-			util.Error(err, "update documents failed")
-		}
-	},
+var describeCmd = &cobra.Command{
+	Use:   "describe",
+	Short: "describe database or collection",
+	Args:  cobra.MinimumNArgs(1),
 }
 
 func init() {
-	dbCmd.AddCommand(updateCmd)
+	dbCmd.AddCommand(describeCmd)
 }
