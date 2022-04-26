@@ -16,8 +16,8 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 

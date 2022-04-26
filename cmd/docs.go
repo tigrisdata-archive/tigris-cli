@@ -17,7 +17,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 var docsCmd = &cobra.Command{

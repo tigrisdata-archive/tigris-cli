@@ -5,9 +5,8 @@ ifeq ($(GOOS), windows)
 BIN=tigris.exe
 endif
 
-BUILD_PARAM=-tags=release -ldflags "-w -extldflags '-static' -X 'github.com/tigrisdata/tigrisdb-cli/util.Version=$(VERSION)'" -o ${BIN} $(shell printenv BUILD_PARAM)
+BUILD_PARAM=-tags=release -ldflags "-w -extldflags '-static' -X 'github.com/tigrisdata/tigris-cli/util.Version=$(VERSION)'" -o ${BIN} $(shell printenv BUILD_PARAM)
 TEST_PARAM=-cover -race -tags=test $(shell printenv TEST_PARAM)
-export GOPRIVATE=github.com/tigrisdata/tigrisdb-client-go
 
 all: ${BIN}
 

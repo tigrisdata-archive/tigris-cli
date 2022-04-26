@@ -19,8 +19,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 var pingCmd = &cobra.Command{

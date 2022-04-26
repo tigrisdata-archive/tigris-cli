@@ -26,7 +26,7 @@ import (
 	"unicode"
 
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 var BatchSize int32 = 100

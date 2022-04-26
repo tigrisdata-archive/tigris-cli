@@ -32,9 +32,9 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	tclient "github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/config"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	tclient "github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 const (

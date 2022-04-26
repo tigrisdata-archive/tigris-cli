@@ -19,7 +19,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 var completionCmd = &cobra.Command{

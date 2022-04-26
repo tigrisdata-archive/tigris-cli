@@ -17,10 +17,10 @@ package main
 import (
 	"os"
 
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/cmd"
-	"github.com/tigrisdata/tigrisdb-cli/config"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/cmd"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module github.com/tigrisdata/tigrisdb-cli
+module github.com/tigrisdata/tigris-cli
 
 go 1.18
 

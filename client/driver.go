@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tigrisdata/tigrisdb-cli/config"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 
