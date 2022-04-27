@@ -21,7 +21,7 @@ import (
 
 	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
 // D is single instance of client
@@ -34,7 +34,7 @@ func Init(config config.Config) error {
 	} else if proto == "https" || proto == "http" {
 		driver.DefaultProtocol = driver.HTTP
 	} else if proto != "" {
-		return fmt.Errorf("unknown protocol set by TIGRISDB_PROTOCOL: %s. allowed: grpc, http, https", proto)
+		return fmt.Errorf("unknown protocol set by TIGRIS_PROTOCOL: %s. allowed: grpc, http, https", proto)
 	}
 
 	// URL prefix has precedence over environment variable
