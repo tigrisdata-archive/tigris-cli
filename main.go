@@ -17,10 +17,10 @@ package main
 import (
 	"os"
 
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/cmd"
-	"github.com/tigrisdata/tigrisdb-cli/config"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/cmd"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 func main() {
@@ -30,9 +30,13 @@ func main() {
 
 	util.DefaultTimeout = config.DefaultConfig.Timeout
 
-	if len(os.Args) > 1 && (os.Args[1] != "local") {
+	if len(os.Args) > 1 &&
+		os.Args[1] != "local" &&
+		os.Args[1] != "version" &&
+		os.Args[1] != "completion" &&
+		os.Args[1] != "docs" {
 		if err := client.Init(config.DefaultConfig); err != nil {
-			util.Error(err, "tigrisdb client initialization failed")
+			util.Error(err, "tigris client initialization failed")
 		}
 	}
 

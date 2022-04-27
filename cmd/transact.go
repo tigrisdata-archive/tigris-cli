@@ -17,12 +17,12 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"unsafe"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigrisdb-client-go/driver"
 )
 
@@ -60,7 +60,7 @@ type TxOp struct {
 	ListCollections          *Op
 }
 
-func execTxOp(ctx context.Context, db string, tp string, op *Op) {
+func execTxOp(ctx context.Context, tx driver.Tx, tp string, op *Op) {
 	if op == nil {
 		return
 	}
@@ -68,22 +68,22 @@ func execTxOp(ctx context.Context, db string, tp string, op *Op) {
 	switch tp {
 	case Insert:
 		ptr := unsafe.Pointer(&op.Documents)
-		_, err = client.Get().Insert(ctx, db, op.Collection, *(*[]driver.Document)(ptr))
+		_, err = tx.Insert(ctx, op.Collection, *(*[]driver.Document)(ptr))
 	case Update:
-		_, err = client.Get().Update(ctx, db, op.Collection, driver.Filter(op.Filter), driver.Update(op.Fields))
+		_, err = tx.Update(ctx, op.Collection, driver.Filter(op.Filter), driver.Update(op.Fields))
 	case Delete:
-		_, err = client.Get().Delete(ctx, db, op.Collection, driver.Filter(op.Filter))
+		_, err = tx.Delete(ctx, op.Collection, driver.Filter(op.Filter))
 	case Replace, InsertOrReplace:
 		ptr := unsafe.Pointer(&op.Documents)
-		_, err = client.Get().Replace(ctx, db, op.Collection, *(*[]driver.Document)(ptr))
+		_, err = tx.Replace(ctx, op.Collection, *(*[]driver.Document)(ptr), &driver.ReplaceOptions{})
 	case CreateOrUpdateCollection:
-		err = client.Get().CreateOrUpdateCollection(ctx, db, op.Collection, driver.Schema(op.Schema))
+		err = tx.CreateOrUpdateCollection(ctx, op.Collection, driver.Schema(op.Schema))
 	case DropCollection:
-		err = client.Get().DropCollection(ctx, db, op.Collection)
+		err = tx.DropCollection(ctx, op.Collection)
 	case ListCollections:
-		colls, err := client.Get().ListCollections(ctx, db)
+		colls, err := tx.ListCollections(ctx)
 		if err != nil {
-			log.Fatal().Err(err).Str("type", op.Operation).Msgf("transact operation failed")
+			util.Error(err, "transact operation failed")
 		}
 		for _, c := range colls {
 			util.Stdout("%s\n", c)
@@ -98,9 +98,9 @@ func execTxOp(ctx context.Context, db string, tp string, op *Op) {
 		if len(op.Fields) > 0 {
 			fields = op.Fields
 		}
-		it, err := client.Get().Read(ctx, db, op.Collection, driver.Filter(filter), driver.Projection(fields))
+		it, err := tx.Read(ctx, op.Collection, driver.Filter(filter), driver.Projection(fields))
 		if err != nil {
-			log.Fatal().Err(err).Str("op", op.Operation).Msgf("transact operation failed")
+			util.Error(err, "transact operation failed")
 		}
 		var d driver.Document
 		for it.Next(&d) {
@@ -108,10 +108,10 @@ func execTxOp(ctx context.Context, db string, tp string, op *Op) {
 		}
 		return
 	default:
-		log.Fatal().Err(err).Str("op", op.Operation).Msgf("unknown operation type")
+		util.Error(fmt.Errorf("unknown operation type: %s", op.Operation), "")
 	}
 	if err != nil {
-		log.Fatal().Err(err).Str("op", op.Operation).Msgf("transact operation failed")
+		util.Error(err, "transact operation failed")
 	}
 }
 
@@ -133,18 +133,18 @@ Operations can be provided in the command line or from standard input`,
 					}
 
 					if op.Operation != "" {
-						execTxOp(ctx, db, op.Operation, &op.Op)
+						execTxOp(ctx, tx, op.Operation, &op.Op)
 					}
 
-					execTxOp(ctx, db, InsertOrReplace, op.InsertOrReplace)
-					execTxOp(ctx, db, Replace, op.Replace)
-					execTxOp(ctx, db, Insert, op.Insert)
-					execTxOp(ctx, db, Read, op.Read)
-					execTxOp(ctx, db, Update, op.Update)
-					execTxOp(ctx, db, Delete, op.Delete)
-					execTxOp(ctx, db, CreateOrUpdateCollection, op.CreateOrUpdateCollection)
-					execTxOp(ctx, db, DropCollection, op.DropCollection)
-					execTxOp(ctx, db, ListCollections, op.ListCollections)
+					execTxOp(ctx, tx, InsertOrReplace, op.InsertOrReplace)
+					execTxOp(ctx, tx, Replace, op.Replace)
+					execTxOp(ctx, tx, Insert, op.Insert)
+					execTxOp(ctx, tx, Read, op.Read)
+					execTxOp(ctx, tx, Update, op.Update)
+					execTxOp(ctx, tx, Delete, op.Delete)
+					execTxOp(ctx, tx, CreateOrUpdateCollection, op.CreateOrUpdateCollection)
+					execTxOp(ctx, tx, DropCollection, op.DropCollection)
+					execTxOp(ctx, tx, ListCollections, op.ListCollections)
 				}
 			})
 		})

@@ -16,12 +16,12 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "show tigrisdb-cli version",
+	Short: "show tigris cli version",
 	Run: func(cmd *cobra.Command, args []string) {
 		util.Stdout("tigris version %s\n", util.Version)
 	},

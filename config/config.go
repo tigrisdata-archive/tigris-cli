@@ -44,7 +44,7 @@ var configPath = []string{
 	"./",
 }
 
-var envPrefix = "tigrisdb"
+var envPrefix = "tigris"
 
 func Load(name string, config interface{}) {
 	viper.SetConfigName(name)

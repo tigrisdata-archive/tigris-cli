@@ -15,24 +15,23 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "tigris",
-	Short: "tigris is a command line interface of Tigris data platform",
-}
-
-var dbCmd = rootCmd
-
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
+var docsCmd = &cobra.Command{
+	Use:   "docs {output directory}",
+	Short: "Generates CLI's documentation in Markdown format",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		err := doc.GenMarkdownTree(rootCmd, args[0])
+		if err != nil {
+			util.Error(err, "error generating Markdown documentation")
+		}
+	},
 }
 
 func init() {
+	rootCmd.AddCommand(docsCmd)
 }
