@@ -38,11 +38,11 @@ import (
 )
 
 const (
-	ImagePath        = "tigrisdata/tigrisdb"
+	ImagePath        = "tigrisdata/tigris"
 	FDBImagePath     = "foundationdb/foundationdb:6.3.23"
 	volumeName       = "fdbdata"
-	FDBContainerName = "tigrisdb-local-fdb"
-	ContainerName    = "tigrisdb-local-server"
+	FDBContainerName = "tigris-local-fdb"
+	ContainerName    = "tigris-local-server"
 )
 
 var ImageTag = "latest"
@@ -232,7 +232,7 @@ var serverUpCmd = &cobra.Command{
 
 		fmt.Printf("Tigris is running at localhost:%s\n", port)
 		if port != "8081" {
-			fmt.Printf("run 'export TIGRISDB_URL=localhost:%s' for tigris cli to automatically connect\n", port)
+			fmt.Printf("run 'export TIGRIS_URL=localhost:%s' for tigris cli to automatically connect\n", port)
 		}
 	},
 }

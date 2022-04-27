@@ -24,7 +24,7 @@ curl -sSL https://tigris.dev/cli-linux | sudo tar -xz -C /usr/local/bin
 
 ```shell
 $ tigris
-tigris is a command line interface of TigrisDB database
+tigris is the command line interface of Tigris data platform
 
 Usage:
   tigris [command]
@@ -40,8 +40,8 @@ Available Commands:
   help        Help about any command
   insert      insert document
   list        list databases of the project or list database collections
-  local       Starting and stopping local TigrisDB server
-  ping        Check connection to the TigrisDB
+  local       Starting and stopping local Tigris server
+  ping        Check connection to the Tigris server
   read        read documents
   replace     replace document
   transact    run a set of operations in a transaction
@@ -113,8 +113,8 @@ tigris local down
 # Community & Support
 
 * [Slack Community](https://join.slack.com/t/tigrisdatacommunity/shared_invite/zt-16fn5ogio-OjxJlgttJIV0ZDywcBItJQ)
-* [GitHub Issues](https://github.com/tigrisdata/tigrisdb-cli/issues)
-* [GitHub Discussions](https://github.com/tigrisdata/tigrisdb/discussions)
+* [GitHub Issues](https://github.com/tigrisdata/tigris-cli/issues)
+* [GitHub Discussions](https://github.com/tigrisdata/tigris/discussions)
 
 # License
 This software is licensed under the [Apache 2.0](LICENSE).
