@@ -22,8 +22,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
-	api "github.com/tigrisdata/tigrisdb-client-go/api/server/v1"
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
+	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
 func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) {
