@@ -51,8 +51,8 @@ type DescribeCollectionResponse struct {
 
 var describeCollectionCmd = &cobra.Command{
 	Use:   "collection {db} {collection}",
-	Short: "describe collection",
-	Long:  "describe collection returns collection metadata, including schema",
+	Short: "Describes collection",
+	Long:  "Returns collection schema including metadata",
 	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
@@ -79,7 +79,7 @@ var describeCollectionCmd = &cobra.Command{
 
 var listCollectionsCmd = &cobra.Command{
 	Use:   "collections {db}",
-	Short: "list database collections",
+	Short: "Lists database collections",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
@@ -96,8 +96,56 @@ var listCollectionsCmd = &cobra.Command{
 
 var createCollectionCmd = &cobra.Command{
 	Use:   "collection {db} {schema}...|-",
-	Short: "create collection(s)",
-	Args:  cobra.MinimumNArgs(1),
+	Short: "Creates collection(s)",
+	Long:  "Creates collections with provided schema.",
+	Example: fmt.Sprintf(`
+  # Pass the schema as a string
+  %[1]s create collection testdb '{
+	"title": "users",
+	"description": "Collection of documents with details of users",
+	"properties": {
+	  "id": {
+		"description": "A unique identifier for the user",
+		"type": "integer"
+	  },
+	  "name": {
+		"description": "Name of the user",
+		"type": "string",
+		"maxLength": 100
+	  }
+	},
+	"primary_key": [
+	  "id"
+	]
+  }'
+
+  # Create collection with schema from a file
+  # $ cat /home/alice/users.json
+  # {
+  #  "title": "users",
+  #  "description": "Collection of documents with details of users",
+  #  "properties": {
+  #    "id": {
+  #      "description": "A unique identifier for the user",
+  #      "type": "integer"
+  #    },
+  #    "name": {
+  #      "description": "Name of the user",
+  #      "type": "string",
+  #      "maxLength": 100
+  #    }
+  #  },
+  #  "primary_key": [
+  #    "id"
+  #  ]
+  # }
+  %[1]s create collection testdb </home/alice/users.json
+
+  # Create collection with schema passed through stdin
+  cat /home/alice/users.json | %[1]s create collection testdb -
+  %[1]s describe collection sampledb users | jq .schema | %[1]s create collection testdb -
+`, rootCmd.Root().Name()),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
 			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
@@ -111,7 +159,7 @@ var createCollectionCmd = &cobra.Command{
 
 var dropCollectionCmd = &cobra.Command{
 	Use:   "collection {db}",
-	Short: "drop collection",
+	Short: "Drops collection",
 	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
@@ -128,9 +176,31 @@ var dropCollectionCmd = &cobra.Command{
 }
 
 var alterCollectionCmd = &cobra.Command{
-	Use:   "collection {db} {collection} {schema}",
-	Short: "update collection schema",
-	Args:  cobra.MinimumNArgs(1),
+	Use:   "collection {db} {schema}",
+	Short: "Updates collection schema",
+	Long:  "Updates collection schema.",
+	Example: fmt.Sprintf(`
+  # Pass the schema as a string
+  %[1]s alter collection testdb '{
+	"title": "users",
+	"description": "Collection of documents with details of users",
+	"properties": {
+	  "id": {
+		"description": "A unique identifier for the user",
+		"type": "integer"
+	  },
+	  "name": {
+		"description": "Name of the user",
+		"type": "string",
+		"maxLength": 100
+	  }
+	},
+	"primary_key": [
+	  "id"
+	]
+  }'
+`, rootCmd.Root().Name()),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
 			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
