@@ -97,10 +97,8 @@ var listCollectionsCmd = &cobra.Command{
 var createCollectionCmd = &cobra.Command{
 	Use:   "collection {db} {schema}...|-",
 	Short: "Creates collection(s)",
-	Long: fmt.Sprintf(`Creates collections with provided schema.
-
-Examples:
-
+	Long:  "Creates collections with provided schema.",
+	Example: fmt.Sprintf(`
   # Pass the schema as a string
   %[1]s create collection testdb '{
 	"title": "users",
@@ -180,10 +178,8 @@ var dropCollectionCmd = &cobra.Command{
 var alterCollectionCmd = &cobra.Command{
 	Use:   "collection {db} {schema}",
 	Short: "Updates collection schema",
-	Long: fmt.Sprintf(`Updates collection schema.
-
-Examples:
-
+	Long:  "Updates collection schema.",
+	Example: fmt.Sprintf(`
   # Pass the schema as a string
   %[1]s alter collection testdb '{
 	"title": "users",

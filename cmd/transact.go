@@ -119,11 +119,9 @@ var transactCmd = &cobra.Command{
 	Use:     "transact {db} {operation}...|-",
 	Aliases: []string{"tx"},
 	Short:   "Executes a set of operations in a transaction",
-	Long: fmt.Sprintf(`Executes a set of operations in a transaction.
-All the read, write and schema operations are supported.
-
-Examples:
-
+	Long: `Executes a set of operations in a transaction.
+All the read, write and schema operations are supported.`,
+	Example: fmt.Sprintf(`
   # Perform a transaction that inserts and updates in three collections
   %[1]s tigris transact testdb \
   '[

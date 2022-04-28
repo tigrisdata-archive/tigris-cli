@@ -20,7 +20,7 @@ import (
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List databases or collections",
+	Short: "Lists databases or collections",
 	Args:  cobra.MinimumNArgs(1),
 }
 

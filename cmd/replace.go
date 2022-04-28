@@ -30,10 +30,8 @@ var replaceCmd = &cobra.Command{
 	Use:     "replace {db} {collection} {document}...|-",
 	Aliases: []string{"insert_or_replace"},
 	Short:   "Inserts or replaces document(s)",
-	Long: fmt.Sprintf(`Inserts new documents or replaces existing documents.
-
-Examples:
-
+	Long:    "Inserts new documents or replaces existing documents.",
+	Example: fmt.Sprintf(`
   # Insert new documents
   %[1]s replace testdb users '{"id": 1, "name": "John Wong"}'
 

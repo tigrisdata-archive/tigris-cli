@@ -25,12 +25,10 @@ import (
 var readCmd = &cobra.Command{
 	Use:   "read {db} {collection} {filter} {fields}",
 	Short: "Reads and outputs documents",
-	Long: fmt.Sprintf(`Reads documents according to provided filter and fields. 
+	Long: `Reads documents according to provided filter and fields. 
 If filter is not provided or an empty json document {} is passed as a filter, all documents in the collection are returned.
-If fields are not provided or an empty json document {} is passed as fields, all the fields of the documents are selected.
-
-Examples:
-
+If fields are not provided or an empty json document {} is passed as fields, all the fields of the documents are selected.`,
+	Example: fmt.Sprintf(`
   # Read a user document where id is 20
   # The output would be 
   #  {"id": 20, "name": "Jania McGrory"}

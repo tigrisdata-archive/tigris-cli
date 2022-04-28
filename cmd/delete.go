@@ -25,10 +25,8 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete {db} {collection} {filter}",
 	Short: "Deletes document(s)",
-	Long: fmt.Sprintf(`Deletes documents according to the provided filter.
-
-Examples:
-
+	Long:  "Deletes documents according to the provided filter.",
+	Example: fmt.Sprintf(`
   # Delete a user where the value of the id field is 2
   %[1]s delete testdb users '{"id": 2}'
 

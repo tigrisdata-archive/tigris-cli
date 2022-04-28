@@ -25,8 +25,8 @@ import (
 var completionCmd = &cobra.Command{
 	Use:   "completion [bash|zsh|fish|powershell]",
 	Short: "Generates completion script for shell",
-	Long: fmt.Sprintf(`Examples:
-
+	Long:  "Generates completion helper script for multiple shells",
+	Example: fmt.Sprintf(`
   # Bash
 
   $ source <(%[1]s completion bash)

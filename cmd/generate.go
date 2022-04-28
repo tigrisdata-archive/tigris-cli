@@ -143,10 +143,8 @@ var schemas = map[string][]byte{
 var sampleSchemaCmd = &cobra.Command{
 	Use:   "sample-schema",
 	Short: "Generates sample schema",
-	Long: fmt.Sprintf(`Generates sample schema consisting of three collections: products, users, orders.
-
-Examples:
-
+	Long:  "Generates sample schema consisting of three collections: products, users, orders.",
+	Example: fmt.Sprintf(`
   # Generate sample schema files in current directory orders.json, products.json and users.json
   %[1]s generate sample-schema
 

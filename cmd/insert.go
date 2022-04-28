@@ -29,10 +29,8 @@ import (
 var insertCmd = &cobra.Command{
 	Use:   "insert {db} {collection} {document}...|-",
 	Short: "Inserts document(s)",
-	Long: fmt.Sprintf(`Inserts one or more documents into a collection.
-
-Examples:
-
+	Long:  "Inserts one or more documents into a collection.",
+	Example: fmt.Sprintf(`
   # Insert a single document into the users collection
   %[1]s insert testdb users '{"id": 1, "name": "Alice Alan"}'
 
