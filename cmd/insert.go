@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"unsafe"
 
 	"github.com/spf13/cobra"
@@ -27,9 +28,29 @@ import (
 
 var insertCmd = &cobra.Command{
 	Use:   "insert {db} {collection} {document}...|-",
-	Short: "insert document",
-	Long: `insert one or multiple documents
-		from command line or standard input`,
+	Short: "Inserts document(s)",
+	Long: fmt.Sprintf(`Inserts one or more documents into a collection.
+
+Examples:
+
+  # Insert a single document into the users collection
+  %[1]s insert testdb users '{"id": 1, "name": "Alice Alan"}
+
+  # Insert multiple documents into the users collection
+  %[1]s insert testdb users \
+  '[
+    {"id": 20, "name": "Jania McGrory"},
+    {"id": 21, "name": "Bunny Instone"}
+  ]'
+
+  # Pass documents to insert via stdin
+  # $ cat /home/alice/user_records.json
+  # [
+  #  {"id": 20, "name": "Jania McGrory"},
+  #  {"id": 21, "name": "Bunny Instone"}
+  # ]
+  cat /home/alice/user_records.json | %[1]s insert testdb users -
+`, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		iterateInput(cmd.Context(), cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) {

@@ -22,7 +22,7 @@ import (
 
 var docsCmd = &cobra.Command{
 	Use:   "docs {output directory}",
-	Short: "Generates CLI's documentation in Markdown format",
+	Short: "Generates CLI documentation in Markdown format",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		err := doc.GenMarkdownTree(rootCmd, args[0])

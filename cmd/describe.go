@@ -20,7 +20,7 @@ import (
 
 var describeCmd = &cobra.Command{
 	Use:   "describe",
-	Short: "describe database or collection",
+	Short: "Describes database or collection",
 	Args:  cobra.MinimumNArgs(1),
 }
 

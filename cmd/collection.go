@@ -97,7 +97,9 @@ var listCollectionsCmd = &cobra.Command{
 var createCollectionCmd = &cobra.Command{
 	Use:   "collection {db} {schema}...|-",
 	Short: "Creates collection(s)",
-	Long: fmt.Sprintf(`Examples:
+	Long: fmt.Sprintf(`Creates collections with provided schema.
+
+Examples:
 
   # Pass the schema as a string
   %[1]s create collection testdb '{
@@ -120,6 +122,25 @@ var createCollectionCmd = &cobra.Command{
   }'
 
   # Create collection with schema from a file
+  # $ cat /home/alice/users.json
+  # {
+  #  "title": "users",
+  #  "description": "Collection of documents with details of users",
+  #  "properties": {
+  #    "id": {
+  #      "description": "A unique identifier for the user",
+  #      "type": "integer"
+  #    },
+  #    "name": {
+  #      "description": "Name of the user",
+  #      "type": "string",
+  #      "maxLength": 100
+  #    }
+  #  },
+  #  "primary_key": [
+  #    "id"
+  #  ]
+  # }
   %[1]s create collection testdb </home/alice/users.json
 
   # Create collection with schema passed through stdin
@@ -159,7 +180,9 @@ var dropCollectionCmd = &cobra.Command{
 var alterCollectionCmd = &cobra.Command{
 	Use:   "collection {db} {schema}",
 	Short: "Updates collection schema",
-	Long: fmt.Sprintf(`Examples:
+	Long: fmt.Sprintf(`Updates collection schema.
+
+Examples:
 
   # Pass the schema as a string
   %[1]s alter collection testdb '{
