@@ -197,7 +197,7 @@ func waitServerUp() {
 
 var serverUpCmd = &cobra.Command{
 	Use:   "up [port] [version]",
-	Short: "Start an instance of Tigris for local development",
+	Short: "Starts an instance of Tigris for local development",
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
@@ -239,7 +239,7 @@ var serverUpCmd = &cobra.Command{
 
 var serverDownCmd = &cobra.Command{
 	Use:   "down",
-	Short: "Stop local Tigris instance",
+	Short: "Stops local Tigris instance",
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
@@ -255,7 +255,7 @@ var serverDownCmd = &cobra.Command{
 
 var serverLogsCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "Show logs of local Tigris instance",
+	Short: "Shows logs from local Tigris instance",
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
@@ -284,7 +284,7 @@ var serverLogsCmd = &cobra.Command{
 
 var localCmd = &cobra.Command{
 	Use:   "local",
-	Short: "Starting and stopping local Tigris server",
+	Short: "Starts and stops local Tigris server",
 }
 
 func init() {

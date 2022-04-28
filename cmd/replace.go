@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"unsafe"
 
 	"github.com/spf13/cobra"
@@ -28,9 +29,31 @@ import (
 var replaceCmd = &cobra.Command{
 	Use:     "replace {db} {collection} {document}...|-",
 	Aliases: []string{"insert_or_replace"},
-	Short:   "replace document",
-	Long: `replace or insert one or multiple documents
-		from command line or standard input`,
+	Short:   "Inserts or replaces document(s)",
+	Long: fmt.Sprintf(`Inserts new documents or replaces existing documents.
+
+Examples:
+
+  # Insert new documents
+  %[1]s replace testdb users '{"id": 1, "name": "John Wong"}'
+
+  # Replace existing document
+  # Existing document with the following data will get replaced
+  #  {"id": 20, "name": "Jania McGrory"}
+  %[1]s replace testdb users '{"id": 20, "name": "Alice Alan"}'
+
+  # Insert or replace multiple documents
+  # Existing document with the following data will get replaced
+  #  {"id": 20, "name": "Alice Alan"}
+  #  {"id": 21, "name": "Bunny Instone"}
+  # While the new document {"id": 19, "name": "New User"} will get inserted
+  %[1]s replace testdb users \
+  '[
+    {"id": 19, "name": "New User"},
+    {"id": 20, "name": "Replaced Alice Alan"},
+    {"id": 21, "name": "Replaced Bunny Instone"}
+  ]'
+`, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		iterateInput(cmd.Context(), cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) {

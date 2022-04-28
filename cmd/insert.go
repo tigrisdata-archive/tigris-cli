@@ -34,7 +34,7 @@ var insertCmd = &cobra.Command{
 Examples:
 
   # Insert a single document into the users collection
-  %[1]s insert testdb users '{"id": 1, "name": "Alice Alan"}
+  %[1]s insert testdb users '{"id": 1, "name": "Alice Alan"}'
 
   # Insert multiple documents into the users collection
   %[1]s insert testdb users \

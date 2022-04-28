@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
@@ -22,12 +23,33 @@ import (
 )
 
 var readCmd = &cobra.Command{
-	Use:   "read {db} {collection} [filter [fields]]",
-	Short: "read documents",
-	Long: `read documents according to provided filter and fields
-if filter is not provided or has special {} value, read returns all documents in the collection
-if fields is not provided or has special {} value, read returns all the fields of the document
-`,
+	Use:   "read {db} {collection} [filter] [fields]",
+	Short: "Reads and outputs documents",
+	Long: fmt.Sprintf(`Reads documents according to provided filter and fields. 
+If filter is not provided or an empty json document {} is passed as a filter, all documents in the collection are returned.
+If fields are not provided or an empty json document {} is passed as fields, all the fields of the documents are selected.
+
+Examples:
+
+  # Read a user document where id is 20
+  # The output would be 
+  #  {"id": 20, "name": "Jania McGrory"}
+  %[1]s read testdb users '{"id": 20}'
+
+  # Read user documents where id is 2 or 4
+  # The output would be
+  #  {"id": 2, "name": "Alice Wong"}
+  #  {"id": 4, "name": "Jigar Joshi"}
+  %[1]s read testdb users '{"$or": [{"id": 2}, {"id": 4}]}'
+
+  # Read all documents in the user collection
+  # The output would be
+  #  {"id": 2, "name": "Alice Wong"}
+  #  {"id": 4, "name": "Jigar Joshi"}
+  #  {"id": 20, "name": "Jania McGrory"}
+  #  {"id": 21, "name": "Bunny Instone"}
+  %[1]s read testdb users
+`, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
