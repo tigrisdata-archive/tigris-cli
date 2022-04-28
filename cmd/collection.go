@@ -157,9 +157,31 @@ var dropCollectionCmd = &cobra.Command{
 }
 
 var alterCollectionCmd = &cobra.Command{
-	Use:   "collection {db} {collection} {schema}",
+	Use:   "collection {db} {schema}",
 	Short: "Updates collection schema",
-	Args:  cobra.MinimumNArgs(1),
+	Long: fmt.Sprintf(`Examples:
+
+  # Pass the schema as a string
+  %[1]s alter collection testdb '{
+	"title": "users",
+	"description": "Collection of documents with details of users",
+	"properties": {
+	  "id": {
+		"description": "A unique identifier for the user",
+		"type": "integer"
+	  },
+	  "name": {
+		"description": "Name of the user",
+		"type": "string",
+		"maxLength": 100
+	  }
+	},
+	"primary_key": [
+	  "id"
+	]
+  }'
+`, rootCmd.Root().Name()),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		client.Transact(cmd.Context(), args[0], func(ctx context.Context, tx driver.Tx) {
 			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
