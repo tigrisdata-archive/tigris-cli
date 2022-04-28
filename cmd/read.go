@@ -23,7 +23,7 @@ import (
 )
 
 var readCmd = &cobra.Command{
-	Use:   "read {db} {collection} [filter] [fields]",
+	Use:   "read {db} {collection} {filter} {fields}",
 	Short: "Reads and outputs documents",
 	Long: fmt.Sprintf(`Reads documents according to provided filter and fields. 
 If filter is not provided or an empty json document {} is passed as a filter, all documents in the collection are returned.

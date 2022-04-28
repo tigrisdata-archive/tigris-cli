@@ -125,7 +125,7 @@ All the read, write and schema operations are supported.
 Examples:
 
   # Perform a transaction that inserts and updates in three collections
-  %[1]s tigris transact sampledb \
+  %[1]s tigris transact testdb \
   '[
     {
       "insert": {
