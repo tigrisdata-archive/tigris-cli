@@ -56,7 +56,7 @@ var replaceCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		iterateInput(cmd.Context(), cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 			ptr := unsafe.Pointer(&docs)
-			_, err := client.Get().Replace(ctx, args[0], args[1], *(*[]driver.Document)(ptr))
+			_, err := client.Get().UseDatabase(args[0]).Replace(ctx, args[1], *(*[]driver.Document)(ptr))
 			if err != nil {
 				util.Error(err, "replace documents failed")
 			}

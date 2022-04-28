@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
@@ -60,7 +61,7 @@ If fields are not provided or an empty json document {} is passed as fields, all
 		if len(args) > 3 {
 			fields = args[3]
 		}
-		it, err := client.Get().Read(ctx, args[0], args[1], driver.Filter(filter), driver.Projection(fields))
+		it, err := client.Get().UseDatabase(args[0]).Read(ctx, args[1], driver.Filter(filter), driver.Projection(fields))
 		if err != nil {
 			util.Error(err, "read documents failed")
 		}

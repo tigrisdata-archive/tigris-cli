@@ -53,7 +53,7 @@ var insertCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		iterateInput(cmd.Context(), cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 			ptr := unsafe.Pointer(&docs)
-			_, err := client.Get().Insert(ctx, args[0], args[1], *(*[]driver.Document)(ptr))
+			_, err := client.Get().UseDatabase(args[0]).Insert(ctx, args[1], *(*[]driver.Document)(ptr))
 			if err != nil {
 				util.Error(err, "insert documents failed")
 			}

@@ -21,6 +21,7 @@ import (
 
 	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
+	cconfig "github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
@@ -58,7 +59,7 @@ func Init(config config.Config) error {
 	ctx, cancel := util.GetContext(context.Background())
 	defer cancel()
 
-	drv, err := driver.NewDriver(ctx, url, &driver.Config{Token: config.Token})
+	drv, err := driver.NewDriver(ctx, &cconfig.Config{URL: url, Token: config.Token})
 	if err != nil {
 		return err
 	}
