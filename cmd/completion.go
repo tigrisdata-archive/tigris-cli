@@ -27,7 +27,7 @@ var completionCmd = &cobra.Command{
 	Short: "Generate completion script",
 	Long: fmt.Sprintf(`Examples:
 
-Bash:
+  # Bash
 
   $ source <(%[1]s completion bash)
 
@@ -37,7 +37,7 @@ Bash:
   # macOS:
   $ %[1]s completion bash > /usr/local/etc/bash_completion.d/%[1]s
 
-Zsh:
+  # Zsh
 
   # If shell completion is not already enabled in your environment,
   # you will need to enable it.  You can execute the following once:
@@ -49,14 +49,14 @@ Zsh:
 
   # You will need to start a new shell for this setup to take effect.
 
-fish:
+  # fish
 
   $ %[1]s completion fish | source
 
   # To load completions for each session, execute once:
   $ %[1]s completion fish > ~/.config/fish/completions/%[1]s.fish
 
-PowerShell:
+  # PowerShell
 
   PS> %[1]s completion powershell | Out-String | Invoke-Expression
 
