@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
@@ -37,7 +38,7 @@ var deleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		_, err := client.Get().Delete(ctx, args[0], args[1], driver.Filter(args[2]))
+		_, err := client.Get().UseDatabase(args[0]).Delete(ctx, args[1], driver.Filter(args[2]))
 		if err != nil {
 			util.Error(err, "delete documents failed")
 		}

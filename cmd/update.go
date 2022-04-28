@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
@@ -35,7 +36,7 @@ var updateCmd = &cobra.Command{
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 
-		_, err := client.Get().Update(ctx, args[0], args[1], driver.Filter(args[2]), driver.Update(args[3]))
+		_, err := client.Get().UseDatabase(args[0]).Update(ctx, args[1], driver.Filter(args[2]), driver.Update(args[3]))
 		if err != nil {
 			util.Error(err, "update documents failed")
 		}

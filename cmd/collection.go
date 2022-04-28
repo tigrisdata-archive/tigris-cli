@@ -57,7 +57,7 @@ var describeCollectionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		resp, err := client.Get().DescribeCollection(ctx, args[0], args[1])
+		resp, err := client.Get().UseDatabase(args[0]).DescribeCollection(ctx, args[1])
 		if err != nil {
 			util.Error(err, "describe collection failed")
 		}
@@ -84,7 +84,7 @@ var listCollectionsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		resp, err := client.Get().ListCollections(ctx, args[0])
+		resp, err := client.Get().UseDatabase(args[0]).ListCollections(ctx)
 		if err != nil {
 			util.Error(err, "list collections failed")
 		}
