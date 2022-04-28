@@ -25,17 +25,8 @@ import (
 var updateCmd = &cobra.Command{
 	Use:   "update {db} {collection} {filter} {fields}",
 	Short: "Updates document(s)",
-	Long: fmt.Sprintf(`Updates the field values in documents according to provided filter.
-
-Examples:
-
-  # Update the field "name" of user where the value of the id field is 2
-  %[1]s update testdb users '{"id": 19}' '{"$set": {"name": "Updated New User"}}'
-`, rootCmd.Root().Name()),
-	Example: fmt.Sprintf(`Updates the field values in documents according to provided filter.
-
-Examples:
-
+	Long:  fmt.Sprintf(`Updates the field values in documents according to provided filter.`),
+	Example: fmt.Sprintf(`
   # Update the field "name" of user where the value of the id field is 2
   %[1]s update testdb users '{"id": 19}' '{"$set": {"name": "Updated New User"}}'
 `, rootCmd.Root().Name()),
