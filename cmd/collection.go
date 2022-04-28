@@ -99,32 +99,32 @@ var createCollectionCmd = &cobra.Command{
 	Short: "Creates collection(s)",
 	Long: fmt.Sprintf(`Examples:
 
-	# Pass the schema as a string
-	%[1]s create collection testdb '{
-		"title": "users",
-		"description": "Collection of documents with details of users",
-		"properties": {
-		  "id": {
-			"description": "A unique identifier for the user",
-			"type": "integer"
-		  },
-		  "name": {
-			"description": "Name of the user",
-			"type": "string",
-			"maxLength": 100
-		  }
-		},
-		"primary_key": [
-		  "id"
-		]
-	}'
+  # Pass the schema as a string
+  %[1]s create collection testdb '{
+	"title": "users",
+	"description": "Collection of documents with details of users",
+	"properties": {
+	  "id": {
+		"description": "A unique identifier for the user",
+		"type": "integer"
+	  },
+	  "name": {
+		"description": "Name of the user",
+		"type": "string",
+		"maxLength": 100
+	  }
+	},
+	"primary_key": [
+	  "id"
+	]
+  }'
 
-	# Create collection with schema from a file
-	%[1]s create collection testdb </home/alice/users.json
+  # Create collection with schema from a file
+  %[1]s create collection testdb </home/alice/users.json
 
-	# Create collection with schema passed through stdin
-	cat /home/alice/users.json | %[1]s create collection testdb -
-	%[1]s describe collection sampledb users | jq .schema | %[1]s create collection testdb -
+  # Create collection with schema passed through stdin
+  cat /home/alice/users.json | %[1]s create collection testdb -
+  %[1]s describe collection sampledb users | jq .schema | %[1]s create collection testdb -
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
