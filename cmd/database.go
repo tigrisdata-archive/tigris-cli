@@ -25,7 +25,7 @@ import (
 
 var listDatabasesCmd = &cobra.Command{
 	Use:   "databases",
-	Short: "list databases",
+	Short: "Lists databases",
 	Run: func(cmd *cobra.Command, _ []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
@@ -47,8 +47,8 @@ type DescribeDatabaseResponse struct {
 
 var describeDatabaseCmd = &cobra.Command{
 	Use:   "database {db}",
-	Short: "describe database",
-	Long:  "describe database returns metadata for all the collections in the database",
+	Short: "Describes database",
+	Long:  "Returns schema and metadata for all the collections in the database",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
@@ -93,7 +93,7 @@ var describeDatabaseCmd = &cobra.Command{
 
 var createDatabaseCmd = &cobra.Command{
 	Use:   "database {db}",
-	Short: "create database",
+	Short: "Creates database",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
@@ -107,7 +107,7 @@ var createDatabaseCmd = &cobra.Command{
 
 var dropDatabaseCmd = &cobra.Command{
 	Use:   "database {db}",
-	Short: "drop database",
+	Short: "Drops database",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())

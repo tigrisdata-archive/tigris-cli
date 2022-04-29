@@ -15,6 +15,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
@@ -23,14 +25,18 @@ import (
 
 var updateCmd = &cobra.Command{
 	Use:   "update {db} {collection} {filter} {fields}",
-	Short: "update documents",
-	Long:  `update documents according to provided filter`,
-	Args:  cobra.MinimumNArgs(4),
+	Short: "Updates document(s)",
+	Long:  "Updates the field values in documents according to provided filter.",
+	Example: fmt.Sprintf(`
+  # Update the field "name" of user where the value of the id field is 2
+  %[1]s update testdb users '{"id": 19}' '{"$set": {"name": "Updated New User"}}'
+`, rootCmd.Root().Name()),
+	Args: cobra.MinimumNArgs(4),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 
-		_, err := client.Get().Update(ctx, args[0], args[1], driver.Filter(args[2]), driver.Update(args[3]))
+		_, err := client.Get().UseDatabase(args[0]).Update(ctx, args[1], driver.Filter(args[2]), driver.Update(args[3]))
 		if err != nil {
 			util.Error(err, "update documents failed")
 		}

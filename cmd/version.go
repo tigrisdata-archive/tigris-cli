@@ -21,7 +21,7 @@ import (
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "show tigris cli version",
+	Short: "Shows tigris cli version",
 	Run: func(cmd *cobra.Command, args []string) {
 		util.Stdout("tigris version %s\n", util.Version)
 	},

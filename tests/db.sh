@@ -221,7 +221,7 @@ error() {
 
 # shellcheck disable=SC2086
 db_errors_tests() {
-	error "database doesn't exists 'db2'" $cli drop database db2
+	error "database doesn't exist 'db2'" $cli drop database db2
 	error "database doesn't exist 'db2'" $cli drop collection db2 coll1
 
 	error "database doesn't exist 'db2'" $cli create collection db2 \

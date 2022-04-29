@@ -20,7 +20,7 @@ import (
 
 var dropCmd = &cobra.Command{
 	Use:   "drop",
-	Short: "drop database or collection",
+	Short: "Drops database or collection",
 	Args:  cobra.MinimumNArgs(1),
 }
 

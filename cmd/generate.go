@@ -142,7 +142,18 @@ var schemas = map[string][]byte{
 
 var sampleSchemaCmd = &cobra.Command{
 	Use:   "sample-schema",
-	Short: "Generate sample schema consisting of three collections: products, users, orders",
+	Short: "Generates sample schema",
+	Long:  "Generates sample schema consisting of three collections: products, users, orders.",
+	Example: fmt.Sprintf(`
+  # Generate sample schema files in current directory orders.json, products.json and users.json
+  %[1]s generate sample-schema
+
+  # Create the database sampledb and sample collections
+  %[1]s generate sample-schema --create
+
+  # Generate sample schema and output it to stdout 
+  %[1]s generate sample-schema --stdout
+`, rootCmd.Root().Name()),
 	Run: func(cmd *cobra.Command, args []string) {
 		create, err := cmd.Flags().GetBool("create")
 		if err != nil {

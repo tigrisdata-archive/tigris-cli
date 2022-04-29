@@ -101,7 +101,7 @@ func iterateInput(ctx context.Context, cmd *cobra.Command, docsPosition int, arg
 		}
 		fn(ctx, args, docs)
 	} else if len(args) <= docsPosition && util.IsTTY(os.Stdin) {
-		fmt.Fprintf(os.Stderr, "not enougn arguments\n")
+		_, _ = fmt.Fprintf(os.Stderr, "not enougn arguments\n")
 		_ = cmd.Usage()
 		os.Exit(1)
 	} else {
