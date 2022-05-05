@@ -43,6 +43,7 @@ func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) {
 	}
 }
 
+// DescribeCollectionResponse adapter to convert Schema field to json.RawMessage
 type DescribeCollectionResponse struct {
 	Collection string                  `json:"collection,omitempty"`
 	Metadata   *api.CollectionMetadata `json:"metadata,omitempty"`
@@ -64,8 +65,8 @@ var describeCollectionCmd = &cobra.Command{
 
 		tr := DescribeCollectionResponse{
 			Collection: resp.Collection,
-			Metadata:   resp.Metadata,
-			Schema:     resp.Schema,
+			//Metadata:   resp.Metadata,
+			Schema: resp.Schema,
 		}
 
 		b, err := json.Marshal(tr)

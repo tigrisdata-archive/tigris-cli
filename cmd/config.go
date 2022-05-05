@@ -15,32 +15,30 @@
 package cmd
 
 import (
-	"encoding/json"
-
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
+	"gopkg.in/yaml.v2"
 )
 
-var infoCmd = &cobra.Command{
-	Use:   "info",
-	Short: "Returns server information",
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Configuration commands",
+}
+
+var showConfigCmd = &cobra.Command{
+	Use:   "show",
+	Short: "Returns effective CLI configuration",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		resp, err := client.Get().Info(ctx)
+		info, err := yaml.Marshal(config.DefaultConfig)
 		if err != nil {
-			util.Error(err, "get server info failed")
-		}
-		info, err := json.MarshalIndent(resp, "", "  ")
-		if err != nil {
-			util.Error(err, "get server info failed")
+			util.Error(err, "marshal config failed")
 		}
 		util.Stdout("%s\n", string(info))
 	},
 }
 
 func init() {
-	serverCmd.AddCommand(infoCmd)
-	serverCmd.AddCommand(serverVersionCmd)
+	configCmd.AddCommand(showConfigCmd)
+	rootCmd.AddCommand(configCmd)
 }

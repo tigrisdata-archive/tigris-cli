@@ -23,6 +23,18 @@ import (
 	"github.com/tigrisdata/tigris-cli/util"
 )
 
+func skipClientInit(args []string) bool {
+	skip := map[string]bool{
+		"local":      true,
+		"version":    true,
+		"completion": true,
+		"docs":       true,
+		"config":     true,
+	}
+
+	return len(args) > 1 && skip[args[1]]
+}
+
 func main() {
 	util.LogConfigure()
 
@@ -30,11 +42,7 @@ func main() {
 
 	util.DefaultTimeout = config.DefaultConfig.Timeout
 
-	if len(os.Args) > 1 &&
-		os.Args[1] != "local" &&
-		os.Args[1] != "version" &&
-		os.Args[1] != "completion" &&
-		os.Args[1] != "docs" {
+	if !skipClientInit(os.Args) {
 		if err := client.Init(config.DefaultConfig); err != nil {
 			util.Error(err, "tigris client initialization failed")
 		}

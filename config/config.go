@@ -16,10 +16,11 @@ package config
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
@@ -47,7 +48,8 @@ var configPath = []string{
 var envPrefix = "tigris"
 
 func Load(name string, config interface{}) {
-	viper.SetConfigName(name)
+	viper.SetConfigName(name + ".yaml")
+	viper.SetConfigType("yaml")
 
 	for _, v := range configPath {
 		viper.AddConfigPath(v)
@@ -57,7 +59,7 @@ func Load(name string, config interface{}) {
 	// Viper will only bind environment variables to the keys it already knows about
 	b, err := yaml.Marshal(config)
 	if err != nil {
-		log.Err(err).Msg("marshal config")
+		e(err, "marshal config")
 	}
 
 	// This is needed to replace periods with underscores when mapping environment variables to multi-level config keys
@@ -69,21 +71,27 @@ func Load(name string, config interface{}) {
 	viper.AutomaticEnv()
 
 	br := bytes.NewBuffer(b)
-	err = viper.MergeConfig(br)
-	if err != nil {
-		log.Err(err).Msg("merge config")
+	if err = viper.MergeConfig(br); err != nil {
+		e(err, "merge config")
 	}
+
+	viper.SetConfigType("")
 
 	err = viper.MergeInConfig()
 	if err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			//log.Warn().Err(err).Msgf("config file not found")
 		} else {
-			log.Fatal().Err(err).Msgf("error reading config")
+			e(err, "error reading config")
 		}
 	}
 
 	if err := viper.Unmarshal(&config); err != nil {
-		log.Fatal().Err(err).Msg("error unmarshalling config")
+		e(err, "error unmarshalling config")
 	}
+}
+
+func e(err error, _ string) {
+	fmt.Fprintf(os.Stderr, "%v\n", err)
+	os.Exit(1)
 }

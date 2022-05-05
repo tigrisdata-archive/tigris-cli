@@ -39,6 +39,7 @@ var listDatabasesCmd = &cobra.Command{
 	},
 }
 
+// DescribeDatabaseResponse adapter to convert schema to json.RawMessage
 type DescribeDatabaseResponse struct {
 	Db          string                        `json:"db,omitempty"`
 	Metadata    *api.DatabaseMetadata         `json:"metadata,omitempty"`
@@ -69,15 +70,15 @@ var describeDatabaseCmd = &cobra.Command{
 			}
 		} else {
 			tr := DescribeDatabaseResponse{
-				Db:       resp.Db,
-				Metadata: resp.Metadata,
+				Db: resp.Db,
+				//Metadata: resp.Metadata,
 			}
 
 			for _, v := range resp.Collections {
 				tr.Collections = append(tr.Collections, &DescribeCollectionResponse{
 					Collection: v.Collection,
-					Metadata:   v.Metadata,
-					Schema:     v.Schema,
+					//Metadata:   v.Metadata,
+					Schema: v.Schema,
 				})
 			}
 
