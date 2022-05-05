@@ -12,42 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
 import (
-	"os"
+	"encoding/json"
 
+	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
-	"github.com/tigrisdata/tigris-cli/cmd"
-	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
 )
 
-func skipClientInit(args []string) bool {
-	skip := map[string]bool{
-		"local":      true,
-		"version":    true,
-		"completion": true,
-		"docs":       true,
-		"config":     true,
-		"scaffold":   true,
-	}
-
-	return len(args) > 1 && skip[args[1]]
+var infoCmd = &cobra.Command{
+	Use:   "info",
+	Short: "Returns server information",
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+		resp, err := client.Get().Info(ctx)
+		if err != nil {
+			util.Error(err, "get server info failed")
+		}
+		info, err := json.MarshalIndent(resp, "", "  ")
+		if err != nil {
+			util.Error(err, "get server info failed")
+		}
+		util.Stdout("%s\n", string(info))
+	},
 }
 
-func main() {
-	util.LogConfigure()
-
-	config.Load("tigris", &config.DefaultConfig)
-
-	util.DefaultTimeout = config.DefaultConfig.Timeout
-
-	if !skipClientInit(os.Args) {
-		if err := client.Init(config.DefaultConfig); err != nil {
-			util.Error(err, "tigris client initialization failed")
-		}
-	}
-
-	cmd.Execute()
+func init() {
+	serverCmd.AddCommand(infoCmd)
+	serverCmd.AddCommand(serverVersionCmd)
 }
