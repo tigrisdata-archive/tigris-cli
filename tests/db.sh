@@ -51,6 +51,10 @@ db_tests() {
 	diff -u <(echo '{"collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
 	diff -u <(echo '{"collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out")
 
+	out=$($cli describe database db1 --schema-only)
+	diff -w -u <(echo -e "$coll1\n$coll111") <(echo "$out") ||
+	diff -w -u <(echo -e "$coll111\n$coll1") <(echo "$out")
+
 	#reading schemas from stream
 	# \n at the end to test empty line skipping
 	# this also test multi-line streams

@@ -103,7 +103,13 @@ func startContainer(cli *client.Client, cname string, image string, volumeMount 
 	}
 	defer func() { _ = reader.Close() }()
 
-	_, _ = io.Copy(os.Stdout, reader)
+	if util.IsTTY(os.Stdout) {
+		if err := util.DockerShowProgress(reader); err != nil {
+			util.Error(err, "error pulling docker image")
+		}
+	} else {
+		_, _ = io.Copy(os.Stdout, reader)
+	}
 
 	m := mount.Mount{
 		Type:   mount.TypeVolume,
