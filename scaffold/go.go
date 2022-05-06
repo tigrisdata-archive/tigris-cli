@@ -110,9 +110,6 @@ func handle{{.}}(ctx context.Context, db *tigris.Database) error {
 		log("Get transactional collection object for {{.}}\n")
 
 		txColl := tigris.GetTxCollection[{{.}}](tx)
-		if err != nil {
-			return err
-		}
 
 		d4 := &{{.}}{StrField: "value2", IntField: 111, BoolField: true}
 		d5 := &{{.}}{StrField: "value3", IntField: 222}
@@ -125,12 +122,12 @@ func handle{{.}}(ctx context.Context, db *tigris.Database) error {
 
 		log("Updating documents int {{.}} where StrField=%v\n", "value2")
 
-		if _, err = coll.Update(ctx, filter.Eq("str_field", "value2"),
+		if _, err = txColl.Update(ctx, filter.Eq("str_field", "value2"),
 			update.Set("IntField", 678)); err != nil {
 			return err
 		}
 
-		if _, err = coll.Delete(ctx, filter.Eq("str_field", "value1")); err != nil {
+		if _, err = txColl.Delete(ctx, filter.Eq("str_field", "value1")); err != nil {
 			return err
 		}
 
