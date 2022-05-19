@@ -232,44 +232,33 @@ error() {
 # BUG: Unify HTTP and GRPC responses
 # shellcheck disable=SC2086
 db_errors_tests() {
-	error "database doesn't exist 'db2'" $cli drop database db2 ||
-	error "404 Not Found" $cli drop database db2
+	error "database doesn't exist 'db2'" $cli drop database db2
 
-	error "database doesn't exist 'db2'" $cli drop collection db2 coll1 ||
-	error "404 Not Found" $cli drop collection db2 coll1
+	error "database doesn't exist 'db2'" $cli drop collection db2 coll1
 
 	error "database doesn't exist 'db2'" $cli create collection db2 \
-		'{ "title" : "coll1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }' ||
-	error "404 Not Found" $cli create collection db2 \
 		'{ "title" : "coll1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
 
-	error "database doesn't exist 'db2'" $cli list collections db2 ||
-	error "404 Not Found" $cli list collections db2
+	error "database doesn't exist 'db2'" $cli list collections db2
 
-	error "database doesn't exist 'db2'" $cli insert db2 coll1 '{}' ||
-	error "404 Not Found" $cli insert db2 coll1 '{}'
+	error "database doesn't exist 'db2'" $cli insert db2 coll1 '{}'
 
 	error "database doesn't exist 'db2'" $cli read db2 coll1 '{}' ||
 	error "404 Not Found" $cli read db2 coll1 '{}'
 
-	error "database doesn't exist 'db2'" $cli update db2 coll1 '{}' '{}' ||
-	error "404 Not Found" $cli update db2 coll1 '{}' '{}'
+	error "database doesn't exist 'db2'" $cli update db2 coll1 '{}' '{}'
 
-	error "database doesn't exist 'db2'" $cli delete db2 coll1 '{}' ||
-	error "404 Not Found" $cli delete db2 coll1 '{}'
+	error "database doesn't exist 'db2'" $cli delete db2 coll1 '{}'
 
 	$cli create database db2
-	error "collection doesn't exist 'coll1'" $cli insert db2 coll1 '{}' ||
-	error "404 Not Found" $cli insert db2 coll1 '{}'
+	error "collection doesn't exist 'coll1'" $cli insert db2 coll1 '{}'
 
 	error "collection doesn't exist 'coll1'" $cli read db2 coll1 '{}' ||
 	error "404 Not Found" $cli read db2 coll1 '{}'
 
-	error "collection doesn't exist 'coll1'" $cli update db2 coll1 '{}' '{}' ||
-	error "404 Not Found" $cli update db2 coll1 '{}' '{}'
+	error "collection doesn't exist 'coll1'" $cli update db2 coll1 '{}' '{}'
 
-	error "collection doesn't exist 'coll1'" $cli delete db2 coll1 '{}' ||
-	error "404 Not Found" $cli delete db2 coll1 '{}'
+	error "collection doesn't exist 'coll1'" $cli delete db2 coll1 '{}'
 
 	error "schema name is missing" $cli create collection db1 \
 		'{ "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
