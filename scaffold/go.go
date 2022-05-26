@@ -26,7 +26,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/tigris"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/filter"
-	"github.com/tigrisdata/tigris-client-go/update"
+	"github.com/tigrisdata/tigris-client-go/fields"
 )
 {{range .Collections}}
 // {{.}} is a collection of documents
@@ -75,7 +75,7 @@ func handle{{.}}(ctx context.Context, db *tigris.Database) error {
 			filter.Eq("str_field", "value1"),
 			filter.Eq("str_field", "value3"),
 		),
-		update.Set("IntField", 123),
+		fields.Set("IntField", 123),
 	); err != nil {
 		return err
 	}
@@ -106,34 +106,32 @@ func handle{{.}}(ctx context.Context, db *tigris.Database) error {
 	log("Execute operations in a transaction\n")
 
 	// Execute operations in a transaction
-	err = db.Tx(ctx, func(ctx context.Context, tx *tigris.Tx) error {
+	err = db.Tx(ctx, func(txCtx context.Context) error {
 		log("Get transactional collection object for {{.}}\n")
-
-		txColl := tigris.GetTxCollection[{{.}}](tx)
 
 		d4 := &{{.}}{StrField: "value2", IntField: 111, BoolField: true}
 		d5 := &{{.}}{StrField: "value3", IntField: 222}
 
 		log("Inserting documents into {{.}}:\n\t%+v\n\t%+v\n", d4, d5)
 
-		if _, err = txColl.Insert(ctx, d4, d5); err != nil {
+		if _, err = coll.Insert(txCtx, d4, d5); err != nil {
 			return err
 		}
 
 		log("Updating documents int {{.}} where StrField=%v\n", "value2")
 
-		if _, err = txColl.Update(ctx, filter.Eq("str_field", "value2"),
-			update.Set("IntField", 678)); err != nil {
+		if _, err = coll.Update(txCtx, filter.Eq("str_field", "value2"),
+			fields.Set("IntField", 678)); err != nil {
 			return err
 		}
 
-		if _, err = txColl.Delete(ctx, filter.Eq("str_field", "value1")); err != nil {
+		if _, err = coll.Delete(txCtx, filter.Eq("str_field", "value1")); err != nil {
 			return err
 		}
 
 		log("Reading documents from {{.}} where StrField=%v\n", "value1")
 
-		it, err = txColl.ReadAll(ctx)
+		it, err = coll.ReadAll(txCtx)
 		if err != nil {
 			return err
 		}
