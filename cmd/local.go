@@ -38,38 +38,64 @@ import (
 )
 
 const (
-	ImagePath        = "tigrisdata/tigris"
-	FDBImagePath     = "foundationdb/foundationdb:6.3.23"
-	volumeName       = "fdbdata"
-	FDBContainerName = "tigris-local-fdb"
-	ContainerName    = "tigris-local-server"
+	ImagePath       = "tigrisdata/tigris"
+	FDBImagePath    = "tigrisdata/foundationdb:7.1.7"
+	SearchImagePath = "typesense/typesense:0.23.0"
+
+	volumeName  = "fdbdata"
+	networkName = "tigris_cli_network"
+
+	SearchContainerName = "tigris-local-search"
+	FDBContainerName    = "tigris-local-db"
+	ContainerName       = "tigris-local-server"
 )
 
 var ImageTag = "latest"
 
+var timeout = 10 * time.Second
+
 func ensureVolume(cli *client.Client) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
 	volumes, err := cli.VolumeList(ctx, filters.NewArgs())
 	if err != nil {
 		util.Error(err, "error listing volumes")
 	}
 
-	found := false
 	for _, v := range volumes.Volumes {
 		if v.Name == volumeName {
-			found = true
+			return
 		}
 	}
 
-	if !found {
-		_, err := cli.VolumeCreate(ctx, volumetypes.VolumeCreateBody{
-			Driver: "local",
-			Name:   volumeName,
-		})
-		if err != nil {
-			util.Error(err, "error creating docker volume")
+	_, err = cli.VolumeCreate(ctx, volumetypes.VolumeCreateBody{
+		Driver: "local",
+		Name:   volumeName,
+	})
+	if err != nil {
+		util.Error(err, "error creating docker volume")
+	}
+}
+
+func ensureNetwork(cli *client.Client) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	networks, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: filters.NewArgs()})
+	if err != nil {
+		util.Error(err, "docker network list failed")
+	}
+
+	for _, v := range networks {
+		if v.Name == networkName {
+			return
 		}
+	}
+
+	_, err = cli.NetworkCreate(ctx, networkName, types.NetworkCreate{})
+	if err != nil {
+		util.Error(err, "docker network create failed")
 	}
 }
 
@@ -94,7 +120,7 @@ func stopContainer(client *client.Client, cname string) {
 	}
 }
 
-func startContainer(cli *client.Client, cname string, image string, volumeMount string, port string) string {
+func startContainer(cli *client.Client, cname string, image string, volumeMount string, port string, env []string) string {
 	ctx := context.Background()
 
 	reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{})
@@ -111,31 +137,42 @@ func startContainer(cli *client.Client, cname string, image string, volumeMount 
 		_, _ = io.Copy(os.Stdout, reader)
 	}
 
-	m := mount.Mount{
-		Type:   mount.TypeVolume,
-		Source: volumeName,
-		Target: volumeMount,
-	}
+	var m []mount.Mount
 
-	p, err := nat.ParsePortSpec(port)
-	if err != nil {
-		log.Fatal().Err(err).Str("image", image).Msg("error parsing port")
+	if volumeMount != "" {
+		m = append(m, mount.Mount{
+			Type:   mount.TypeVolume,
+			Source: volumeName,
+			Target: volumeMount,
+		})
 	}
 
 	pm := nat.PortMap{}
 
-	for _, v := range p {
-		pm[v.Port] = []nat.PortBinding{v.Binding}
+	if port != "" {
+		p, err := nat.ParsePortSpec(port)
+		if err != nil {
+			log.Fatal().Err(err).Str("image", image).Msg("error parsing port")
+		}
+
+		for _, v := range p {
+			pm[v.Port] = []nat.PortBinding{v.Binding}
+		}
 	}
 
 	resp, err := cli.ContainerCreate(ctx,
 		&container.Config{
-			Image: image,
-			Tty:   false,
+			Hostname: cname,
+			Image:    image,
+			Tty:      false,
+			Env:      env,
 		},
 		&container.HostConfig{
-			Mounts:       []mount.Mount{m},
+			Mounts:       m,
 			PortBindings: pm,
+			DNS:          []string{"127.0.0.11"},
+			//DNS: []string{"172.17.0.1"},
+			NetworkMode: networkName,
 		}, nil, nil, cname)
 	if err != nil {
 		log.Fatal().Err(err).Str("image", image).Msg("error creating container docker image")
@@ -149,7 +186,8 @@ func startContainer(cli *client.Client, cname string, image string, volumeMount 
 }
 
 func execDockerCommand(cli *client.Client, container string, cmd []string) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	response, err := cli.ContainerExecCreate(ctx, container, types.ExecConfig{
 		Cmd: cmd,
@@ -211,6 +249,7 @@ var serverUpCmd = &cobra.Command{
 		}
 
 		ensureVolume(cli)
+		ensureNetwork(cli)
 
 		port := "8081"
 		if len(args) > 0 {
@@ -226,11 +265,17 @@ var serverUpCmd = &cobra.Command{
 			ImageTag = t
 		}
 
+		stopContainer(cli, SearchContainerName)
 		stopContainer(cli, FDBContainerName)
 		stopContainer(cli, ContainerName)
 
-		_ = startContainer(cli, FDBContainerName, FDBImagePath, "/var/fdb", "4500")
-		_ = startContainer(cli, ContainerName, ImagePath+":"+ImageTag, "/etc/foundationdb", rport)
+		_ = startContainer(cli, SearchContainerName, SearchImagePath, "", "", []string{"TYPESENSE_API_KEY=ts_dev_key", "TYPESENSE_DATA_DIR=/tmp"})
+		_ = startContainer(cli, FDBContainerName, FDBImagePath, "/var/lib/foundationdb", "", nil)
+		_ = startContainer(cli, ContainerName, ImagePath+":"+ImageTag, "/etc/foundationdb", rport,
+			[]string{
+				"TIGRIS_SERVER_SEARCH_AUTH_KEY=ts_dev_key",
+				fmt.Sprintf("TIGRIS_SERVER_SEARCH_HOST=%s", SearchContainerName),
+			})
 
 		execDockerCommand(cli, ContainerName, []string{"fdbcli", "--exec", "configure new single memory"})
 
@@ -252,8 +297,9 @@ var serverDownCmd = &cobra.Command{
 			util.Error(err, "error creating docker client")
 		}
 
-		stopContainer(cli, FDBContainerName)
 		stopContainer(cli, ContainerName)
+		stopContainer(cli, FDBContainerName)
+		stopContainer(cli, SearchContainerName)
 
 		fmt.Printf("Tigris stopped\n")
 	},

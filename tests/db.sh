@@ -21,7 +21,7 @@ make
 
 $cli version
 
-$cli local up
+$cli local up 8081
 $cli local logs >/dev/null 2>&1
 
 $cli server info
