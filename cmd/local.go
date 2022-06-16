@@ -42,8 +42,8 @@ const (
 	FDBImagePath    = "tigrisdata/foundationdb:7.1.7"
 	SearchImagePath = "typesense/typesense:0.23.0"
 
-	volumeName  = "fdbdata"
-	networkName = "tigris_cli_network"
+	volumeName  = "tigris-local-fdbdata"
+	networkName = "tigris-local-network"
 
 	SearchContainerName = "tigris-local-search"
 	FDBContainerName    = "tigris-local-db"
@@ -53,6 +53,15 @@ const (
 var ImageTag = "latest"
 
 var timeout = 10 * time.Second
+
+func removeVolume(cli *client.Client) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	if err := cli.VolumeRemove(ctx, volumeName, true); err != nil {
+		util.Error(err, "error removing docker volume")
+	}
+}
 
 func ensureVolume(cli *client.Client) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -300,6 +309,8 @@ var serverDownCmd = &cobra.Command{
 		stopContainer(cli, ContainerName)
 		stopContainer(cli, FDBContainerName)
 		stopContainer(cli, SearchContainerName)
+
+		removeVolume(cli)
 
 		fmt.Printf("Tigris stopped\n")
 	},
