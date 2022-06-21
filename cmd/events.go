@@ -25,21 +25,16 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-var streamCmd = &cobra.Command{
-	Use:     "stream {db} [collection]",
+var eventsCmd = &cobra.Command{
+	Use:     "events {db} {collection}",
 	Short:   "Streams and outputs events",
 	Long:    "Streams events in real-time until cancelled.",
 	Example: fmt.Sprintf("%[1]s stream testdb", rootCmd.Root().Name()),
-	Args:    cobra.MinimumNArgs(1),
+	Args:    cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		var collection string
-		if len(args) > 1 {
-			collection = args[1]
-		}
-
-		it, err := client.Get().UseDatabase(args[0]).Stream(ctx, collection)
+		it, err := client.Get().UseDatabase(args[0]).Events(ctx, args[1])
 		if err != nil {
 			util.Error(err, "stream events failed")
 		}
@@ -49,18 +44,12 @@ var streamCmd = &cobra.Command{
 				TxId       []byte          `json:"tx_id"`
 				Collection string          `json:"collection"`
 				Op         string          `json:"op"`
-				Key        []byte          `json:"key,omitempty"`
-				LKey       []byte          `json:"lkey,omitempty"`
-				RKey       []byte          `json:"rkey,omitempty"`
 				Data       json.RawMessage `json:"data,omitempty"`
 				Last       bool            `json:"last"`
 			}{
 				TxId:       event.TxId,
 				Collection: event.Collection,
 				Op:         event.Op,
-				Key:        event.Key,
-				LKey:       event.Lkey,
-				RKey:       event.Rkey,
 				Data:       event.Data,
 				Last:       event.Last,
 			}
@@ -78,5 +67,5 @@ var streamCmd = &cobra.Command{
 }
 
 func init() {
-	dbCmd.AddCommand(streamCmd)
+	dbCmd.AddCommand(eventsCmd)
 }
