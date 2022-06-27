@@ -23,9 +23,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/mount"
-	volumetypes "github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/stdcopy"
@@ -38,75 +35,11 @@ import (
 )
 
 const (
-	ImagePath       = "tigrisdata/tigris"
-	FDBImagePath    = "tigrisdata/foundationdb:7.1.7"
-	SearchImagePath = "typesense/typesense:0.23.0"
-
-	volumeName  = "tigris-local-fdbdata"
-	networkName = "tigris-local-network"
-
-	SearchContainerName = "tigris-local-search"
-	FDBContainerName    = "tigris-local-db"
-	ContainerName       = "tigris-local-server"
+	ImagePath     = "tigrisdata/tigris-local"
+	ContainerName = "tigris-local-server"
 )
 
 var ImageTag = "latest"
-
-var timeout = 10 * time.Second
-
-func removeVolume(cli *client.Client) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	if err := cli.VolumeRemove(ctx, volumeName, true); err != nil {
-		util.Error(err, "error removing docker volume")
-	}
-}
-
-func ensureVolume(cli *client.Client) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	volumes, err := cli.VolumeList(ctx, filters.NewArgs())
-	if err != nil {
-		util.Error(err, "error listing volumes")
-	}
-
-	for _, v := range volumes.Volumes {
-		if v.Name == volumeName {
-			return
-		}
-	}
-
-	_, err = cli.VolumeCreate(ctx, volumetypes.VolumeCreateBody{
-		Driver: "local",
-		Name:   volumeName,
-	})
-	if err != nil {
-		util.Error(err, "error creating docker volume")
-	}
-}
-
-func ensureNetwork(cli *client.Client) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	networks, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: filters.NewArgs()})
-	if err != nil {
-		util.Error(err, "docker network list failed")
-	}
-
-	for _, v := range networks {
-		if v.Name == networkName {
-			return
-		}
-	}
-
-	_, err = cli.NetworkCreate(ctx, networkName, types.NetworkCreate{})
-	if err != nil {
-		util.Error(err, "docker network create failed")
-	}
-}
 
 func stopContainer(client *client.Client, cname string) {
 	ctx := context.Background()
@@ -129,7 +62,7 @@ func stopContainer(client *client.Client, cname string) {
 	}
 }
 
-func startContainer(cli *client.Client, cname string, image string, volumeMount string, port string, env []string) string {
+func startContainer(cli *client.Client, cname string, image string, port string, env []string) string {
 	ctx := context.Background()
 
 	reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{})
@@ -144,16 +77,6 @@ func startContainer(cli *client.Client, cname string, image string, volumeMount 
 		}
 	} else {
 		_, _ = io.Copy(os.Stdout, reader)
-	}
-
-	var m []mount.Mount
-
-	if volumeMount != "" {
-		m = append(m, mount.Mount{
-			Type:   mount.TypeVolume,
-			Source: volumeName,
-			Target: volumeMount,
-		})
 	}
 
 	pm := nat.PortMap{}
@@ -177,11 +100,7 @@ func startContainer(cli *client.Client, cname string, image string, volumeMount 
 			Env:      env,
 		},
 		&container.HostConfig{
-			Mounts:       m,
 			PortBindings: pm,
-			DNS:          []string{"127.0.0.11"},
-			//DNS: []string{"172.17.0.1"},
-			NetworkMode: networkName,
 		}, nil, nil, cname)
 	if err != nil {
 		log.Fatal().Err(err).Str("image", image).Msg("error creating container docker image")
@@ -194,31 +113,8 @@ func startContainer(cli *client.Client, cname string, image string, volumeMount 
 	return resp.ID
 }
 
-func execDockerCommand(cli *client.Client, container string, cmd []string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	response, err := cli.ContainerExecCreate(ctx, container, types.ExecConfig{
-		Cmd: cmd,
-	})
-	if err != nil {
-		util.Error(err, "error executing command in docker container")
-	}
-
-	execID := response.ID
-	if execID == "" {
-		log.Fatal().Msg("error executing command in docker container")
-	}
-
-	resp, err := cli.ContainerExecAttach(ctx, execID, types.ExecStartCheck{})
-	if err != nil {
-		util.Error(err, "error executing command in docker container")
-	}
-	defer resp.Close()
-}
-
 func waitServerUp() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	inited := false
@@ -235,10 +131,15 @@ func waitServerUp() {
 			}
 		}
 
+		if err == context.DeadlineExceeded {
+			break
+		}
+
 		time.Sleep(10 * time.Millisecond)
 
 		select {
 		case <-ctx.Done():
+			err = fmt.Errorf("timeout waiting server to start")
 			break
 		default:
 		}
@@ -257,9 +158,6 @@ var serverUpCmd = &cobra.Command{
 			util.Error(err, "error creating docker client")
 		}
 
-		ensureVolume(cli)
-		ensureNetwork(cli)
-
 		port := "8081"
 		if len(args) > 0 {
 			port = args[0]
@@ -274,19 +172,8 @@ var serverUpCmd = &cobra.Command{
 			ImageTag = t
 		}
 
-		stopContainer(cli, SearchContainerName)
-		stopContainer(cli, FDBContainerName)
 		stopContainer(cli, ContainerName)
-
-		_ = startContainer(cli, SearchContainerName, SearchImagePath, "", "", []string{"TYPESENSE_API_KEY=ts_dev_key", "TYPESENSE_DATA_DIR=/tmp"})
-		_ = startContainer(cli, FDBContainerName, FDBImagePath, "/var/lib/foundationdb", "", nil)
-		_ = startContainer(cli, ContainerName, ImagePath+":"+ImageTag, "/etc/foundationdb", rport,
-			[]string{
-				"TIGRIS_SERVER_SEARCH_AUTH_KEY=ts_dev_key",
-				fmt.Sprintf("TIGRIS_SERVER_SEARCH_HOST=%s", SearchContainerName),
-			})
-
-		execDockerCommand(cli, ContainerName, []string{"fdbcli", "--exec", "configure new single memory"})
+		_ = startContainer(cli, ContainerName, ImagePath+":"+ImageTag, rport, nil)
 
 		waitServerUp()
 
@@ -307,10 +194,6 @@ var serverDownCmd = &cobra.Command{
 		}
 
 		stopContainer(cli, ContainerName)
-		stopContainer(cli, FDBContainerName)
-		stopContainer(cli, SearchContainerName)
-
-		removeVolume(cli)
 
 		fmt.Printf("Tigris stopped\n")
 	},
