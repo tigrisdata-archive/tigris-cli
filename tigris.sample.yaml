@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Raname this file to tigrisdb-cli.yaml to enable it loading
-# The paths where tigrisdb-cli looks for config files are:
-#   * /etc/tigrisdata/tigrisdb-cli.yaml
-#   * $HOME/.tigrisdata/tigrisdb-cli.yaml
-#   * ./tigrisdb-cli.yaml
+# Raname this file to tigris.yaml to enable it loading
+# The paths where tigris cli looks for config files are:
+#   * /etc/tigris/tigris.yaml
+#   * $HOME/.tigris/tigris.yaml
+#   * ./tigris.yaml
 
 # URL specifies database's host and port where to connect.
 #url: "localhost:8081"
