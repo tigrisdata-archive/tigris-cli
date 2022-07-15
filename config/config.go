@@ -39,8 +39,8 @@ type Config struct {
 }
 
 var configPath = []string{
-	"/etc/tigrisdata/",
-	"$HOME/.tigrisdata",
+	"/etc/tigris/",
+	"$HOME/.tigris",
 	"./config/",
 	"./",
 }
