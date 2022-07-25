@@ -48,8 +48,6 @@ test_config() {
   unset TIGRIS_APPLICATION_SECRET
 }
 
-test_config
-
 db_tests() {
 	echo "=== Test ==="
 	echo "Proto: $TIGRIS_PROTOCOL, URL: $TIGRIS_URL"
@@ -220,8 +218,9 @@ EOF
 	db_negative_tests
 	db_errors_tests
 	db_generate_schema_test
+	test_pubsub
 
-	$cli drop collection db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7
+	$cli drop collection db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7 coll111
 	$cli drop database db1
 }
 
@@ -297,49 +296,91 @@ db_generate_schema_test() {
   $cli drop database sampledb
 }
 
-unset TIGRIS_PROTOCOL
-unset TIGRIS_URL
-db_tests
+test_pubsub() {
+	coll_msg='{"title":"coll_msg","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"}},"collection_type":"messages"}'
 
-export TIGRIS_PROTOCOL=grpc
-$cli config show | grep "protocol: grpc"
-db_tests
+	#reading schemas from command line parameters
+	$cli create collection db1 "$coll_msg"
 
-export TIGRIS_PROTOCOL=http
-$cli config show | grep "protocol: http"
-db_tests
+	exp_out='{"Field1":123}
+{"Field1":456}
+{"Key1":"ee"}'
 
-export TIGRIS_URL=localhost:8081
-export TIGRIS_PROTOCOL=grpc
-$cli config show | grep "protocol: grpc"
-$cli config show | grep "url: localhost:8081"
-db_tests
+	(
+	# Give some time for subscribe to start
+	sleep 1
 
-export TIGRIS_URL=localhost:8081
-export TIGRIS_PROTOCOL=http
-$cli config show | grep "protocol: http"
-$cli config show | grep "url: localhost:8081"
-db_tests
+	$cli publish db1 coll_msg '{"Field1":123}' '{"Field1":456}'
+	echo '{"Key1":"ee"}' | $cli publish db1 coll_msg -
+	)&
+	pid=$!
 
-export TIGRIS_PROTOCOL=grpc
-export TIGRIS_URL=http://localhost:8081
-$cli config show | grep "protocol: grpc"
-$cli config show | grep "url: http://localhost:8081"
-db_tests
+	out=$($cli subscribe db1 coll_msg '{}' --limit 3)
+	diff -w -u <(echo "$exp_out") <(echo "$out")
 
-export TIGRIS_PROTOCOL=http
-export TIGRIS_URL=grpc://localhost:8081
-$cli config show | grep "protocol: http"
-$cli config show | grep "url: grpc://localhost:8081"
-db_tests
+	# make sure subhell terminated
+	wait $pid
+
+	$cli drop collection db1 coll_msg
+}
+
+main() { 
+	test_config
+
+	unset TIGRIS_PROTOCOL
+	unset TIGRIS_URL
+	db_tests
+
+	export TIGRIS_PROTOCOL=grpc
+	$cli config show | grep "protocol: grpc"
+	db_tests
+
+	export TIGRIS_PROTOCOL=http
+	$cli config show | grep "protocol: http"
+	db_tests
+
+	export TIGRIS_URL=localhost:8081
+	export TIGRIS_PROTOCOL=grpc
+	$cli config show | grep "protocol: grpc"
+	$cli config show | grep "url: localhost:8081"
+	db_tests
+
+	export TIGRIS_URL=localhost:8081
+	export TIGRIS_PROTOCOL=http
+	$cli config show | grep "protocol: http"
+	$cli config show | grep "url: localhost:8081"
+	db_tests
+
+	export TIGRIS_PROTOCOL=grpc
+	export TIGRIS_URL=http://localhost:8081
+	$cli config show | grep "protocol: grpc"
+	$cli config show | grep "url: http://localhost:8081"
+	db_tests
+
+	export TIGRIS_PROTOCOL=http
+	export TIGRIS_URL=grpc://localhost:8081
+	$cli config show | grep "protocol: http"
+	$cli config show | grep "url: grpc://localhost:8081"
+	db_tests
+}
+
+main
 
 if [ -z "$noup" ]; then
 	$cli local down
 fi
 
 test_dev_alias() {
-	$cli dev start 9083
-	$cli dev stop 9083
+	port=9083
+
+	$cli dev start $port
+
+	export TIGRIS_URL=http://localhost:$port
+	$cli config show | grep "protocol: http"
+	$cli config show | grep "url: http://localhost:$port"
+	db_tests
+
+	$cli dev stop $port
 }
 
 test_dev_alias

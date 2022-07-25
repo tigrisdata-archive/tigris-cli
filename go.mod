@@ -6,13 +6,11 @@ require (
 	github.com/coreos/go-oidc/v3 v3.3.0
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/docker/go-connections v0.4.0
-	github.com/docker/go-units v0.4.0
-	github.com/json-iterator/go v1.1.12
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/rs/zerolog v1.27.0
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.12.0
-	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.33
+	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.35
 	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -23,6 +21,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/deepmap/oapi-codegen v1.11.0 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/go-units v0.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/getkin/kin-openapi v0.96.0 // indirect
@@ -39,6 +38,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/invopop/yaml v0.2.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
