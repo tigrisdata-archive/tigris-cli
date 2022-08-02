@@ -15,13 +15,14 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigris-cli/util"
-	"github.com/tigrisdata/tigris-cli/client"
-	"github.com/tigrisdata/tigris-client-go/driver"
-	"github.com/tigrisdata/tigris-client-go/search"
 	"encoding/json"
 	"fmt"
+
+	"github.com/spf13/cobra"
+	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/util"
+	"github.com/tigrisdata/tigris-client-go/driver"
+	"github.com/tigrisdata/tigris-client-go/search"
 )
 
 var query string
