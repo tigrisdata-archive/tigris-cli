@@ -9,7 +9,7 @@ require (
 	github.com/rs/zerolog v1.27.0
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.12.0
-	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.21
+	github.com/tigrisdata/tigris-client-go v1.0.0-alpha.23
 	gopkg.in/yaml.v2 v2.4.0
 )
 
