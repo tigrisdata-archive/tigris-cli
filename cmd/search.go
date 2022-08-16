@@ -55,11 +55,14 @@ var searchCmd = &cobra.Command{
 # Aggregate results by current city and get top 10 cities
 %[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}" --facet "{\"currentCity\": {\"size\": 10}}"
 
+# Sort the results by age in increasing order
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}" --facet "{\"currentCity\": {\"size\": 10}}" --sort "[{\"age\": \"$asc\"}]"
+
 # Exclude sensitive information from results
-%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}" --facet "{\"currentCity\": {\"size\": 10}}" -x "phoneNumber,address"
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}" --facet "{\"currentCity\": {\"size\": 10}}" --sort "[{\"age\": \"$asc\"}]" -x "phoneNumber,address"
 
 # Paginate the results, with 15 per page
-%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}" --facet "{\"currentCity\": {\"size\": 10}}" -x "phoneNumber,address" -p 1 -c 15
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}" --facet "{\"currentCity\": {\"size\": 10}}" --sort "[{\"age\": \"$asc\"}]" -x "phoneNumber,address" -p 1 -c 15
 
 # Find users with last name exactly matching "Wong"
 %[1]s %[2]s --filter "{\"lastName\": \"Wong\"}"
@@ -74,6 +77,7 @@ var searchCmd = &cobra.Command{
 			SearchFields:  searchFields,
 			Filter:        driver.Filter(filter),
 			Facet:         driver.Facet(facet),
+			Sort:          driver.SortOrder(sort),
 			IncludeFields: includeFields,
 			ExcludeFields: excludeFields,
 			Page:          page,
@@ -105,7 +109,7 @@ func init() {
 	searchCmd.Flags().StringSliceVarP(&searchFields, "searchFields", "f", []string{}, "comma separated value of fields to project search query against")
 	searchCmd.Flags().StringVar(&filter, "filter", "{}", "further refine the search results using filters")
 	searchCmd.Flags().StringVar(&facet, "facet", "{}", "retrieve aggregate ")
-	searchCmd.Flags().StringVar(&sort, "sort", "{}", "order to sort the results")
+	searchCmd.Flags().StringVar(&sort, "sort", "[]", "order to sort the results")
 	searchCmd.Flags().StringSliceVarP(&includeFields, "includeFields", "i", []string{}, "comma separated value of document fields to include in results")
 	searchCmd.Flags().StringSliceVarP(&excludeFields, "excludeFields", "x", []string{}, "comma separated value of document fields to exclude in results")
 	searchCmd.Flags().Int32VarP(&page, "page", "p", 1, "page of results to retrieve")
