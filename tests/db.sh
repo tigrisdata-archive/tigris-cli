@@ -15,17 +15,41 @@
 
 set -ex
 
-cli="./tigris"
-
-make
+if [ -z $cli ]; then
+	cli="./tigris"
+fi
 
 $cli version
+$cli config show
 
-$cli local up 8081
-$cli local logs >/dev/null 2>&1
+if [ -z $noup ]; then
+	$cli local up 8081
+	$cli local logs >/dev/null 2>&1
+fi
 
 $cli server info
 $cli server version
+
+test_config() {
+  export TIGRIS_APPLICATION_ID=test_id_1
+  export TIGRIS_APPLICATION_SECRET=test_secret_1
+  export TIGRIS_TIMEOUT=333s
+  export TIGRIS_PROTOCOL=https
+  export TIGRIS_URL=example.com:8888
+  $cli config show
+  $cli config show | grep "application_id: test_id_1"
+  $cli config show | grep "application_secret: test_secret_1"
+  $cli config show | grep "timeout: 5m33s"
+  $cli config show | grep "protocol: https"
+  $cli config show | grep "url: example.com:8888"
+  unset TIGRIS_PROTOCOL
+  unset TIGRIS_URL
+  unset TIGRIS_TIMEOUT
+  unset TIGRIS_APPLICATION_ID
+  unset TIGRIS_APPLICATION_SECRET
+}
+
+test_config
 
 db_tests() {
 	$cli ping
@@ -307,5 +331,7 @@ $cli config show | grep "protocol: http"
 $cli config show | grep "url: grpc://localhost:8081"
 db_tests
 
-$cli local down
+if [ -z $noup ]; then
+	$cli local down
+fi
 

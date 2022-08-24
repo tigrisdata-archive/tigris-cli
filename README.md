@@ -44,6 +44,7 @@ Available Commands:
   describe    describe database or collection
   docs        Generates CLI documentation in Markdown format
   drop        drop database or collection
+  events      Streams and outputs events
   generate    Generating helper assets such as sample schema
   help        Help about any command
   insert      insert document
@@ -52,6 +53,9 @@ Available Commands:
   ping        Check connection to Tigris
   read        read documents
   replace     replace document
+  scaffold    Scaffold a project for specified language
+  search      Searches a collection for documents matching the query
+  server      Tigris server related commands
   transact    run a set of operations in a transaction
   update      update documents
   version     show tigris cli version

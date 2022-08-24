@@ -33,7 +33,7 @@ func skipClientInit(args []string) bool {
 		"scaffold":   true,
 	}
 
-	return len(args) > 1 && skip[args[1]]
+	return len(args) <= 1 || skip[args[1]]
 }
 
 func main() {
