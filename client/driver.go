@@ -59,7 +59,11 @@ func Init(config config.Config) error {
 	ctx, cancel := util.GetContext(context.Background())
 	defer cancel()
 
-	drv, err := driver.NewDriver(ctx, &cconfig.Driver{URL: url, Token: config.Token})
+	drv, err := driver.NewDriver(ctx, &cconfig.Driver{
+		URL:               url,
+		ApplicationId:     config.ApplicationID,
+		ApplicationSecret: config.ApplicationSecret,
+	})
 	if err != nil {
 		return err
 	}

@@ -32,10 +32,11 @@ var DefaultConfig = Config{
 }
 
 type Config struct {
-	Token    string        `json:"token,omitempty"`
-	URL      string        `json:"url,omitempty"`
-	Timeout  time.Duration `json:"timeout,omitempty"`
-	Protocol string        `json:"protocol,omitempty"`
+	ApplicationID     string        `json:"application_id" yaml:"application_id" mapstructure:"application_id"`
+	ApplicationSecret string        `json:"application_secret" yaml:"application_secret" mapstructure:"application_secret"`
+	URL               string        `json:"url" yaml:"url"`
+	Timeout           time.Duration `json:"timeout" yaml:"timeout"`
+	Protocol          string        `json:"protocol" yaml:"protocol"`
 }
 
 var configPath = []string{
