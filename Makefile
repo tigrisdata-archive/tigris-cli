@@ -15,6 +15,7 @@ ${BIN}: ${GO_SRC} go.sum
 
 lint:
 	golangci-lint run
+	shellcheck tests/*.sh
 
 go.sum: go.mod
 	go mod download
@@ -22,6 +23,10 @@ go.sum: go.mod
 test: ${BIN} go.sum
 	go test $(TEST_PARAM) ./...
 	/bin/bash tests/*.sh
+
+install: ${BIN}
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install -m 755 ${BIN} $(DESTDIR)$(PREFIX)/bin/
 
 clean:
 	rm -f ${BIN}

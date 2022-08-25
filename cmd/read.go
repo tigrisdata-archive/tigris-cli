@@ -67,7 +67,12 @@ If fields are not provided or an empty json document {} is passed as fields, all
 		}
 		var doc driver.Document
 		for it.Next(&doc) {
-			util.Stdout("%s\n", string(doc))
+			// Document came through GRPC may have \n at the end already
+			if doc[len(doc)-1] == 0x0A {
+				util.Stdout("%s", string(doc))
+			} else {
+				util.Stdout("%s\n", string(doc))
+			}
 		}
 		if err := it.Err(); err != nil {
 			util.Error(err, "iterate documents failed")
