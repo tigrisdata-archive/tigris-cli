@@ -50,22 +50,22 @@ var searchCmd = &cobra.Command{
 %[1]s %[2]s -q "Alice" -f "firstName,lastName"
 
 # Filter for users with age > 23
-%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}"
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}'
 
 # Aggregate results by current city and get top 10 cities
-%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}" --facet "{\"currentCity\": {\"size\": 10}}"
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}'
 
 # Sort the results by age in increasing order
-%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}" --facet "{\"currentCity\": {\"size\": 10}}" --sort "[{\"age\": \"$asc\"}]"
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}' --sort '[{"age": "$asc"}]'
 
 # Exclude sensitive information from results
-%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}" --facet "{\"currentCity\": {\"size\": 10}}" --sort "[{\"age\": \"$asc\"}]" -x "phoneNumber,address"
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}' --sort '[{"age": "$asc"}]' -x "phoneNumber,address"
 
 # Paginate the results, with 15 per page
-%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter "{\"age\": {\"$gt\": 23}}" --facet "{\"currentCity\": {\"size\": 10}}" --sort "[{\"age\": \"$asc\"}]" -x "phoneNumber,address" -p 1 -c 15
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}' --sort '[{"age": "$asc"}]' -x "phoneNumber,address" -p 1 -c 15
 
 # Find users with last name exactly matching "Wong"
-%[1]s %[2]s --filter "{\"lastName\": \"Wong\"}"
+%[1]s %[2]s --filter '{"lastName": "Wong"}'
 `, rootCmd.Root().Name(), "search testdb users"),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {

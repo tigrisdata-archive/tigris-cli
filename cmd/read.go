@@ -23,6 +23,9 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
+var limit int64
+var skip int64
+
 var readCmd = &cobra.Command{
 	Use:   "read {db} {collection} {filter} {fields}",
 	Short: "Reads and outputs documents",
@@ -61,7 +64,11 @@ If fields are not provided or an empty json document {} is passed as fields, all
 		if len(args) > 3 {
 			fields = args[3]
 		}
-		it, err := client.Get().UseDatabase(args[0]).Read(ctx, args[1], driver.Filter(filter), driver.Projection(fields))
+		it, err := client.Get().UseDatabase(args[0]).Read(ctx, args[1],
+			driver.Filter(filter),
+			driver.Projection(fields),
+			&driver.ReadOptions{Limit: limit, Skip: skip},
+		)
 		if err != nil {
 			util.Error(err, "read documents failed")
 		}
@@ -81,5 +88,7 @@ If fields are not provided or an empty json document {} is passed as fields, all
 }
 
 func init() {
+	readCmd.Flags().Int64VarP(&limit, "limit", "l", 0, "limit number of returned results")
+	readCmd.Flags().Int64VarP(&skip, "skip", "s", 0, "skip this many results in the beginning of the result set")
 	dbCmd.AddCommand(readCmd)
 }
