@@ -72,6 +72,7 @@ If fields are not provided or an empty json document {} is passed as fields, all
 		if err != nil {
 			util.Error(err, "read documents failed")
 		}
+		defer it.Close()
 		var doc driver.Document
 		for it.Next(&doc) {
 			// Document came through GRPC may have \n at the end already
