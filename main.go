@@ -25,6 +25,7 @@ import (
 
 func skipClientInit(args []string) bool {
 	skip := map[string]bool{
+		"help":       true,
 		"local":      true,
 		"version":    true,
 		"completion": true,

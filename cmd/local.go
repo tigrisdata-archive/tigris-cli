@@ -119,6 +119,7 @@ func waitServerUp() {
 
 	inited := false
 	var err error
+L:
 	for {
 		if !inited {
 			if err = tclient.Init(config.DefaultConfig); err == nil {
@@ -140,7 +141,7 @@ func waitServerUp() {
 		select {
 		case <-ctx.Done():
 			err = fmt.Errorf("timeout waiting server to start")
-			break
+			break L
 		default:
 		}
 	}

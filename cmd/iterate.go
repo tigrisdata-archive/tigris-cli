@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"unicode"
 
@@ -107,7 +106,7 @@ func iterateInput(ctx context.Context, cmd *cobra.Command, docsPosition int, arg
 	} else {
 		r := bufio.NewReader(os.Stdin)
 		if detectArray(r) {
-			buf, err := ioutil.ReadAll(r)
+			buf, err := io.ReadAll(r)
 			if err != nil {
 				util.Error(err, "error reading documents")
 			}

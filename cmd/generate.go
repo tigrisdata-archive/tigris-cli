@@ -17,7 +17,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
@@ -180,7 +180,7 @@ var sampleSchemaCmd = &cobra.Command{
 				if stdout {
 					util.Stdout("%s\n", string(schema))
 				} else {
-					if err := ioutil.WriteFile(fmt.Sprintf("%v.json", name), schema, 0644); err != nil {
+					if err := os.WriteFile(fmt.Sprintf("%v.json", name), schema, 0644); err != nil {
 						util.Error(err, "error generating sample schema file")
 					}
 				}
