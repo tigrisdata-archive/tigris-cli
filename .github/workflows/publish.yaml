@@ -4,7 +4,11 @@ on:
     types: [created]
 
 jobs:
+  package:
+    uses: ./.github/workflows/package.yaml
+
   publish:
+    needs: [package]
     name: Publish Go binaries
     runs-on: ubuntu-latest
     steps:
