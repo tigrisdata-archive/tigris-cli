@@ -16,6 +16,7 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strings"
 
@@ -58,18 +59,19 @@ func Init(config config.Config) error {
 
 	ctx, cancel := util.GetContext(context.Background())
 	defer cancel()
-
-	drv, err := driver.NewDriver(ctx, &cconfig.Driver{
+	cfg := &cconfig.Driver{
 		URL:               url,
 		ApplicationId:     config.ApplicationID,
 		ApplicationSecret: config.ApplicationSecret,
-	})
+	}
+	if config.UseTLS {
+		cfg.TLS = &tls.Config{}
+	}
+	drv, err := driver.NewDriver(ctx, cfg)
 	if err != nil {
 		return err
 	}
-
 	D = drv
-
 	return nil
 }
 

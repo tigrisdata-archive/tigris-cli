@@ -29,12 +29,14 @@ var DefaultConfig = Config{
 	URL:      "localhost:8081",
 	Timeout:  5 * time.Second,
 	Protocol: "grpc",
+	UseTLS:   false,
 }
 
 type Config struct {
 	ApplicationID     string        `json:"application_id" yaml:"application_id" mapstructure:"application_id"`
 	ApplicationSecret string        `json:"application_secret" yaml:"application_secret" mapstructure:"application_secret"`
 	URL               string        `json:"url" yaml:"url"`
+	UseTLS            bool          `json:"use_tls" yaml:"use_tls" mapstructure:"use_tls"`
 	Timeout           time.Duration `json:"timeout" yaml:"timeout"`
 	Protocol          string        `json:"protocol" yaml:"protocol"`
 }
