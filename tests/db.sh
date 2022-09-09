@@ -36,6 +36,7 @@ test_config() {
   export TIGRIS_TIMEOUT=333s
   export TIGRIS_PROTOCOL=https
   export TIGRIS_URL=example.com:8888
+  $cli config show
   $cli config show | grep "application_id: test_id_1"
   $cli config show | grep "application_secret: test_secret_1"
   $cli config show | grep "timeout: 5m33s"
@@ -51,6 +52,9 @@ test_config() {
 test_config
 
 db_tests() {
+	echo "=== Test ==="
+	echo "Proto: $TIGRIS_PROTOCOL, URL: $TIGRIS_URL"
+	echo "============"
 	$cli ping
 
 	$cli drop database db1 || true

@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/tigrisdata/tigris-cli/config"
@@ -28,6 +29,10 @@ import (
 
 // D is single instance of client
 var D driver.Driver
+
+// A is single instance of auth service client
+var A driver.Auth
+var cfg *cconfig.Driver
 
 func Init(config config.Config) error {
 	proto := strings.ToLower(strings.Trim(config.Protocol, " "))
@@ -57,27 +62,50 @@ func Init(config config.Config) error {
 		url = "http://" + url
 	}
 
-	ctx, cancel := util.GetContext(context.Background())
-	defer cancel()
-	cfg := &cconfig.Driver{
+	cfg = &cconfig.Driver{
 		URL:               url,
 		ApplicationId:     config.ApplicationID,
 		ApplicationSecret: config.ApplicationSecret,
+		Token:             config.Token,
 	}
-	if config.UseTLS {
+
+	if config.UseTLS || cfg.ApplicationSecret != "" || cfg.ApplicationId != "" || cfg.Token != "" {
 		cfg.TLS = &tls.Config{}
 	}
-	drv, err := driver.NewDriver(ctx, cfg)
-	if err != nil {
-		return err
-	}
-	D = drv
+
+	_ = os.Unsetenv("TIGRIS_PROTOCOL")
+
 	return nil
 }
 
 // Get returns an instance of client
 func Get() driver.Driver {
+	if D == nil {
+		ctx, cancel := util.GetContext(context.Background())
+		defer cancel()
+
+		drv, err := driver.NewDriver(ctx, cfg)
+		if err != nil {
+			util.Error(err, "tigris client initialization failed")
+		}
+		D = drv
+	}
 	return D
+}
+
+// AuthGet returns an instance of authentication API client
+func AuthGet() driver.Auth {
+	if A == nil {
+		ctx, cancel := util.GetContext(context.Background())
+		defer cancel()
+
+		drv, err := driver.NewAuth(ctx, cfg)
+		if err != nil {
+			util.Error(err, "tigris client initialization failed")
+		}
+		A = drv
+	}
+	return A
 }
 
 func Transact(bctx context.Context, db string, fn func(ctx context.Context, tx driver.Tx)) {
