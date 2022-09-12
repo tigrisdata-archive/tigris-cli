@@ -44,6 +44,8 @@ var ImageTag = "latest"
 func stopContainer(client *client.Client, cname string) {
 	ctx := context.Background()
 
+	log.Debug().Msg("stopping local instance")
+
 	if err := client.ContainerStop(ctx, cname, nil); err != nil {
 		if !errdefs.IsNotFound(err) {
 			log.Fatal().Err(err).Str("name", cname).Msg("error stopping container")
@@ -60,16 +62,22 @@ func stopContainer(client *client.Client, cname string) {
 			log.Fatal().Err(err).Str("name", cname).Msg("error stopping container")
 		}
 	}
+
+	log.Debug().Msg("local instance stopped")
 }
 
 func startContainer(cli *client.Client, cname string, image string, port string, env []string) string {
 	ctx := context.Background()
+
+	log.Debug().Msg("starting local instance")
 
 	reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{})
 	if err != nil {
 		log.Fatal().Err(err).Str("image", image).Msg("error pulling docker image")
 	}
 	defer func() { _ = reader.Close() }()
+
+	log.Debug().Msg("local Docker image pulled")
 
 	if util.IsTTY(os.Stdout) {
 		if err := util.DockerShowProgress(reader); err != nil {
@@ -92,6 +100,8 @@ func startContainer(cli *client.Client, cname string, image string, port string,
 		}
 	}
 
+	log.Debug().Msg("creating container")
+
 	resp, err := cli.ContainerCreate(ctx,
 		&container.Config{
 			Hostname: cname,
@@ -106,9 +116,13 @@ func startContainer(cli *client.Client, cname string, image string, port string,
 		log.Fatal().Err(err).Str("image", image).Msg("error creating container docker image")
 	}
 
+	log.Debug().Msg("starting container")
+
 	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Fatal().Err(err).Str("image", image).Msg("error starting docker image")
 	}
+
+	log.Debug().Msg("local instance started successfully")
 
 	return resp.ID
 }
@@ -117,12 +131,19 @@ func waitServerUp() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
+	log.Debug().Msg("waiting local instance to start")
+
 	inited := false
 	var err error
+
+	if err = tclient.Init(config.DefaultConfig); err != nil {
+		util.Error(err, "client init failed")
+	}
+
 L:
 	for {
 		if !inited {
-			if err = tclient.Init(config.DefaultConfig); err == nil {
+			if err = tclient.InitLow(); err == nil {
 				inited = true
 			}
 		} else {
@@ -148,6 +169,8 @@ L:
 	if err != nil {
 		util.Error(err, "tigris initialization failed")
 	}
+
+	log.Debug().Msg("wait finished successfully")
 }
 
 var serverUpCmd = &cobra.Command{
