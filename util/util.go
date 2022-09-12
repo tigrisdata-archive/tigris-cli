@@ -28,44 +28,57 @@ import (
 	"github.com/tigrisdata/tigris-cli/config"
 )
 
-var Version string
-var DefaultTimeout = 5 * time.Second
+var (
+	Version        string
+	DefaultTimeout = 5 * time.Second
+)
 
 func IsTTY(f *os.File) bool {
 	fileInfo, _ := f.Stat()
+
 	return (fileInfo.Mode() & os.ModeCharDevice) != 0
 }
 
 func LogConfigure(cfg *config.Log) {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	//Colored output to terminal and just JSON output to pipe
+
+	// Colored output to terminal and just JSON output to pipe
 	var output io.Writer = os.Stderr
+
 	if IsTTY(os.Stdout) {
 		output = zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}
 	}
+
 	level := cfg.Level
 	if cfg.Level == "" {
 		level = "info"
 	}
+
 	lvl, err := zerolog.ParseLevel(level)
 	if err != nil {
 		log.Error().Err(err).Msg("error parsing log level. defaulting to info level")
+
 		lvl = zerolog.InfoLevel
 	}
+
 	log.Logger = zerolog.New(output).Level(lvl).With().Timestamp().CallerWithSkipFrameCount(2).Stack().Logger()
 }
 
-func GetContext(ctx context.Context) (context.Context, context.CancelFunc) {
+func GetTimeout() time.Duration {
 	timeout := DefaultTimeout
 	if config.DefaultConfig.Timeout != 0 {
 		timeout = config.DefaultConfig.Timeout
 	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	return ctx, cancel
+
+	return timeout
 }
 
-func Stdout(format string, args ...interface{}) {
+func GetContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, GetTimeout())
+}
+
+func Stdoutf(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stdout, format, args...)
 }
 
@@ -75,7 +88,7 @@ func PrettyJSON(s any) error {
 		return err
 	}
 
-	Stdout("%s\n", string(b))
+	Stdoutf("%s\n", string(b))
 
 	return nil
 }

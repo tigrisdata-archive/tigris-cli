@@ -25,7 +25,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Shows tigris cli version",
 	Run: func(cmd *cobra.Command, args []string) {
-		util.Stdout("tigris version %s\n", util.Version)
+		util.Stdoutf("tigris version %s\n", util.Version)
 	},
 }
 
@@ -39,7 +39,7 @@ var serverVersionCmd = &cobra.Command{
 		if err != nil {
 			util.Error(err, "get server info failed")
 		}
-		util.Stdout("tigris server version at %s is %s\n", config.DefaultConfig.URL, resp.ServerVersion)
+		util.Stdoutf("tigris server version at %s is %s\n", config.DefaultConfig.URL, resp.ServerVersion)
 	},
 }
 

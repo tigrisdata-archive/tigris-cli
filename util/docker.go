@@ -1,8 +1,22 @@
+// Copyright 2022 Tigris Data, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package util
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"strings"
 )
@@ -18,7 +32,7 @@ type pullEvent struct {
 	} `json:"progressDetail"`
 }
 
-// DockerShowProgress shows docker like progress output on terminal
+// DockerShowProgress shows docker like progress output on terminal.
 func DockerShowProgress(reader io.Reader) error {
 	dec := json.NewDecoder(reader)
 
@@ -34,14 +48,16 @@ func DockerShowProgress(reader io.Reader) error {
 		if err := dec.Decode(&event); err != nil {
 			c.show()
 
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return nil
 			}
+
 			return err
 		}
 
 		if strings.HasPrefix(event.Status, "Digest:") || strings.HasPrefix(event.Status, "Status:") {
-			Stdout("%s\n", event.Status)
+			Stdoutf("%s\n", event.Status)
+
 			continue
 		}
 
@@ -55,24 +71,16 @@ func DockerShowProgress(reader io.Reader) error {
 
 		diff := index - curIdx
 
-		if ok {
-			if diff > 1 {
-				c.moveDown(diff - 1)
-			} else if diff < 1 {
-				c.moveUp(-1*diff + 1)
-			}
-		} else if diff > 1 {
-			c.moveDown(diff)
-		}
+		c.moveCursor(ok, diff)
 
 		curIdx = index
 
 		c.clearLine()
 
 		if event.Status == "Pull complete" {
-			fmt.Printf("%s: %s\n", event.ID, event.Status)
+			Stdoutf("%s: %s\n", event.ID, event.Status)
 		} else {
-			fmt.Printf("%s: %s %s\n", event.ID, event.Status, event.Progress)
+			Stdoutf("%s: %s %s\n", event.ID, event.Status, event.Progress)
 		}
 	}
 }
@@ -80,21 +88,33 @@ func DockerShowProgress(reader io.Reader) error {
 type cursor struct{}
 
 func (c *cursor) hide() {
-	fmt.Printf("\033[?25l")
+	Stdoutf("\033[?25l")
 }
 
 func (c *cursor) show() {
-	fmt.Printf("\033[?25h")
+	Stdoutf("\033[?25h")
 }
 
 func (c *cursor) moveUp(rows int) {
-	fmt.Printf("\033[%dF", rows)
+	Stdoutf("\033[%dF", rows)
 }
 
 func (c *cursor) moveDown(rows int) {
-	fmt.Printf("\033[%dE", rows)
+	Stdoutf("\033[%dE", rows)
 }
 
 func (c *cursor) clearLine() {
-	fmt.Printf("\033[2K")
+	Stdoutf("\033[2K")
+}
+
+func (c *cursor) moveCursor(ok bool, diff int) {
+	if ok {
+		if diff > 1 {
+			c.moveDown(diff - 1)
+		} else if diff < 1 {
+			c.moveUp(-1*diff + 1)
+		}
+	} else if diff > 1 {
+		c.moveDown(diff)
+	}
 }

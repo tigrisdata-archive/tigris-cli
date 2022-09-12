@@ -170,7 +170,7 @@ var sampleSchemaCmd = &cobra.Command{
 				}
 			})
 
-			util.Stdout("%v created with the collections\n", sampleDBName)
+			util.Stdoutf("%v created with the collections\n", sampleDBName)
 		} else {
 			stdout, err := cmd.Flags().GetBool("stdout")
 			if err != nil {
@@ -178,9 +178,9 @@ var sampleSchemaCmd = &cobra.Command{
 			}
 			for name, schema := range schemas {
 				if stdout {
-					util.Stdout("%s\n", string(schema))
+					util.Stdoutf("%s\n", string(schema))
 				} else {
-					if err := os.WriteFile(fmt.Sprintf("%v.json", name), schema, 0644); err != nil {
+					if err := os.WriteFile(fmt.Sprintf("%v.json", name), schema, 0o600); err != nil {
 						util.Error(err, "error generating sample schema file")
 					}
 				}

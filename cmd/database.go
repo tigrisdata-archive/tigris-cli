@@ -34,14 +34,14 @@ var listDatabasesCmd = &cobra.Command{
 			util.Error(err, "list databases failed")
 		}
 		for _, v := range resp {
-			util.Stdout("%s\n", v)
+			util.Stdoutf("%s\n", v)
 		}
 	},
 }
 
-// DescribeDatabaseResponse adapter to convert schema to json.RawMessage
+// DescribeDatabaseResponse adapter to convert schema to json.RawMessage.
 type DescribeDatabaseResponse struct {
-	Db          string                        `json:"db,omitempty"`
+	DB          string                        `json:"db,omitempty"`
 	Metadata    *api.DatabaseMetadata         `json:"metadata,omitempty"`
 	Collections []*DescribeCollectionResponse `json:"collections,omitempty"`
 }
@@ -66,18 +66,18 @@ var describeDatabaseCmd = &cobra.Command{
 
 		if schemaOnly {
 			for _, v := range resp.Collections {
-				util.Stdout("%s\n", string(v.Schema))
+				util.Stdoutf("%s\n", string(v.Schema))
 			}
 		} else {
 			tr := DescribeDatabaseResponse{
-				Db: resp.Db,
-				//Metadata: resp.Metadata,
+				DB: resp.Db,
+				// Metadata: resp.Metadata,
 			}
 
 			for _, v := range resp.Collections {
 				tr.Collections = append(tr.Collections, &DescribeCollectionResponse{
 					Collection: v.Collection,
-					//Metadata:   v.Metadata,
+					// Metadata:   v.Metadata,
 					Schema: v.Schema,
 				})
 			}
@@ -87,7 +87,7 @@ var describeDatabaseCmd = &cobra.Command{
 				util.Error(err, "describe database failed")
 			}
 
-			util.Stdout("%s\n", string(b))
+			util.Stdoutf("%s\n", string(b))
 		}
 	},
 }

@@ -17,6 +17,7 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -59,6 +60,7 @@ var envPrefix = "tigris"
 
 func Save(name string, config interface{}) error {
 	var home string
+
 	if runtime.GOOS == "windows" {
 		home = os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
 		if home == "" {
@@ -67,28 +69,34 @@ func Save(name string, config interface{}) error {
 	} else {
 		home = os.Getenv("HOME")
 	}
+
 	// if home is not set write to current directory
 	path := "."
 	if home != "" {
 		path = home
 	}
-	path = path + "/.tigris/"
-	if err := os.MkdirAll(path, 0700); err != nil {
+
+	path += "/.tigris/"
+	if err := os.MkdirAll(path, 0o700); err != nil {
 		return err
 	}
+
 	file := path + name + ".yaml"
 	if err := os.Rename(file, file+".bak"); err != nil {
 		if !os.IsNotExist(err) {
 			return err
 		}
 	}
+
 	b, err := yaml.Marshal(config)
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(file, b, 0600); err != nil {
+
+	if err := os.WriteFile(file, b, 0o600); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -116,6 +124,7 @@ func Load(name string, config interface{}) {
 	viper.AutomaticEnv()
 
 	viper.SetConfigType("json")
+
 	br := bytes.NewBuffer(b)
 	if err = viper.MergeConfig(br); err != nil {
 		e(err, "merge config")
@@ -125,9 +134,8 @@ func Load(name string, config interface{}) {
 
 	err = viper.MergeInConfig()
 	if err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			//log.Warn().Err(err).Msgf("config file not found")
-		} else {
+		var ep viper.ConfigFileNotFoundError
+		if !errors.As(err, &ep) {
 			e(err, "error reading config")
 		}
 	}

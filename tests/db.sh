@@ -22,6 +22,15 @@ fi
 $cli version
 $cli config show
 
+def_cfg=$($cli config show)
+if [ "$def_cfg" != 'url: localhost:8081' ]; then
+	set +x
+	echo "unexpected default config"
+	echo "it can be caused by tigris-cli.yaml in /etc/tigris/, $HOME/tigris/, ./config/, . directories"
+	echo "back it up and remove original one"
+	exit 1
+fi
+
 if [ -z "$noup" ]; then
 	TIGRIS_LOG_LEVEL=debug $cli local up 8081
 	$cli local logs >/dev/null 2>&1

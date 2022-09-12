@@ -22,7 +22,11 @@ import (
 	"github.com/tigrisdata/tigris-cli/util"
 )
 
-var rotate bool
+var (
+	rotate bool
+
+	ErrWrongArgs = fmt.Errorf("please provide name and description to update or use --rotate to rotate the secret")
+)
 
 var createApplicationCmd = &cobra.Command{
 	Use:   "application {name} {description}",
@@ -72,7 +76,7 @@ var dropApplicationCmd = &cobra.Command{
 			util.Error(err, "drop application failed")
 		}
 
-		util.Stdout("successfully dropped application credentials\n")
+		util.Stdoutf("successfully dropped application credentials\n")
 	},
 }
 
@@ -99,7 +103,7 @@ Output:
 
 		// no name/descr and no explicit --rotate
 		if len(args) < 2 && !rotate {
-			util.Error(fmt.Errorf("please provide name and description to update or use --rotate to rotate the secret"), "alter application failed")
+			util.Error(ErrWrongArgs, "alter application failed")
 		}
 
 		if len(args) >= 1 {

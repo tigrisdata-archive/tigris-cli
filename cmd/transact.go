@@ -60,11 +60,45 @@ type TxOp struct {
 	ListCollections          *Op
 }
 
-func execTxOp(ctx context.Context, tx driver.Tx, tp string, op *Op) {
-	if op == nil {
-		return
+var ErrUnknownOperationType = fmt.Errorf("unknown operation type")
+
+func execTxOpRead(ctx context.Context, tx driver.Tx, op *Op) {
+	filter := json.RawMessage(`{}`)
+	fields := json.RawMessage(`{}`)
+
+	if len(op.Filter) > 0 {
+		filter = op.Filter
 	}
+
+	if len(op.Fields) > 0 {
+		fields = op.Fields
+	}
+
+	it, err := tx.Read(ctx, op.Collection, driver.Filter(filter), driver.Projection(fields))
+	if err != nil {
+		util.Error(err, "transact operation failed")
+	}
+
+	var d driver.Document
+	for it.Next(&d) {
+		util.Stdoutf("%s\n", string(d))
+	}
+}
+
+func execTxOpListColls(ctx context.Context, tx driver.Tx) {
+	colls, err := tx.ListCollections(ctx)
+	if err != nil {
+		util.Error(err, "transact operation failed")
+	}
+
+	for _, c := range colls {
+		util.Stdoutf("%s\n", c)
+	}
+}
+
+func execTxOpLow(ctx context.Context, tx driver.Tx, tp string, op *Op) error {
 	var err error
+
 	switch tp {
 	case Insert:
 		ptr := unsafe.Pointer(&op.Documents)
@@ -81,36 +115,22 @@ func execTxOp(ctx context.Context, tx driver.Tx, tp string, op *Op) {
 	case DropCollection:
 		err = tx.DropCollection(ctx, op.Collection)
 	case ListCollections:
-		colls, err := tx.ListCollections(ctx)
-		if err != nil {
-			util.Error(err, "transact operation failed")
-		}
-		for _, c := range colls {
-			util.Stdout("%s\n", c)
-		}
-		return
+		execTxOpListColls(ctx, tx)
 	case Read:
-		filter := json.RawMessage(`{}`)
-		fields := json.RawMessage(`{}`)
-		if len(op.Filter) > 0 {
-			filter = op.Filter
-		}
-		if len(op.Fields) > 0 {
-			fields = op.Fields
-		}
-		it, err := tx.Read(ctx, op.Collection, driver.Filter(filter), driver.Projection(fields))
-		if err != nil {
-			util.Error(err, "transact operation failed")
-		}
-		var d driver.Document
-		for it.Next(&d) {
-			util.Stdout("%s\n", string(d))
-		}
-		return
+		execTxOpRead(ctx, tx, op)
 	default:
-		util.Error(fmt.Errorf("unknown operation type: %s", op.Operation), "")
+		util.Error(fmt.Errorf("%w: %s", ErrUnknownOperationType, op.Operation), "")
 	}
-	if err != nil {
+
+	return err
+}
+
+func execTxOp(ctx context.Context, tx driver.Tx, tp string, op *Op) {
+	if op == nil {
+		return
+	}
+
+	if err := execTxOpLow(ctx, tx, tp, op); err != nil {
 		util.Error(err, "transact operation failed")
 	}
 }

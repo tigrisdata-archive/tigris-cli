@@ -15,6 +15,8 @@
 package main
 
 import (
+	_ "embed" // needed for templates embedding
+
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/cmd"
 	"github.com/tigrisdata/tigris-cli/config"
@@ -26,7 +28,7 @@ func main() {
 
 	util.LogConfigure(&config.DefaultConfig.Log)
 
-	if err := client.Init(config.DefaultConfig); err != nil {
+	if err := client.Init(&config.DefaultConfig); err != nil {
 		util.Error(err, "tigris client initialization failed")
 	}
 

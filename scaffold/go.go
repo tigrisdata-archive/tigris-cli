@@ -1,3 +1,17 @@
+// Copyright 2022 Tigris Data, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package scaffold
 
 import (
@@ -6,180 +20,21 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/tigrisdata/tigris-cli/templates"
 	"github.com/tigrisdata/tigris-cli/util"
 )
+
+var ErrDirAlreadyExists = fmt.Errorf("directory already exists")
 
 type TemplateVars struct {
 	Company     string
 	Project     string
-	Db          string
+	DB          string
 	Collections []string
 }
 
-var TemplateBody = `
-package main
-
-import (
-	"context"
-	"fmt"
-
-	"github.com/tigrisdata/tigris-client-go/tigris"
-	"github.com/tigrisdata/tigris-client-go/config"
-	"github.com/tigrisdata/tigris-client-go/filter"
-	"github.com/tigrisdata/tigris-client-go/fields"
-)
-{{range .Collections}}
-// {{.}} is a collection of documents
-type {{.}} struct {
-	StrField  string ` + "`" + `json:"str_field" tigris:"primary_key"` + "`" + `
-	IntField  int64
-	BoolField bool ` + "`" + `json:",omitempty"` + "`" + `
-}
-{{end}}
-{{range .Collections}}
-func handle{{.}}(ctx context.Context, db *tigris.Database) error {
-	coll := tigris.GetCollection[{{.}}](db)
-
-	log("Executing operations on {{.}}\n")
-
-	d1 := &{{.}}{StrField: "value1", IntField: 111, BoolField: true}
-	d2 := &{{.}}{StrField: "value2", IntField: 222, BoolField: false}
-
-	log("Inserting documents into {{.}}:\n\t%+v\n\t%+v\n", d1, d2)
-
-	if _, err := coll.Insert(ctx, d1, d2); err != nil {
-		return err
-	}
-
-	d3 := &{{.}}{StrField: "value2", IntField: 333}
-
-	log("Replacing document into {{.}}:\n\t%+v\n", d3)
-
-	if _, err := coll.InsertOrReplace(ctx, d3); err != nil {
-		return err
-	}
-
-	log("Reading one document from {{.}} where StrField=%v\n", "value1")
-
-	doc1, err := coll.ReadOne(ctx, filter.Eq("str_field", "value1"))
-	if err != nil {
-		return err
-	}
-
-	log("\t%+v\n", doc1)
-
-	log("Updating documents int {{.}} where StrField=%v Or StrField=%v, Setting IntField=123\n", "value1", "value3")
-
-	if _, err = coll.Update(ctx,
-		filter.Or(
-			filter.Eq("str_field", "value1"),
-			filter.Eq("str_field", "value3"),
-		),
-		fields.Set("IntField", 123),
-	); err != nil {
-		return err
-	}
-
-	log("Reading all documents from {{.}}\n")
-
-	it, err := coll.ReadAll(ctx)
-	if err != nil {
-		return err
-	}
-
-	var doc2 {{.}}
-	for it.Next(&doc2) {
-		fmt.Printf("\t%+v\n", doc2)
-	}
-
-	if it.Err() != nil {
-		return it.Err()
-	}
-
-	log("Deleting documents from {{.}} where StrField=%v\n", "value2")
-
-	_, err = coll.Delete(ctx, filter.Eq("str_field", "value2"))
-	if err != nil {
-		return err
-	}
-
-	log("Execute operations in a transaction\n")
-
-	// Execute operations in a transaction
-	err = db.Tx(ctx, func(txCtx context.Context) error {
-		log("Get transactional collection object for {{.}}\n")
-
-		d4 := &{{.}}{StrField: "value2", IntField: 111, BoolField: true}
-		d5 := &{{.}}{StrField: "value3", IntField: 222}
-
-		log("Inserting documents into {{.}}:\n\t%+v\n\t%+v\n", d4, d5)
-
-		if _, err = coll.Insert(txCtx, d4, d5); err != nil {
-			return err
-		}
-
-		log("Updating documents int {{.}} where StrField=%v\n", "value2")
-
-		if _, err = coll.Update(txCtx, filter.Eq("str_field", "value2"),
-			fields.Set("IntField", 678)); err != nil {
-			return err
-		}
-
-		if _, err = coll.Delete(txCtx, filter.Eq("str_field", "value1")); err != nil {
-			return err
-		}
-
-		log("Reading documents from {{.}} where StrField=%v\n", "value1")
-
-		it, err = coll.ReadAll(txCtx)
-		if err != nil {
-			return err
-		}
-
-		var doc3 {{.}}
-		for it.Next(&doc3) {
-			fmt.Printf("\t%+v\n", doc3)
-		}
-
-		return it.Err()
-	})
-	if err != nil {
-		return err
-	}
-	log("Committed transaction to {{.}}\n")
-
-	log("Dropping {{.}}\n")
-
-	return coll.Drop(ctx)
-}
-{{end}}
-func main() {
-	ctx := context.TODO()
-
-	log("Create or open existing database, update schema of existing collections\n")
-
-    cfg := &config.Database{Driver: config.Driver{URL: "localhost:8081"}}
-	db, err := tigris.OpenDatabase(ctx, cfg, "{{.Db}}", {{range .Collections}}
-		&{{.}}{},
-{{end}})
-	if err != nil {
-		panic(err)
-	}
-{{range .Collections}}
-	if err := handle{{.}}(context.TODO(), db); err != nil {
-		panic(err)
-	}
-{{end}}
-	log("SUCCESS\n")
-}
-
-func log(format string, args ...interface{}) {
-	_, _ = fmt.Printf(format, args...)
-}
-`
-
 var GoCmd = &cobra.Command{
-	Use:     "go {Company} {Project} {Db} {Collection}...",
+	Use:     "go {Company} {Project} {DB} {Collection}...",
 	Aliases: []string{"golang"},
 	Short:   "Scaffold a new Go project",
 	Args:    cobra.MinimumNArgs(4),
@@ -187,15 +42,16 @@ var GoCmd = &cobra.Command{
 		tv := &TemplateVars{
 			Company:     args[0],
 			Project:     args[1],
-			Db:          args[2],
+			DB:          args[2],
 			Collections: args[3:],
 		}
 
 		if _, err := os.Stat(tv.Project); !os.IsNotExist(err) {
-			util.Error(fmt.Errorf("directory %v already exists", tv.Project), "")
+			util.Error(fmt.Errorf("%w: %s", ErrDirAlreadyExists, tv.Project),
+				"directory of being scaffolded project already exists")
 		}
 
-		err := os.Mkdir(tv.Project, 0755)
+		err := os.Mkdir(tv.Project, 0o755)
 		if err != nil {
 			util.Error(err, "")
 		}
@@ -209,7 +65,7 @@ var GoCmd = &cobra.Command{
 			util.Error(err, "failed to close main.go")
 		}()
 
-		tmpl, err := template.New("main").Parse(TemplateBody)
+		tmpl, err := template.New("main").Parse(templates.ScaffoldGo)
 		if err != nil {
 			util.Error(err, "")
 		}
@@ -221,11 +77,11 @@ var GoCmd = &cobra.Command{
 module github.com/%s/%s
 
 go 1.18
-`, tv.Company, tv.Project)), 0644); err != nil {
+`, tv.Company, tv.Project)), 0o600); err != nil {
 			util.Error(err, "")
 		}
 
-		util.Stdout(`
+		util.Stdoutf(`
 Execute the following to compile and run scaffolded project:
 	cd %s
 	go mod tidy
