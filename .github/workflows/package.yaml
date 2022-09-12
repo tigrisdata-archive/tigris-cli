@@ -1,7 +1,6 @@
 name: release-binaries
 on:
-  release:
-    types: [created]
+  workflow_call:
 
 jobs:
   releases-matrix:

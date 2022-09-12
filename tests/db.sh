@@ -23,7 +23,7 @@ $cli version
 $cli config show
 
 if [ -z "$noup" ]; then
-	$cli local up 8081
+	TIGRIS_LOG_LEVEL=debug $cli local up 8081
 	$cli local logs >/dev/null 2>&1
 fi
 
@@ -36,7 +36,6 @@ test_config() {
   export TIGRIS_TIMEOUT=333s
   export TIGRIS_PROTOCOL=https
   export TIGRIS_URL=example.com:8888
-  $cli config show
   $cli config show | grep "application_id: test_id_1"
   $cli config show | grep "application_secret: test_secret_1"
   $cli config show | grep "timeout: 5m33s"

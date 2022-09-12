@@ -78,17 +78,24 @@ func Init(config config.Config) error {
 	return nil
 }
 
-// Get returns an instance of client
-func Get() driver.Driver {
+func InitLow() error {
 	if D == nil {
 		ctx, cancel := util.GetContext(context.Background())
 		defer cancel()
 
 		drv, err := driver.NewDriver(ctx, cfg)
 		if err != nil {
-			util.Error(err, "tigris client initialization failed")
+			return err
 		}
 		D = drv
+	}
+	return nil
+}
+
+// Get returns an instance of client
+func Get() driver.Driver {
+	if err := InitLow(); err != nil {
+		util.Error(err, "tigris client initialization failed")
 	}
 	return D
 }
