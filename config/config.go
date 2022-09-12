@@ -16,8 +16,10 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -26,20 +28,25 @@ import (
 )
 
 var DefaultConfig = Config{
-	URL:      "localhost:8081",
-	Timeout:  5 * time.Second,
-	Protocol: "grpc",
-	UseTLS:   false,
+	URL: "localhost:8081",
+}
+
+type Log struct {
+	Level string `json:"level" yaml:"level,omitempty"`
 }
 
 type Config struct {
-	ApplicationID     string        `json:"application_id" yaml:"application_id" mapstructure:"application_id"`
-	ApplicationSecret string        `json:"application_secret" yaml:"application_secret" mapstructure:"application_secret"`
-	URL               string        `json:"url" yaml:"url"`
-	UseTLS            bool          `json:"use_tls" yaml:"use_tls" mapstructure:"use_tls"`
-	Timeout           time.Duration `json:"timeout" yaml:"timeout"`
-	Protocol          string        `json:"protocol" yaml:"protocol"`
+	ApplicationID     string        `json:"application_id" yaml:"application_id,omitempty" mapstructure:"application_id"`
+	ApplicationSecret string        `json:"application_secret" yaml:"application_secret,omitempty" mapstructure:"application_secret"`
+	Token             string        `json:"token" yaml:"token,omitempty"`
+	URL               string        `json:"url" yaml:"url,omitempty"`
+	UseTLS            bool          `json:"use_tls" yaml:"use_tls,omitempty" mapstructure:"use_tls"`
+	Timeout           time.Duration `json:"timeout" yaml:"timeout,omitempty"`
+	Protocol          string        `json:"protocol" yaml:"protocol,omitempty"`
+	Log               Log           `json:"log" yaml:"log,omitempty"`
 }
+
+var DefaultName = "tigris-cli"
 
 var configPath = []string{
 	"/etc/tigris/",
@@ -49,6 +56,41 @@ var configPath = []string{
 }
 
 var envPrefix = "tigris"
+
+func Save(name string, config interface{}) error {
+	var home string
+	if runtime.GOOS == "windows" {
+		home = os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+	} else {
+		home = os.Getenv("HOME")
+	}
+	// if home is not set write to current directory
+	path := "."
+	if home != "" {
+		path = home
+	}
+	path = path + "/.tigris/"
+	if err := os.MkdirAll(path, 0700); err != nil {
+		return err
+	}
+	file := path + name + ".yaml"
+	if err := os.Rename(file, file+".bak"); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	b, err := yaml.Marshal(config)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(file, b, 0600); err != nil {
+		return err
+	}
+	return nil
+}
 
 func Load(name string, config interface{}) {
 	viper.SetConfigName(name + ".yaml")
@@ -60,7 +102,7 @@ func Load(name string, config interface{}) {
 
 	// This is needed to automatically bind environment variables to config struct
 	// Viper will only bind environment variables to the keys it already knows about
-	b, err := yaml.Marshal(config)
+	b, err := json.Marshal(config)
 	if err != nil {
 		e(err, "marshal config")
 	}
@@ -73,12 +115,13 @@ func Load(name string, config interface{}) {
 	viper.SetEnvPrefix(envPrefix)
 	viper.AutomaticEnv()
 
+	viper.SetConfigType("json")
 	br := bytes.NewBuffer(b)
 	if err = viper.MergeConfig(br); err != nil {
 		e(err, "merge config")
 	}
 
-	viper.SetConfigType("")
+	viper.SetConfigType("yaml")
 
 	err = viper.MergeInConfig()
 	if err != nil {

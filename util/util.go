@@ -35,7 +35,7 @@ func IsTTY(f *os.File) bool {
 	return (fileInfo.Mode() & os.ModeCharDevice) != 0
 }
 
-func LogConfigure() {
+func LogConfigure(cfg *config.Log) {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	//Colored output to terminal and just JSON output to pipe
@@ -43,7 +43,11 @@ func LogConfigure() {
 	if IsTTY(os.Stdout) {
 		output = zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}
 	}
-	lvl, err := zerolog.ParseLevel("trace")
+	level := cfg.Level
+	if cfg.Level == "" {
+		level = "info"
+	}
+	lvl, err := zerolog.ParseLevel(level)
 	if err != nil {
 		log.Error().Err(err).Msg("error parsing log level. defaulting to info level")
 		lvl = zerolog.InfoLevel
@@ -64,7 +68,8 @@ func Stdout(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stdout, format, args...)
 }
 
-func Error(err error, _ string) {
+func Error(err error, msg string) {
 	fmt.Fprintf(os.Stderr, "%v\n", err)
+	log.Debug().Err(err).Msg(msg)
 	os.Exit(1)
 }
