@@ -29,7 +29,7 @@ var createApplicationCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		app, err := client.AuthGet().CreateApplication(ctx, args[0], args[1])
+		app, err := client.ManagementGet().CreateApplication(ctx, args[0], args[1])
 		if err != nil {
 			util.Error(err, "create application failed")
 		}
@@ -50,7 +50,7 @@ var dropApplicationCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		if err := client.AuthGet().DeleteApplication(ctx, args[0]); err != nil {
+		if err := client.ManagementGet().DeleteApplication(ctx, args[0]); err != nil {
 			util.Error(err, "drop application failed")
 		}
 
@@ -65,7 +65,7 @@ var alterApplicationCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		app, err := client.AuthGet().UpdateApplication(ctx, args[0], args[1], args[2])
+		app, err := client.ManagementGet().UpdateApplication(ctx, args[0], args[1], args[2])
 		if err != nil {
 			util.Error(err, "alter application failed")
 		}
@@ -85,7 +85,7 @@ var listApplicationsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		resp, err := client.AuthGet().ListApplications(ctx)
+		resp, err := client.ManagementGet().ListApplications(ctx)
 		if err != nil {
 			util.Error(err, "list collections failed")
 		}

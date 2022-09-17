@@ -31,7 +31,7 @@ import (
 var D driver.Driver
 
 // A is single instance of auth service client
-var A driver.Auth
+var M driver.Management
 var cfg *cconfig.Driver
 
 func Init(config config.Config) error {
@@ -100,19 +100,19 @@ func Get() driver.Driver {
 	return D
 }
 
-// AuthGet returns an instance of authentication API client
-func AuthGet() driver.Auth {
-	if A == nil {
+// ManagementGet returns an instance of authentication API client
+func ManagementGet() driver.Management {
+	if M == nil {
 		ctx, cancel := util.GetContext(context.Background())
 		defer cancel()
 
-		drv, err := driver.NewAuth(ctx, cfg)
+		drv, err := driver.NewManagement(ctx, cfg)
 		if err != nil {
 			util.Error(err, "tigris client initialization failed")
 		}
-		A = drv
+		M = drv
 	}
-	return A
+	return M
 }
 
 func Transact(bctx context.Context, db string, fn func(ctx context.Context, tx driver.Tx)) {
