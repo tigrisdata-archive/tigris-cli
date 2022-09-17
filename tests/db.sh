@@ -337,3 +337,10 @@ if [ -z "$noup" ]; then
 	$cli local down
 fi
 
+test_dev_alias() {
+	$cli dev start
+	$cli dev stop
+}
+
+test_dev_alias
+
