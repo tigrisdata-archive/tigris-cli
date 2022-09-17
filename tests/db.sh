@@ -338,6 +338,7 @@ if [ -z "$noup" ]; then
 fi
 
 test_dev_alias() {
+	$cli local down
 	$cli dev start
 	$cli dev stop
 }
