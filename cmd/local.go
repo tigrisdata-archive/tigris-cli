@@ -48,7 +48,7 @@ func stopContainer(client *client.Client, cname string) {
 
 	if err := client.ContainerStop(ctx, cname, nil); err != nil {
 		if !errdefs.IsNotFound(err) {
-			log.Fatal().Err(err).Str("name", cname).Msg("error stopping container")
+			util.Error(err, "error stopping container: %s", cname)
 		}
 	}
 
@@ -59,7 +59,7 @@ func stopContainer(client *client.Client, cname string) {
 
 	if err := client.ContainerRemove(ctx, cname, opts); err != nil {
 		if !errdefs.IsNotFound(err) {
-			log.Fatal().Err(err).Str("name", cname).Msg("error stopping container")
+			util.Error(err, "error stopping container: %s", cname)
 		}
 	}
 
@@ -69,11 +69,11 @@ func stopContainer(client *client.Client, cname string) {
 func startContainer(cli *client.Client, cname string, image string, port string, env []string) string {
 	ctx := context.Background()
 
-	log.Debug().Msg("starting local instance")
+	log.Debug().Str("port", port).Msg("starting local instance")
 
 	reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{})
 	if err != nil {
-		log.Fatal().Err(err).Str("image", image).Msg("error pulling docker image")
+		util.Error(err, "error pulling docker image: %s", image)
 	}
 	defer func() { _ = reader.Close() }()
 
@@ -81,7 +81,7 @@ func startContainer(cli *client.Client, cname string, image string, port string,
 
 	if util.IsTTY(os.Stdout) {
 		if err := util.DockerShowProgress(reader); err != nil {
-			util.Error(err, "error pulling docker image")
+			util.Error(err, "error pulling docker image: %s", image)
 		}
 	} else {
 		_, _ = io.Copy(os.Stdout, reader)
@@ -92,7 +92,7 @@ func startContainer(cli *client.Client, cname string, image string, port string,
 	if port != "" {
 		p, err := nat.ParsePortSpec(port)
 		if err != nil {
-			log.Fatal().Err(err).Str("image", image).Msg("error parsing port")
+			util.Error(err, "error parsing port: %s", port)
 		}
 
 		for _, v := range p {
@@ -113,13 +113,13 @@ func startContainer(cli *client.Client, cname string, image string, port string,
 			PortBindings: pm,
 		}, nil, nil, cname)
 	if err != nil {
-		log.Fatal().Err(err).Str("image", image).Msg("error creating container docker image")
+		util.Error(err, "error creating container docker image: %s", image)
 	}
 
 	log.Debug().Msg("starting container")
 
 	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		log.Fatal().Err(err).Str("image", image).Msg("error starting docker image")
+		util.Error(err, "starting container id=%s", resp.ID)
 	}
 
 	log.Debug().Msg("local instance started successfully")
@@ -127,7 +127,7 @@ func startContainer(cli *client.Client, cname string, image string, port string,
 	return resp.ID
 }
 
-func waitServerUp() {
+func waitServerUp(port string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -136,7 +136,13 @@ func waitServerUp() {
 	inited := false
 	var err error
 
-	if err = tclient.Init(config.DefaultConfig); err != nil {
+	cfg := config.DefaultConfig
+	cfg.URL = fmt.Sprintf("localhost:%s", port)
+	cfg.Token = ""
+	cfg.ApplicationSecret = ""
+	cfg.ApplicationID = ""
+
+	if err = tclient.Init(cfg); err != nil {
 		util.Error(err, "client init failed")
 	}
 
@@ -200,7 +206,7 @@ var serverUpCmd = &cobra.Command{
 		stopContainer(cli, ContainerName)
 		_ = startContainer(cli, ContainerName, ImagePath+":"+ImageTag, rport, nil)
 
-		waitServerUp()
+		waitServerUp(port)
 
 		fmt.Printf("Tigris is running at localhost:%s\n", port)
 		if port != "8081" {

@@ -68,8 +68,8 @@ func Stdout(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stdout, format, args...)
 }
 
-func Error(err error, msg string) {
+func Error(err error, msg string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "%v\n", err)
-	log.Debug().Err(err).Msg(msg)
+	log.Debug().Err(err).Msgf(msg, args...)
 	os.Exit(1)
 }

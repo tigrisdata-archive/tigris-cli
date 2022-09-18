@@ -338,12 +338,9 @@ if [ -z "$noup" ]; then
 fi
 
 test_dev_alias() {
-  # the prior part of test starts tigris server instances on 8081 and 8082, using different port here fix the port conflict
 	$cli dev start 9083
 	$cli dev stop 9083
 }
 
-# uncomment this test once it is fixed
-# local up readiness needs to check on port passed in (vs the config.DefaultConfig.URL)
-#test_dev_alias
+test_dev_alias
 
