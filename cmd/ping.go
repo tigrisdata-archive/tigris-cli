@@ -12,23 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
-	"github.com/tigrisdata/tigris-cli/cmd"
-	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
 )
 
-func main() {
-	config.Load(config.DefaultName, &config.DefaultConfig)
+var pingCmd = &cobra.Command{
+	Use:   "ping",
+	Short: "Checks connection to Tigris",
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+		_, err := client.Get().ListDatabases(ctx)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "FAILED\n")
+			os.Exit(1)
+		} else {
+			fmt.Fprintf(os.Stderr, "OK\n")
+		}
+	},
+}
 
-	util.LogConfigure(&config.DefaultConfig.Log)
-
-	if err := client.Init(config.DefaultConfig); err != nil {
-		util.Error(err, "tigris client initialization failed")
-	}
-
-	cmd.Execute()
+func init() {
+	dbCmd.AddCommand(pingCmd)
 }

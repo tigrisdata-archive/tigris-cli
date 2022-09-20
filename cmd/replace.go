@@ -26,42 +26,45 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-var insertCmd = &cobra.Command{
-	Use:   "insert {db} {collection} {document}...|-",
-	Short: "Inserts document(s)",
-	Long:  "Inserts one or more documents into a collection.",
+var replaceCmd = &cobra.Command{
+	Use:     "replace {db} {collection} {document}...|-",
+	Aliases: []string{"insert_or_replace"},
+	Short:   "Inserts or replaces document(s)",
+	Long:    "Inserts new documents or replaces existing documents.",
 	Example: fmt.Sprintf(`
-  # Insert a single document into the users collection
-  %[1]s insert testdb users '{"id": 1, "name": "Alice Alan"}'
+  # Insert new documents
+  %[1]s replace testdb users '{"id": 1, "name": "John Wong"}'
 
-  # Insert multiple documents into the users collection
-  %[1]s insert testdb users \
-  '[
-    {"id": 20, "name": "Jania McGrory"},
-    {"id": 21, "name": "Bunny Instone"}
-  ]'
+  # Replace existing document
+  # Existing document with the following data will get replaced
+  #  {"id": 20, "name": "Jania McGrory"}
+  %[1]s replace testdb users '{"id": 20, "name": "Alice Alan"}'
 
-  # Pass documents to insert via stdin
-  # $ cat /home/alice/user_records.json
-  # [
-  #  {"id": 20, "name": "Jania McGrory"},
+  # Insert or replace multiple documents
+  # Existing document with the following data will get replaced
+  #  {"id": 20, "name": "Alice Alan"}
   #  {"id": 21, "name": "Bunny Instone"}
-  # ]
-  cat /home/alice/user_records.json | %[1]s insert testdb users -
+  # While the new document {"id": 19, "name": "New User"} will get inserted
+  %[1]s replace testdb users \
+  '[
+    {"id": 19, "name": "New User"},
+    {"id": 20, "name": "Replaced Alice Alan"},
+    {"id": 21, "name": "Replaced Bunny Instone"}
+  ]'
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		iterateInput(cmd.Context(), cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
 			ptr := unsafe.Pointer(&docs)
-			_, err := client.Get().UseDatabase(args[0]).Insert(ctx, args[1], *(*[]driver.Document)(ptr))
+			_, err := client.Get().UseDatabase(args[0]).Replace(ctx, args[1], *(*[]driver.Document)(ptr))
 			if err != nil {
-				util.Error(err, "insert documents failed")
+				util.Error(err, "replace documents failed")
 			}
 		})
 	},
 }
 
 func init() {
-	insertCmd.Flags().Int32VarP(&BatchSize, "batch_size", "b", BatchSize, "set batch size")
-	dbCmd.AddCommand(insertCmd)
+	replaceCmd.Flags().Int32VarP(&BatchSize, "batch_size", "b", BatchSize, "set batch size")
+	dbCmd.AddCommand(replaceCmd)
 }

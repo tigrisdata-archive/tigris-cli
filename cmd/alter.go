@@ -20,10 +20,10 @@ import (
 
 var alterCmd = &cobra.Command{
 	Use:   "alter",
-	Short: "alter collection",
+	Short: "Alters collection",
 	Args:  cobra.MinimumNArgs(1),
 }
 
 func init() {
-	rootCmd.AddCommand(alterCmd)
+	dbCmd.AddCommand(alterCmd)
 }

@@ -15,7 +15,10 @@
 package cmd
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"unsafe"
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
@@ -23,28 +26,26 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-var deleteCmd = &cobra.Command{
-	Use:   "delete {db} {collection} {filter}",
-	Short: "Deletes document(s)",
-	Long:  "Deletes documents according to the provided filter.",
+var publishCmd = &cobra.Command{
+	Use:   "publish {db} {collection} {message}...|-",
+	Short: "Publish message(s)",
+	Long:  "Publishes one or more messages into a collection.",
 	Example: fmt.Sprintf(`
-  # Delete a user where the value of the id field is 2
-  %[1]s delete testdb users '{"id": 2}'
-
-  # Delete users where the value of id field is 1 or 3
-  %[1]s delete testdb users '{"$or": [{"id": 1}, {"id": 3}]}'
+  # Publish a single message into the users collection
+  %[1]s publish testdb users '{"id": 1, "name": "Alice Alan"}'
 `, rootCmd.Root().Name()),
-	Args: cobra.MinimumNArgs(3),
+	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		_, err := client.Get().UseDatabase(args[0]).Delete(ctx, args[1], driver.Filter(args[2]))
-		if err != nil {
-			util.Error(err, "delete documents failed")
-		}
+		iterateInput(cmd.Context(), cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
+			ptr := unsafe.Pointer(&docs)
+			_, err := client.Get().UseDatabase(args[0]).Publish(ctx, args[1], *(*[]driver.Message)(ptr))
+			if err != nil {
+				util.Error(err, "publish messages failed")
+			}
+		})
 	},
 }
 
 func init() {
-	dbCmd.AddCommand(deleteCmd)
+	dbCmd.AddCommand(publishCmd)
 }

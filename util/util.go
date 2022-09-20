@@ -17,22 +17,37 @@ package util
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
-	"github.com/tigrisdata/tigrisdb-cli/config"
+	"github.com/tigrisdata/tigris-cli/config"
 )
 
+var Version string
 var DefaultTimeout = 5 * time.Second
 
-func LogConfigure() {
+func IsTTY(f *os.File) bool {
+	fileInfo, _ := f.Stat()
+	return (fileInfo.Mode() & os.ModeCharDevice) != 0
+}
+
+func LogConfigure(cfg *config.Log) {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-	lvl, err := zerolog.ParseLevel("trace")
+	//Colored output to terminal and just JSON output to pipe
+	var output io.Writer = os.Stderr
+	if IsTTY(os.Stdout) {
+		output = zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}
+	}
+	level := cfg.Level
+	if cfg.Level == "" {
+		level = "info"
+	}
+	lvl, err := zerolog.ParseLevel(level)
 	if err != nil {
 		log.Error().Err(err).Msg("error parsing log level. defaulting to info level")
 		lvl = zerolog.InfoLevel
@@ -50,5 +65,11 @@ func GetContext(ctx context.Context) (context.Context, context.CancelFunc) {
 }
 
 func Stdout(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stdout, format, args)
+	fmt.Fprintf(os.Stdout, format, args...)
+}
+
+func Error(err error, msg string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, "%v\n", err)
+	log.Debug().Err(err).Msgf(msg, args...)
+	os.Exit(1)
 }

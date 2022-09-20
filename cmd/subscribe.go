@@ -23,28 +23,33 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-var deleteCmd = &cobra.Command{
-	Use:   "delete {db} {collection} {filter}",
-	Short: "Deletes document(s)",
-	Long:  "Deletes documents according to the provided filter.",
-	Example: fmt.Sprintf(`
-  # Delete a user where the value of the id field is 2
-  %[1]s delete testdb users '{"id": 2}'
+var subscribeLimit int32
 
-  # Delete users where the value of id field is 1 or 3
-  %[1]s delete testdb users '{"$or": [{"id": 1}, {"id": 3}]}'
-`, rootCmd.Root().Name()),
-	Args: cobra.MinimumNArgs(3),
+var subscribeCmd = &cobra.Command{
+	Use:     "subscribe {db} {collection} {filter}",
+	Short:   "Subscribes to published messages",
+	Long:    "Streams messages in real-time until cancelled.",
+	Example: fmt.Sprintf("%[1]s subscribe testdb", rootCmd.Root().Name()),
+	Args:    cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		_, err := client.Get().UseDatabase(args[0]).Delete(ctx, args[1], driver.Filter(args[2]))
+		ctx := cmd.Context()
+
+		it, err := client.Get().UseDatabase(args[0]).Subscribe(ctx, args[1], driver.Filter(args[2]))
 		if err != nil {
-			util.Error(err, "delete documents failed")
+			util.Error(err, "subscribe messages failed")
+		}
+		var doc driver.Document
+		for i := int32(0); (subscribeLimit == 0 || i < subscribeLimit) && it.Next(&doc); i++ {
+			util.Stdout("%s\n", string(doc))
+		}
+		if err := it.Err(); err != nil {
+			util.Error(err, "iterate messages failed")
 		}
 	},
 }
 
 func init() {
-	dbCmd.AddCommand(deleteCmd)
+	subscribeCmd.Flags().Int32VarP(&subscribeLimit, "limit", "l", 0, "limit number of results returned")
+
+	dbCmd.AddCommand(subscribeCmd)
 }

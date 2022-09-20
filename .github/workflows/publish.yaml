@@ -1,0 +1,19 @@
+name: publish-binaries
+on:
+  release:
+    types: [created]
+
+jobs:
+  package:
+    uses: ./.github/workflows/package.yaml
+
+  publish:
+    needs: [package]
+    name: Publish Go binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Upload to shorts.io
+        run: |
+          API_KEY=${{secrets.SHORTS_IO_KEY}} VERSION=${GITHUB_REF/refs\/tags\//} /bin/bash scripts/publish.sh

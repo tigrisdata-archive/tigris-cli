@@ -15,60 +15,115 @@
 package cmd
 
 import (
-	"github.com/rs/zerolog/log"
+	"encoding/json"
+
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/util"
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/util"
+	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 )
 
 var listDatabasesCmd = &cobra.Command{
 	Use:   "databases",
-	Short: "list databases",
-	Long:  `list databases`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Short: "Lists databases",
+	Run: func(cmd *cobra.Command, _ []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 		resp, err := client.Get().ListDatabases(ctx)
 		if err != nil {
-			log.Fatal().Err(err).Msg("list databases failed")
+			util.Error(err, "list databases failed")
 		}
 		for _, v := range resp {
-			util.Stdout(v)
+			util.Stdout("%s\n", v)
+		}
+	},
+}
+
+// DescribeDatabaseResponse adapter to convert schema to json.RawMessage
+type DescribeDatabaseResponse struct {
+	Db          string                        `json:"db,omitempty"`
+	Metadata    *api.DatabaseMetadata         `json:"metadata,omitempty"`
+	Collections []*DescribeCollectionResponse `json:"collections,omitempty"`
+}
+
+var describeDatabaseCmd = &cobra.Command{
+	Use:   "database {db}",
+	Short: "Describes database",
+	Long:  "Returns schema and metadata for all the collections in the database",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+		resp, err := client.Get().DescribeDatabase(ctx, args[0])
+		if err != nil {
+			util.Error(err, "describe collection failed")
+		}
+
+		schemaOnly, err := cmd.Flags().GetBool("schema-only")
+		if err != nil {
+			util.Error(err, "error reading the 'schema-only' option")
+		}
+
+		if schemaOnly {
+			for _, v := range resp.Collections {
+				util.Stdout("%s\n", string(v.Schema))
+			}
+		} else {
+			tr := DescribeDatabaseResponse{
+				Db: resp.Db,
+				//Metadata: resp.Metadata,
+			}
+
+			for _, v := range resp.Collections {
+				tr.Collections = append(tr.Collections, &DescribeCollectionResponse{
+					Collection: v.Collection,
+					//Metadata:   v.Metadata,
+					Schema: v.Schema,
+				})
+			}
+
+			b, err := json.Marshal(tr)
+			if err != nil {
+				util.Error(err, "describe database failed")
+			}
+
+			util.Stdout("%s\n", string(b))
 		}
 	},
 }
 
 var createDatabaseCmd = &cobra.Command{
-	Use:   "database",
-	Short: "create database",
-	Args:  cobra.MinimumNArgs(1),
+	Use:   "database {db}",
+	Short: "Creates database",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		err := client.Get().CreateDatabase(ctx, args[0], &driver.DatabaseOptions{})
+		err := client.Get().CreateDatabase(ctx, args[0])
 		if err != nil {
-			log.Fatal().Err(err).Msg("create database failed")
+			util.Error(err, "create database failed")
 		}
 	},
 }
 
 var dropDatabaseCmd = &cobra.Command{
-	Use:   "database",
-	Short: "drop database",
-	Args:  cobra.MinimumNArgs(1),
+	Use:   "database {db}",
+	Short: "Drops database",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		err := client.Get().DropDatabase(ctx, args[0], &driver.DatabaseOptions{})
+		err := client.Get().DropDatabase(ctx, args[0])
 		if err != nil {
-			log.Fatal().Err(err).Msg("drop database failed")
+			util.Error(err, "drop database failed")
 		}
 	},
 }
 
 func init() {
+	describeDatabaseCmd.Flags().BoolP("schema-only", "s", false, "dump only schema of all database collections")
 	dropCmd.AddCommand(dropDatabaseCmd)
 	createCmd.AddCommand(createDatabaseCmd)
 	listCmd.AddCommand(listDatabasesCmd)
+	describeCmd.AddCommand(describeDatabaseCmd)
 }

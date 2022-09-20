@@ -20,11 +20,10 @@ import (
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "creates database or collection",
-	Long:  "creates database or collection",
+	Short: "Creates database or collection",
 	Args:  cobra.MinimumNArgs(1),
 }
 
 func init() {
-	rootCmd.AddCommand(createCmd)
+	dbCmd.AddCommand(createCmd)
 }

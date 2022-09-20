@@ -1,0 +1,25 @@
+name: go-lint
+on:
+  push:
+  workflow_call:
+    secrets:
+      CLIENT_DEPLOY_KEY:
+        required: true
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.18'
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: latest
+          skip-pkg-cache: true
+          skip-build-cache: true

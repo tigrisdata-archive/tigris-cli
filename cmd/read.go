@@ -15,35 +15,81 @@
 package cmd
 
 import (
-	"github.com/rs/zerolog/log"
+	"fmt"
+
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/util"
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/util"
+	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
+var limit int64
+var skip int64
+
 var readCmd = &cobra.Command{
-	Use:   "read",
-	Short: "read documents",
-	Long:  `read documents according to provided filter`,
-	Args:  cobra.MinimumNArgs(3),
+	Use:   "read {db} {collection} {filter} {fields}",
+	Short: "Reads and outputs documents",
+	Long: `Reads documents according to provided filter and fields. 
+If filter is not provided or an empty json document {} is passed as a filter, all documents in the collection are returned.
+If fields are not provided or an empty json document {} is passed as fields, all the fields of the documents are selected.`,
+	Example: fmt.Sprintf(`
+  # Read a user document where id is 20
+  # The output would be 
+  #  {"id": 20, "name": "Jania McGrory"}
+  %[1]s read testdb users '{"id": 20}'
+
+  # Read user documents where id is 2 or 4
+  # The output would be
+  #  {"id": 2, "name": "Alice Wong"}
+  #  {"id": 4, "name": "Jigar Joshi"}
+  %[1]s read testdb users '{"$or": [{"id": 2}, {"id": 4}]}'
+
+  # Read all documents in the user collection
+  # The output would be
+  #  {"id": 2, "name": "Alice Wong"}
+  #  {"id": 4, "name": "Jigar Joshi"}
+  #  {"id": 20, "name": "Jania McGrory"}
+  #  {"id": 21, "name": "Bunny Instone"}
+  %[1]s read testdb users
+`, rootCmd.Root().Name()),
+	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		it, err := client.Get().Read(ctx, args[0], args[1], driver.Filter(args[2]), &driver.ReadOptions{})
-		if err != nil {
-			log.Fatal().Err(err).Msg("read documents failed")
+		filter := `{}`
+		fields := `{}`
+		if len(args) > 2 {
+			filter = args[2]
 		}
+		if len(args) > 3 {
+			fields = args[3]
+		}
+		it, err := client.Get().UseDatabase(args[0]).Read(ctx, args[1],
+			driver.Filter(filter),
+			driver.Projection(fields),
+			&driver.ReadOptions{Limit: limit, Skip: skip},
+		)
+		if err != nil {
+			util.Error(err, "read documents failed")
+		}
+		defer it.Close()
 		var doc driver.Document
 		for it.Next(&doc) {
-			util.Stdout(string(doc))
+			// Document came through GRPC may have \n at the end already
+			if doc[len(doc)-1] == 0x0A {
+				util.Stdout("%s", string(doc))
+			} else {
+				util.Stdout("%s\n", string(doc))
+			}
 		}
 		if err := it.Err(); err != nil {
-			log.Fatal().Err(err).Msg("iterate documents failed")
+			util.Error(err, "iterate documents failed")
 		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(readCmd)
+	readCmd.Flags().Int64VarP(&limit, "limit", "l", 0, "limit number of returned results")
+	readCmd.Flags().Int64VarP(&skip, "skip", "s", 0, "skip this many results in the beginning of the result set")
+	dbCmd.AddCommand(readCmd)
 }

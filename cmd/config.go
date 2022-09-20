@@ -12,23 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
 import (
-	"github.com/tigrisdata/tigris-cli/client"
-	"github.com/tigrisdata/tigris-cli/cmd"
+	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
+	"gopkg.in/yaml.v2"
 )
 
-func main() {
-	config.Load(config.DefaultName, &config.DefaultConfig)
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Configuration commands",
+}
 
-	util.LogConfigure(&config.DefaultConfig.Log)
+var showConfigCmd = &cobra.Command{
+	Use:   "show",
+	Short: "Returns effective CLI configuration",
+	Run: func(cmd *cobra.Command, args []string) {
+		info, err := yaml.Marshal(config.DefaultConfig)
+		if err != nil {
+			util.Error(err, "marshal config failed")
+		}
+		util.Stdout("%s\n", string(info))
+	},
+}
 
-	if err := client.Init(config.DefaultConfig); err != nil {
-		util.Error(err, "tigris client initialization failed")
-	}
-
-	cmd.Execute()
+func init() {
+	configCmd.AddCommand(showConfigCmd)
+	rootCmd.AddCommand(configCmd)
 }

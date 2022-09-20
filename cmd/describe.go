@@ -12,23 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
 import (
-	"github.com/tigrisdata/tigris-cli/client"
-	"github.com/tigrisdata/tigris-cli/cmd"
-	"github.com/tigrisdata/tigris-cli/config"
-	"github.com/tigrisdata/tigris-cli/util"
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	config.Load(config.DefaultName, &config.DefaultConfig)
+var describeCmd = &cobra.Command{
+	Use:   "describe",
+	Short: "Describes database or collection",
+	Args:  cobra.MinimumNArgs(1),
+}
 
-	util.LogConfigure(&config.DefaultConfig.Log)
-
-	if err := client.Init(config.DefaultConfig); err != nil {
-		util.Error(err, "tigris client initialization failed")
-	}
-
-	cmd.Execute()
+func init() {
+	dbCmd.AddCommand(describeCmd)
 }
