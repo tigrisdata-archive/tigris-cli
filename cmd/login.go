@@ -166,7 +166,18 @@ type Authenticator struct {
 var loginCmd = &cobra.Command{
 	Use:   "login [url]",
 	Short: "Authenticate on the Tigris instance",
-	Args:  cobra.MinimumNArgs(1),
+	Long: `Performs authentication flow on the Tigris instance
+* Run "tigris login [url]",
+* It opens a login page in the browser
+* Enter organization name in the prompt. Click "Continue" button.
+* On the new page click "Continue with Google" or "Continue with Github",
+  depending on which OIDC provider you prefer.
+* You will be asked for you Google or Github password,
+  if are not already signed in to the account
+* You'll see "Successfully authenticated" on success
+* You can now return to the terminal and start using the CLI`,
+	Args:    cobra.MinimumNArgs(1),
+	Example: `tigris login api.preview.tigrisdata.cloud`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		tmplSuccess, err = template.New("login_success").Parse(templates.LoginSuccessful)
