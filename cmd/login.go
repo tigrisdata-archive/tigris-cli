@@ -271,8 +271,8 @@ var logoutCmd = &cobra.Command{
 	Short: "Logout from Tigris instance",
 	Run: func(cmd *cobra.Command, args []string) {
 		config.DefaultConfig.Token = ""
-		config.DefaultConfig.ApplicationSecret = ""
-		config.DefaultConfig.ApplicationID = ""
+		config.DefaultConfig.ClientSecret = ""
+		config.DefaultConfig.ClientID = ""
 		config.DefaultConfig.URL = ""
 		if err := config.Save(config.DefaultName, config.DefaultConfig); err != nil {
 			util.Error(err, "Failure saving config")
