@@ -139,8 +139,8 @@ func waitServerUp(port string) {
 	cfg := config.DefaultConfig
 	cfg.URL = fmt.Sprintf("localhost:%s", port)
 	cfg.Token = ""
-	cfg.ApplicationSecret = ""
-	cfg.ApplicationID = ""
+	cfg.ClientSecret = ""
+	cfg.ClientID = ""
 
 	if err = tclient.Init(cfg); err != nil {
 		util.Error(err, "client init failed")
