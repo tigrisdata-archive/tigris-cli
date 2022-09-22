@@ -36,8 +36,8 @@ type Log struct {
 }
 
 type Config struct {
-	ClientID     string        `json:"client_id" yaml:"client_id,omitempty" mapstructure:"application_id"`
-	ClientSecret string        `json:"client_secret" yaml:"client_secret,omitempty" mapstructure:"application_secret"`
+	ClientID     string        `json:"client_id" yaml:"client_id,omitempty" mapstructure:"client_id"`
+	ClientSecret string        `json:"client_secret" yaml:"client_secret,omitempty" mapstructure:"client_secret"`
 	Token        string        `json:"token" yaml:"token,omitempty"`
 	URL          string        `json:"url" yaml:"url,omitempty"`
 	UseTLS       bool          `json:"use_tls" yaml:"use_tls,omitempty" mapstructure:"use_tls"`
