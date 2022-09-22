@@ -63,13 +63,13 @@ func Init(config config.Config) error {
 	}
 
 	cfg = &cconfig.Driver{
-		URL:               url,
-		ApplicationId:     config.ApplicationID,
-		ApplicationSecret: config.ApplicationSecret,
-		Token:             config.Token,
+		URL:          url,
+		ClientID:     config.ClientID,
+		ClientSecret: config.ClientSecret,
+		Token:        config.Token,
 	}
 
-	if config.UseTLS || cfg.ApplicationSecret != "" || cfg.ApplicationId != "" || cfg.Token != "" {
+	if config.UseTLS || cfg.ClientSecret != "" || cfg.ClientID != "" || cfg.Token != "" {
 		cfg.TLS = &tls.Config{}
 	}
 

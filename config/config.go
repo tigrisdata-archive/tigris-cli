@@ -36,14 +36,14 @@ type Log struct {
 }
 
 type Config struct {
-	ApplicationID     string        `json:"application_id" yaml:"application_id,omitempty" mapstructure:"application_id"`
-	ApplicationSecret string        `json:"application_secret" yaml:"application_secret,omitempty" mapstructure:"application_secret"`
-	Token             string        `json:"token" yaml:"token,omitempty"`
-	URL               string        `json:"url" yaml:"url,omitempty"`
-	UseTLS            bool          `json:"use_tls" yaml:"use_tls,omitempty" mapstructure:"use_tls"`
-	Timeout           time.Duration `json:"timeout" yaml:"timeout,omitempty"`
-	Protocol          string        `json:"protocol" yaml:"protocol,omitempty"`
-	Log               Log           `json:"log" yaml:"log,omitempty"`
+	ClientID     string        `json:"client_id" yaml:"client_id,omitempty" mapstructure:"client_id"`
+	ClientSecret string        `json:"client_secret" yaml:"client_secret,omitempty" mapstructure:"client_secret"`
+	Token        string        `json:"token" yaml:"token,omitempty"`
+	URL          string        `json:"url" yaml:"url,omitempty"`
+	UseTLS       bool          `json:"use_tls" yaml:"use_tls,omitempty" mapstructure:"use_tls"`
+	Timeout      time.Duration `json:"timeout" yaml:"timeout,omitempty"`
+	Protocol     string        `json:"protocol" yaml:"protocol,omitempty"`
+	Log          Log           `json:"log" yaml:"log,omitempty"`
 }
 
 var DefaultName = "tigris-cli"

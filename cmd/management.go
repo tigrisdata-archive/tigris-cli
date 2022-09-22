@@ -15,8 +15,6 @@
 package cmd
 
 import (
-	"encoding/json"
-
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
@@ -25,7 +23,26 @@ import (
 var createApplicationCmd = &cobra.Command{
 	Use:   "application {name} {description}",
 	Short: "Create application credentials",
-	Args:  cobra.MinimumNArgs(2),
+	Long: `Creates new application credentials.
+The output contains client_id and client_secret,
+which can be used to authenticate using our official client SDKs.
+Set the client_id and client_secret in the configuration of the corresponding SDK
+Check the docs for more information: https://docs.tigrisdata.com/overview/authentication
+`,
+	Example: `
+  tigris create application service1 "main api service"
+
+  Output:
+
+  {
+    "id": "<client id here>",
+    "name": "service2",
+    "description": "main api service",
+    "secret": "<client secret here",
+    "created_at": 1663802082000,
+    "created_by": "github|3436058"
+  }`,
+	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
@@ -34,12 +51,9 @@ var createApplicationCmd = &cobra.Command{
 			util.Error(err, "create application failed")
 		}
 
-		b, err := json.Marshal(app)
-		if err != nil {
+		if err := util.PrettyJSON(app); err != nil {
 			util.Error(err, "create application failed")
 		}
-
-		util.Stdout("%s\n", string(b))
 	},
 }
 
@@ -61,21 +75,37 @@ var dropApplicationCmd = &cobra.Command{
 var alterApplicationCmd = &cobra.Command{
 	Use:   "application {id} {name} {description}",
 	Short: "Alter application credentials",
-	Args:  cobra.MinimumNArgs(3),
+	Example: `
+tigris alter application <client id> new_name1 "new descr1"
+
+Output:
+{
+  "id": "<client id>",
+  "name": "new_name1",
+  "description": "new descr1",
+  "secret": "<client secrete here",
+  "created_at": 1663802082000,
+  "created_by": "github|3436058"
+}
+`,
+	Args: cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
-		app, err := client.ManagementGet().UpdateApplication(ctx, args[0], args[1], args[2])
+
+		_, err := client.ManagementGet().UpdateApplication(ctx, args[0], args[1], args[2])
 		if err != nil {
 			util.Error(err, "alter application failed")
 		}
 
-		b, err := json.Marshal(app)
+		sec, err := client.ManagementGet().RotateClientSecret(ctx, args[0])
 		if err != nil {
 			util.Error(err, "alter application failed")
 		}
 
-		util.Stdout("%s\n", string(b))
+		if err := util.PrettyJSON(sec); err != nil {
+			util.Error(err, "alter application failed")
+		}
 	},
 }
 
@@ -90,11 +120,9 @@ var listApplicationsCmd = &cobra.Command{
 			util.Error(err, "list collections failed")
 		}
 		for _, v := range resp {
-			b, err := json.Marshal(v)
-			if err != nil {
-				util.Error(err, "list application failed")
+			if err := util.PrettyJSON(v); err != nil {
+				util.Error(err, "list applications failed")
 			}
-			util.Stdout("%s\n", string(b))
 		}
 	},
 }

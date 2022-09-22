@@ -16,6 +16,7 @@ package util
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -66,6 +67,17 @@ func GetContext(ctx context.Context) (context.Context, context.CancelFunc) {
 
 func Stdout(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stdout, format, args...)
+}
+
+func PrettyJSON(s any) error {
+	b, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	Stdout("%s\n", string(b))
+
+	return nil
 }
 
 func Error(err error, msg string, args ...interface{}) {

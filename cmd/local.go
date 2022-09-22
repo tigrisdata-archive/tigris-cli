@@ -139,8 +139,8 @@ func waitServerUp(port string) {
 	cfg := config.DefaultConfig
 	cfg.URL = fmt.Sprintf("localhost:%s", port)
 	cfg.Token = ""
-	cfg.ApplicationSecret = ""
-	cfg.ApplicationID = ""
+	cfg.ClientSecret = ""
+	cfg.ClientID = ""
 
 	if err = tclient.Init(cfg); err != nil {
 		util.Error(err, "client init failed")
@@ -180,8 +180,8 @@ L:
 }
 
 var serverUpCmd = &cobra.Command{
-	Use:     "up [port] [version]",
-	Aliases: []string{"start"},
+	Use:     "start [port] [version]",
+	Aliases: []string{"up"},
 	Short:   "Starts an instance of Tigris for local development",
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -216,8 +216,8 @@ var serverUpCmd = &cobra.Command{
 }
 
 var serverDownCmd = &cobra.Command{
-	Use:     "down",
-	Aliases: []string{"stop"},
+	Use:     "stop",
+	Aliases: []string{"down"},
 	Short:   "Stops local Tigris instance",
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -261,8 +261,8 @@ var serverLogsCmd = &cobra.Command{
 }
 
 var localCmd = &cobra.Command{
-	Use:     "local",
-	Aliases: []string{"dev"},
+	Use:     "dev",
+	Aliases: []string{"local"},
 	Short:   "Starts and stops local development Tigris server",
 }
 

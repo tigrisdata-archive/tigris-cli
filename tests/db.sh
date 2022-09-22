@@ -31,21 +31,21 @@ $cli server info
 $cli server version
 
 test_config() {
-  export TIGRIS_APPLICATION_ID=test_id_1
-  export TIGRIS_APPLICATION_SECRET=test_secret_1
+  export TIGRIS_CLIENT_ID=test_id_1
+  export TIGRIS_CLIENT_SECRET=test_secret_1
   export TIGRIS_TIMEOUT=333s
   export TIGRIS_PROTOCOL=https
   export TIGRIS_URL=example.com:8888
-  $cli config show | grep "application_id: test_id_1"
-  $cli config show | grep "application_secret: test_secret_1"
+  $cli config show | grep "client_id: test_id_1"
+  $cli config show | grep "client_secret: test_secret_1"
   $cli config show | grep "timeout: 5m33s"
   $cli config show | grep "protocol: https"
   $cli config show | grep "url: example.com:8888"
   unset TIGRIS_PROTOCOL
   unset TIGRIS_URL
   unset TIGRIS_TIMEOUT
-  unset TIGRIS_APPLICATION_ID
-  unset TIGRIS_APPLICATION_SECRET
+  unset TIGRIS_CLIENT_ID
+  unset TIGRIS_CLIENT_SECRET
 }
 
 db_tests() {
