@@ -15,10 +15,14 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
 )
+
+var rotate bool
 
 var createApplicationCmd = &cobra.Command{
 	Use:   "application {name} {description}",
@@ -88,23 +92,37 @@ Output:
   "created_by": "github|3436058"
 }
 `,
-	Args: cobra.MinimumNArgs(3),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 
-		_, err := client.ManagementGet().UpdateApplication(ctx, args[0], args[1], args[2])
-		if err != nil {
-			util.Error(err, "alter application failed")
+		// no name/descr and no explicit --rotate
+		if len(args) < 2 && !rotate {
+			util.Error(fmt.Errorf("please provide name and description to update or use --rotate to rotate the secret"), "alter application failed")
 		}
 
-		sec, err := client.ManagementGet().RotateClientSecret(ctx, args[0])
-		if err != nil {
-			util.Error(err, "alter application failed")
+		if len(args) >= 1 {
+			desc := ""
+			if len(args) > 2 {
+				desc = args[2]
+			}
+			_, err := client.ManagementGet().UpdateApplication(ctx, args[0], args[1], desc)
+			if err != nil {
+				util.Error(err, "alter application failed")
+			}
 		}
 
-		if err := util.PrettyJSON(sec); err != nil {
-			util.Error(err, "alter application failed")
+		// rotate only when explicitly requested
+		if rotate {
+			sec, err := client.ManagementGet().RotateClientSecret(ctx, args[0])
+			if err != nil {
+				util.Error(err, "alter application failed")
+			}
+
+			if err := util.PrettyJSON(sec); err != nil {
+				util.Error(err, "alter application failed")
+			}
 		}
 	},
 }
@@ -138,6 +156,7 @@ var listApplicationsCmd = &cobra.Command{
 }
 
 func init() {
+	alterApplicationCmd.Flags().BoolVarP(&rotate, "rotate", "r", false, "Rotate application secret")
 	dropCmd.AddCommand(dropApplicationCmd)
 	createCmd.AddCommand(createApplicationCmd)
 	listCmd.AddCommand(listApplicationsCmd)
