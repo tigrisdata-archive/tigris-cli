@@ -98,7 +98,7 @@ Output:
 			util.Error(err, "alter application failed")
 		}
 
-		sec, err := client.ManagementGet().RotateApplicationSecret(ctx, args[0])
+		sec, err := client.ManagementGet().RotateClientSecret(ctx, args[0])
 		if err != nil {
 			util.Error(err, "alter application failed")
 		}
