@@ -110,8 +110,9 @@ Output:
 }
 
 var listApplicationsCmd = &cobra.Command{
-	Use:   "applications",
+	Use:   "applications [name]",
 	Short: "Lists applications",
+	Long:  "Lists available applications. Optional parameter allows to return only the application with the given name.",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
@@ -119,8 +120,17 @@ var listApplicationsCmd = &cobra.Command{
 		if err != nil {
 			util.Error(err, "list collections failed")
 		}
-		for _, v := range resp {
-			if err := util.PrettyJSON(v); err != nil {
+
+		if len(args) > 0 {
+			for _, v := range resp {
+				if v.Name == args[0] {
+					if err := util.PrettyJSON(v); err != nil {
+						util.Error(err, "list applications failed")
+					}
+				}
+			}
+		} else {
+			if err := util.PrettyJSON(resp); err != nil {
 				util.Error(err, "list applications failed")
 			}
 		}

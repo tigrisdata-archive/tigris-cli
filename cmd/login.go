@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -31,6 +32,8 @@ type instance struct {
 var (
 	callbackHost = "localhost:8585"
 	callbackURL  = "http://" + callbackHost + "/callback"
+
+	defaultURL = "api.preview.tigrisdata.cloud"
 
 	instances = map[string]instance{
 		"api.dev.tigrisdata.cloud": {
@@ -176,7 +179,6 @@ var loginCmd = &cobra.Command{
   if are not already signed in to the account
 * You'll see "Successfully authenticated" on success
 * You can now return to the terminal and start using the CLI`,
-	Args:    cobra.MinimumNArgs(1),
 	Example: `tigris login api.preview.tigrisdata.cloud`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
@@ -192,7 +194,15 @@ var loginCmd = &cobra.Command{
 
 		state := genRandomState()
 
-		host := args[0]
+		host := defaultURL
+		if os.Getenv("TIGRIS_URL") != "" {
+			host = os.Getenv("TIGRIS_URL")
+		}
+
+		if len(args) > 0 {
+			host = args[0]
+		}
+
 		inst, ok := instances[host]
 		if !ok {
 			util.Error(fmt.Errorf("instance not found: %s", host), "Instance config not found")
