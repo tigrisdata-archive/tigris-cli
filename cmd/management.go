@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
@@ -140,7 +141,7 @@ var listApplicationsCmd = &cobra.Command{
 		defer cancel()
 		resp, err := client.ManagementGet().ListApplications(ctx)
 		if err != nil {
-			util.Error(err, "list collections failed")
+			util.Error(err, "list applications failed")
 		}
 
 		if len(args) > 0 {
@@ -159,10 +160,52 @@ var listApplicationsCmd = &cobra.Command{
 	},
 }
 
+var listNamespacesCmd = &cobra.Command{
+	Use:   "namespaces",
+	Short: "Lists namespaces",
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+		resp, err := client.ManagementGet().ListNamespaces(ctx)
+		if err != nil {
+			util.Error(err, "list namespaces failed")
+		}
+
+		if err := util.PrettyJSON(resp); err != nil {
+			util.Error(err, "list namespaces failed")
+		}
+	},
+}
+
+var createNamespaceCmd = &cobra.Command{
+	Use:   "namespace {id} {name}",
+	Short: "Create namespace",
+	Args:  cobra.MinimumNArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+
+		id, err := strconv.ParseInt(args[0], 10, 32)
+		if err != nil {
+			util.Error(err, "error parsing integer id")
+		}
+
+		if err := client.ManagementGet().CreateNamespace(ctx, int(id), args[1]); err != nil {
+			util.Error(err, "create namespace failed")
+		}
+
+		util.Stdoutf("namespace successfully created\n")
+	},
+}
+
 func init() {
 	alterApplicationCmd.Flags().BoolVarP(&rotate, "rotate", "r", false, "Rotate application secret")
+
 	dropCmd.AddCommand(dropApplicationCmd)
 	createCmd.AddCommand(createApplicationCmd)
 	listCmd.AddCommand(listApplicationsCmd)
 	alterCmd.AddCommand(alterApplicationCmd)
+
+	listCmd.AddCommand(listNamespacesCmd)
+	createCmd.AddCommand(createNamespaceCmd)
 }

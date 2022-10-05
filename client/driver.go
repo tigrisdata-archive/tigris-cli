@@ -31,8 +31,10 @@ import (
 var D driver.Driver
 
 // M is single instance of auth service client.
-var M driver.Management
-var cfg *cconfig.Driver
+var (
+	M   driver.Management
+	cfg *cconfig.Driver
+)
 
 var ErrUnknownProtocol = fmt.Errorf("unknown protocol set by TIGRIS_PROTOCOL. allowed: grpc, http, https")
 
