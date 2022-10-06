@@ -36,7 +36,7 @@ var infoCmd = &cobra.Command{
 		if err != nil {
 			util.Error(err, "get server info failed")
 		}
-		util.Stdout("%s\n", string(info))
+		util.Stdoutf("%s\n", string(info))
 	},
 }
 

@@ -15,9 +15,18 @@
 package cmd
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
+)
+
+var (
+	rotate bool
+
+	ErrWrongArgs = fmt.Errorf("please provide name and description to update or use --rotate to rotate the secret")
 )
 
 var createApplicationCmd = &cobra.Command{
@@ -68,7 +77,7 @@ var dropApplicationCmd = &cobra.Command{
 			util.Error(err, "drop application failed")
 		}
 
-		util.Stdout("successfully dropped application credentials\n")
+		util.Stdoutf("successfully dropped application credentials\n")
 	},
 }
 
@@ -88,48 +97,115 @@ Output:
   "created_by": "github|3436058"
 }
 `,
-	Args: cobra.MinimumNArgs(3),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 
-		_, err := client.ManagementGet().UpdateApplication(ctx, args[0], args[1], args[2])
-		if err != nil {
-			util.Error(err, "alter application failed")
+		// no name/descr and no explicit --rotate
+		if len(args) < 2 && !rotate {
+			util.Error(ErrWrongArgs, "alter application failed")
 		}
 
-		sec, err := client.ManagementGet().RotateClientSecret(ctx, args[0])
-		if err != nil {
-			util.Error(err, "alter application failed")
+		if len(args) >= 1 {
+			desc := ""
+			if len(args) > 2 {
+				desc = args[2]
+			}
+			_, err := client.ManagementGet().UpdateApplication(ctx, args[0], args[1], desc)
+			if err != nil {
+				util.Error(err, "alter application failed")
+			}
 		}
 
-		if err := util.PrettyJSON(sec); err != nil {
-			util.Error(err, "alter application failed")
+		// rotate only when explicitly requested
+		if rotate {
+			sec, err := client.ManagementGet().RotateClientSecret(ctx, args[0])
+			if err != nil {
+				util.Error(err, "alter application failed")
+			}
+
+			if err := util.PrettyJSON(sec); err != nil {
+				util.Error(err, "alter application failed")
+			}
 		}
 	},
 }
 
 var listApplicationsCmd = &cobra.Command{
-	Use:   "applications",
+	Use:   "applications [name]",
 	Short: "Lists applications",
+	Long:  "Lists available applications. Optional parameter allows to return only the application with the given name.",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 		resp, err := client.ManagementGet().ListApplications(ctx)
 		if err != nil {
-			util.Error(err, "list collections failed")
+			util.Error(err, "list applications failed")
 		}
-		for _, v := range resp {
-			if err := util.PrettyJSON(v); err != nil {
+
+		if len(args) > 0 {
+			for _, v := range resp {
+				if v.Name == args[0] {
+					if err := util.PrettyJSON(v); err != nil {
+						util.Error(err, "list applications failed")
+					}
+				}
+			}
+		} else {
+			if err := util.PrettyJSON(resp); err != nil {
 				util.Error(err, "list applications failed")
 			}
 		}
 	},
 }
 
+var listNamespacesCmd = &cobra.Command{
+	Use:   "namespaces",
+	Short: "Lists namespaces",
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+		resp, err := client.ManagementGet().ListNamespaces(ctx)
+		if err != nil {
+			util.Error(err, "list namespaces failed")
+		}
+
+		if err := util.PrettyJSON(resp); err != nil {
+			util.Error(err, "list namespaces failed")
+		}
+	},
+}
+
+var createNamespaceCmd = &cobra.Command{
+	Use:   "namespace {id} {name}",
+	Short: "Create namespace",
+	Args:  cobra.MinimumNArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+
+		id, err := strconv.ParseInt(args[0], 10, 32)
+		if err != nil {
+			util.Error(err, "error parsing integer id")
+		}
+
+		if err := client.ManagementGet().CreateNamespace(ctx, int(id), args[1]); err != nil {
+			util.Error(err, "create namespace failed")
+		}
+
+		util.Stdoutf("namespace successfully created\n")
+	},
+}
+
 func init() {
+	alterApplicationCmd.Flags().BoolVarP(&rotate, "rotate", "r", false, "Rotate application secret")
+
 	dropCmd.AddCommand(dropApplicationCmd)
 	createCmd.AddCommand(createApplicationCmd)
 	listCmd.AddCommand(listApplicationsCmd)
 	alterCmd.AddCommand(alterApplicationCmd)
+
+	listCmd.AddCommand(listNamespacesCmd)
+	createCmd.AddCommand(createNamespaceCmd)
 }

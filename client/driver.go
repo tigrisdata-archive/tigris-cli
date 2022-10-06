@@ -27,25 +27,35 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-// D is single instance of client
+// D is single instance of client.
 var D driver.Driver
 
-// A is single instance of auth service client
-var M driver.Management
-var cfg *cconfig.Driver
+// M is single instance of auth service client.
+var (
+	M   driver.Management
+	cfg *cconfig.Driver
+)
 
-func Init(config config.Config) error {
-	proto := strings.ToLower(strings.Trim(config.Protocol, " "))
-	if proto == "grpc" {
+var ErrUnknownProtocol = fmt.Errorf("unknown protocol set by TIGRIS_PROTOCOL. allowed: grpc, http, https")
+
+func initProtocol(config *config.Config) error {
+	switch proto := strings.ToLower(strings.Trim(config.Protocol, " ")); proto {
+	case "grpc":
 		driver.DefaultProtocol = driver.GRPC
-	} else if proto == "https" || proto == "http" {
+	case "https", "http":
 		driver.DefaultProtocol = driver.HTTP
-	} else if proto != "" {
-		return fmt.Errorf("unknown protocol set by TIGRIS_PROTOCOL: %s. allowed: grpc, http, https", proto)
+	case "":
+	default:
+		return fmt.Errorf("%w, got: %s", ErrUnknownProtocol, proto)
 	}
 
+	return nil
+}
+
+func initURL(config *config.Config) string {
 	// URL prefix has precedence over environment variable
 	url := config.URL
+	//nolint:golint,gocritic
 	if strings.HasPrefix(config.URL, "http://") {
 		driver.DefaultProtocol = driver.HTTP
 	} else if strings.HasPrefix(config.URL, "https://") {
@@ -55,12 +65,22 @@ func Init(config config.Config) error {
 		url = strings.TrimPrefix(config.URL, "grpc://")
 	}
 
-	//Client would use HTTPS if scheme is not explicitly specified
-	//Avoid this for localhost connections
+	// Client would use HTTPS if scheme is not explicitly specified.
+	// Avoid this for localhost connections.
 	if !strings.Contains(url, "://") && driver.DefaultProtocol == driver.HTTP &&
 		(strings.HasPrefix(url, "localhost") || strings.HasPrefix(url, "127.0.0.1")) {
 		url = "http://" + url
 	}
+
+	return url
+}
+
+func Init(config *config.Config) error {
+	if err := initProtocol(config); err != nil {
+		return err
+	}
+
+	url := initURL(config)
 
 	cfg = &cconfig.Driver{
 		URL:          url,
@@ -70,7 +90,7 @@ func Init(config config.Config) error {
 	}
 
 	if config.UseTLS || cfg.ClientSecret != "" || cfg.ClientID != "" || cfg.Token != "" {
-		cfg.TLS = &tls.Config{}
+		cfg.TLS = &tls.Config{MinVersion: tls.VersionTLS12}
 	}
 
 	_ = os.Unsetenv("TIGRIS_PROTOCOL")
@@ -87,20 +107,23 @@ func InitLow() error {
 		if err != nil {
 			return err
 		}
+
 		D = drv
 	}
+
 	return nil
 }
 
-// Get returns an instance of client
+// Get returns an instance of client.
 func Get() driver.Driver {
 	if err := InitLow(); err != nil {
 		util.Error(err, "tigris client initialization failed")
 	}
+
 	return D
 }
 
-// ManagementGet returns an instance of authentication API client
+// ManagementGet returns an instance of authentication API client.
 func ManagementGet() driver.Management {
 	if M == nil {
 		ctx, cancel := util.GetContext(context.Background())
@@ -110,8 +133,10 @@ func ManagementGet() driver.Management {
 		if err != nil {
 			util.Error(err, "tigris client initialization failed")
 		}
+
 		M = drv
 	}
+
 	return M
 }
 
@@ -123,6 +148,7 @@ func Transact(bctx context.Context, db string, fn func(ctx context.Context, tx d
 	if err != nil {
 		util.Error(err, "begin transaction failed")
 	}
+
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	fn(ctx, tx)

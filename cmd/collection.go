@@ -26,24 +26,30 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
+var ErrSchemaNameMissing = fmt.Errorf("schema name is missing")
+
 func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) {
 	type Schema struct {
 		Name string `json:"title"`
 	}
+
 	var schema Schema
+
 	if err := json.Unmarshal(raw, &schema); err != nil {
 		util.Error(err, "error parsing collection schema")
 	}
+
 	if schema.Name == "" {
-		util.Error(fmt.Errorf("schema name is missing"), "create collection failed")
+		util.Error(ErrSchemaNameMissing, "create collection failed")
 	}
+
 	err := tx.CreateOrUpdateCollection(ctx, schema.Name, raw)
 	if err != nil {
 		util.Error(err, "create collection failed")
 	}
 }
 
-// DescribeCollectionResponse adapter to convert Schema field to json.RawMessage
+// DescribeCollectionResponse adapter to convert Schema field to json.RawMessage.
 type DescribeCollectionResponse struct {
 	Collection string                  `json:"collection,omitempty"`
 	Metadata   *api.CollectionMetadata `json:"metadata,omitempty"`
@@ -65,7 +71,7 @@ var describeCollectionCmd = &cobra.Command{
 
 		tr := DescribeCollectionResponse{
 			Collection: resp.Collection,
-			//Metadata:   resp.Metadata,
+			// Metadata:   resp.Metadata,
 			Schema: resp.Schema,
 		}
 
@@ -74,7 +80,7 @@ var describeCollectionCmd = &cobra.Command{
 			util.Error(err, "describe collection failed")
 		}
 
-		util.Stdout("%s\n", string(b))
+		util.Stdoutf("%s\n", string(b))
 	},
 }
 
@@ -90,7 +96,7 @@ var listCollectionsCmd = &cobra.Command{
 			util.Error(err, "list collections failed")
 		}
 		for _, v := range resp {
-			util.Stdout("%s\n", v)
+			util.Stdoutf("%s\n", v)
 		}
 	},
 }

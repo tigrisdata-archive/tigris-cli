@@ -23,15 +23,20 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-var limit int64
-var skip int64
+var (
+	limit int64
+	skip  int64
+)
 
 var readCmd = &cobra.Command{
 	Use:   "read {db} {collection} {filter} {fields}",
 	Short: "Reads and outputs documents",
 	Long: `Reads documents according to provided filter and fields. 
-If filter is not provided or an empty json document {} is passed as a filter, all documents in the collection are returned.
-If fields are not provided or an empty json document {} is passed as fields, all the fields of the documents are selected.`,
+If filter is not provided or an empty json document {} is passed as a filter,
+all documents in the collection are returned.
+
+If fields are not provided or an empty json document {} is passed as fields,
+all the fields of the documents are selected.`,
 	Example: fmt.Sprintf(`
   # Read a user document where id is 20
   # The output would be 
@@ -77,9 +82,9 @@ If fields are not provided or an empty json document {} is passed as fields, all
 		for it.Next(&doc) {
 			// Document came through GRPC may have \n at the end already
 			if doc[len(doc)-1] == 0x0A {
-				util.Stdout("%s", string(doc))
+				util.Stdoutf("%s", string(doc))
 			} else {
-				util.Stdout("%s\n", string(doc))
+				util.Stdoutf("%s\n", string(doc))
 			}
 		}
 		if err := it.Err(); err != nil {

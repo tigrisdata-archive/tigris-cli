@@ -34,7 +34,7 @@ var showConfigCmd = &cobra.Command{
 		if err != nil {
 			util.Error(err, "marshal config failed")
 		}
-		util.Stdout("%s\n", string(info))
+		util.Stdoutf("%s\n", string(info))
 	},
 }
 

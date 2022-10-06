@@ -25,20 +25,23 @@ import (
 	"github.com/tigrisdata/tigris-client-go/search"
 )
 
-var query string
-var searchFields []string
-var filter string
-var facet string
-var sort string
-var includeFields []string
-var excludeFields []string
-var page int32
-var pageSize int32
+var (
+	query         string
+	searchFields  []string
+	filter        string
+	facet         string
+	sort          string
+	includeFields []string
+	excludeFields []string
+	page          int32
+	pageSize      int32
+)
 
 var searchCmd = &cobra.Command{
 	Use:   "search {db} {collection}",
 	Short: "Searches a collection for documents matching the query",
 	Long:  "Executes a search query against collection and returns the search results.",
+	//nolint:golint,lll
 	Example: fmt.Sprintf(`
 # Default search without any parameters will return all documents
 %[1]s %[2]s
@@ -95,8 +98,13 @@ var searchCmd = &cobra.Command{
 			if err != nil {
 				util.Error(err, "search result conversion failed")
 			}
-			resultJson, _ := json.MarshalIndent(r, "", " ")
-			util.Stdout("%s\n", resultJson)
+
+			resultJSON, err := json.MarshalIndent(r, "", " ")
+			if err != nil {
+				util.Error(err, "result marshalling failed")
+			}
+
+			util.Stdoutf("%s\n", resultJSON)
 		}
 		if err := it.Err(); err != nil {
 			util.Error(err, "search result iteration failed")
@@ -105,15 +113,20 @@ var searchCmd = &cobra.Command{
 }
 
 func init() {
+	searchCmd.Flags().SortFlags = false
+
 	searchCmd.Flags().StringVarP(&query, "query", "q", "", "query string for searching across text fields")
-	searchCmd.Flags().StringSliceVarP(&searchFields, "searchFields", "f", []string{}, "comma separated value of fields to project search query against")
+	searchCmd.Flags().StringSliceVarP(&searchFields, "searchFields", "f", []string{},
+		"comma separated value of fields to project search query against")
 	searchCmd.Flags().StringVar(&filter, "filter", "{}", "further refine the search results using filters")
 	searchCmd.Flags().StringVar(&facet, "facet", "{}", "retrieve aggregate ")
 	searchCmd.Flags().StringVar(&sort, "sort", "[]", "order to sort the results")
-	searchCmd.Flags().StringSliceVarP(&includeFields, "includeFields", "i", []string{}, "comma separated value of document fields to include in results")
-	searchCmd.Flags().StringSliceVarP(&excludeFields, "excludeFields", "x", []string{}, "comma separated value of document fields to exclude in results")
+	searchCmd.Flags().StringSliceVarP(&includeFields, "includeFields", "i", []string{},
+		"comma separated value of document fields to include in results")
+	searchCmd.Flags().StringSliceVarP(&excludeFields, "excludeFields", "x", []string{},
+		"comma separated value of document fields to exclude in results")
 	searchCmd.Flags().Int32VarP(&page, "page", "p", 1, "page of results to retrieve")
 	searchCmd.Flags().Int32VarP(&pageSize, "pageSize", "c", 20, "count of results to be returned per page")
-	searchCmd.Flags().SortFlags = false
+
 	dbCmd.AddCommand(searchCmd)
 }

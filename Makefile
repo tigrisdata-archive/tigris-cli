@@ -14,7 +14,7 @@ ${BIN}: ${GO_SRC} go.sum
 	CGO_ENABLED=0 go build ${BUILD_PARAM} .
 
 lint:
-	golangci-lint run
+	golangci-lint run --fix
 	shellcheck tests/*.sh
 
 go.sum: go.mod

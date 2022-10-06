@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -39,7 +40,11 @@ const (
 	ContainerName = "tigris-local-server"
 )
 
-var ImageTag = "latest"
+var (
+	ImageTag = "latest"
+
+	ErrServerStartTimeout = fmt.Errorf("timeout waiting server to start")
+)
 
 func stopContainer(client *client.Client, cname string) {
 	ctx := context.Background()
@@ -66,7 +71,7 @@ func stopContainer(client *client.Client, cname string) {
 	log.Debug().Msg("local instance stopped")
 }
 
-func startContainer(cli *client.Client, cname string, image string, port string, env []string) string {
+func pullImage(cli *client.Client, image string, port string) {
 	ctx := context.Background()
 
 	log.Debug().Str("port", port).Msg("starting local instance")
@@ -75,17 +80,28 @@ func startContainer(cli *client.Client, cname string, image string, port string,
 	if err != nil {
 		util.Error(err, "error pulling docker image: %s", image)
 	}
-	defer func() { _ = reader.Close() }()
 
 	log.Debug().Msg("local Docker image pulled")
 
 	if util.IsTTY(os.Stdout) {
 		if err := util.DockerShowProgress(reader); err != nil {
+			_ = reader.Close()
+
 			util.Error(err, "error pulling docker image: %s", image)
 		}
 	} else {
 		_, _ = io.Copy(os.Stdout, reader)
 	}
+
+	_ = reader.Close()
+}
+
+func startContainer(cli *client.Client, cname string, image string, port string, env []string) string {
+	ctx := context.Background()
+
+	log.Debug().Msg("starting local instance")
+
+	pullImage(cli, image, port)
 
 	pm := nat.PortMap{}
 
@@ -134,7 +150,6 @@ func waitServerUp(port string) {
 	log.Debug().Msg("waiting local instance to start")
 
 	inited := false
-	var err error
 
 	cfg := config.DefaultConfig
 	cfg.URL = fmt.Sprintf("localhost:%s", port)
@@ -142,9 +157,11 @@ func waitServerUp(port string) {
 	cfg.ClientSecret = ""
 	cfg.ClientID = ""
 
-	if err = tclient.Init(cfg); err != nil {
+	if err := tclient.Init(&cfg); err != nil {
 		util.Error(err, "client init failed")
 	}
+
+	var err error
 
 L:
 	for {
@@ -159,7 +176,7 @@ L:
 			}
 		}
 
-		if err == context.DeadlineExceeded {
+		if errors.Is(err, context.DeadlineExceeded) {
 			break
 		}
 
@@ -167,11 +184,13 @@ L:
 
 		select {
 		case <-ctx.Done():
-			err = fmt.Errorf("timeout waiting server to start")
+			err = ErrServerStartTimeout
+
 			break L
 		default:
 		}
 	}
+
 	if err != nil {
 		util.Error(err, "tigris initialization failed")
 	}
@@ -208,9 +227,9 @@ var serverUpCmd = &cobra.Command{
 
 		waitServerUp(port)
 
-		fmt.Printf("Tigris is running at localhost:%s\n", port)
+		util.Stdoutf("Tigris is running at localhost:%s\n", port)
 		if port != "8081" {
-			fmt.Printf("run 'export TIGRIS_URL=localhost:%s' for tigris cli to automatically connect\n", port)
+			util.Stdoutf("run 'export TIGRIS_URL=localhost:%s' for tigris cli to automatically connect\n", port)
 		}
 	},
 }
@@ -227,7 +246,7 @@ var serverDownCmd = &cobra.Command{
 
 		stopContainer(cli, ContainerName)
 
-		fmt.Printf("Tigris stopped\n")
+		util.Stdoutf("Tigris stopped\n")
 	},
 }
 

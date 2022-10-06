@@ -1,14 +1,29 @@
+// Copyright 2022 Tigris Data, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
 import (
 	"context"
 	"crypto/rand"
-	_ "embed"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -29,8 +44,15 @@ type instance struct {
 }
 
 var (
+	ErrStateMismatched  = fmt.Errorf("state is not matched")
+	ErrInstanceNotFound = fmt.Errorf("instance not found")
+)
+
+var (
 	callbackHost = "localhost:8585"
 	callbackURL  = "http://" + callbackHost + "/callback"
+
+	defaultURL = "api.preview.tigrisdata.cloud"
 
 	instances = map[string]instance{
 		"api.dev.tigrisdata.cloud": {
@@ -62,10 +84,11 @@ func authorize(auth *Authenticator, state string, audience string) error {
 
 	log.Debug().Str("url", authURL).Msg("Open login link in the browser")
 
-	util.Stdout("Opening login page in the browser. Please continue login flow there.\n")
+	util.Stdoutf("Opening login page in the browser. Please continue login flow there.\n")
 
 	if err := browser.OpenURL(authURL); err != nil {
 		util.Error(err, "Error opening login page")
+
 		return err
 	}
 
@@ -102,9 +125,10 @@ func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, inst
 		defer wg.Done()
 
 		if r.URL.Query().Get("state") != state {
-			retError = fmt.Errorf("state is not matched")
+			retError = ErrStateMismatched
 			execTemplate(w, tmplError, &tmplVars{Title: instanceURL, Error: retError.Error()})
 			log.Debug().Str("want", state).Str("got", r.URL.Query().Get("state")).Msg("state is not matched")
+
 			return
 		}
 
@@ -114,7 +138,8 @@ func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, inst
 
 		token = getToken(auth, code)
 
-		log.Debug().Str("accessToken", token.AccessToken).Str("refreshToken", token.RefreshToken).Msg("Access token retrieved")
+		log.Debug().Str("accessToken", token.AccessToken).Str("refreshToken", token.RefreshToken).
+			Msg("Access token retrieved")
 
 		config.DefaultConfig.Token = token.AccessToken
 		config.DefaultConfig.URL = instanceURL
@@ -123,12 +148,13 @@ func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, inst
 			retError = err
 			log.Err(err).Msg("Error saving config")
 			execTemplate(w, tmplError, &tmplVars{Title: instanceURL, Error: err.Error()})
+
 			return
 		}
 
 		execTemplate(w, tmplSuccess, &tmplVars{Title: instanceURL})
 
-		util.Stdout("Successfully logged in\n")
+		util.Stdoutf("Successfully logged in\n")
 	})
 
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
@@ -136,23 +162,24 @@ func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, inst
 		log.Debug().Msg("Callback server up-check received")
 	})
 
-	err := server.ListenAndServe()
-	if err != nil && err != http.ErrServerClosed {
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		util.Error(err, "callback server failed")
+
 		if retError == nil {
 			retError = err
 		}
 	}
 
 	log.Debug().Msg("callback server finished")
+
 	return retError
 }
 
 func genRandomState() string {
 	stateBin := make([]byte, 32)
-	n, err := rand.Read(stateBin)
-	if err != nil || n != 32 {
-		util.Error(fmt.Errorf("failed to generate random state %v", err.Error()), "")
+
+	if n, err := rand.Read(stateBin); err != nil || n != 32 {
+		util.Error(fmt.Errorf("failed to generate random state %w", err), "")
 	}
 
 	return base64.StdEncoding.EncodeToString(stateBin)
@@ -164,7 +191,7 @@ type Authenticator struct {
 }
 
 var loginCmd = &cobra.Command{
-	Use:   "login [url]",
+	Use:   "login {url}",
 	Short: "Authenticate on the Tigris instance",
 	Long: `Performs authentication flow on the Tigris instance
 * Run "tigris login [url]",
@@ -176,7 +203,6 @@ var loginCmd = &cobra.Command{
   if are not already signed in to the account
 * You'll see "Successfully authenticated" on success
 * You can now return to the terminal and start using the CLI`,
-	Args:    cobra.MinimumNArgs(1),
 	Example: `tigris login api.preview.tigrisdata.cloud`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
@@ -192,10 +218,18 @@ var loginCmd = &cobra.Command{
 
 		state := genRandomState()
 
-		host := args[0]
+		host := defaultURL
+		if os.Getenv("TIGRIS_URL") != "" {
+			host = os.Getenv("TIGRIS_URL")
+		}
+
+		if len(args) > 0 {
+			host = args[0]
+		}
+
 		inst, ok := instances[host]
 		if !ok {
-			util.Error(fmt.Errorf("instance not found: %s", host), "Instance config not found")
+			util.Error(fmt.Errorf("%w: %s", ErrInstanceNotFound, host), "Instance config not found")
 		}
 
 		p, err := oidc.NewProvider(context.Background(), inst.authHost)
@@ -214,7 +248,7 @@ var loginCmd = &cobra.Command{
 
 		var callbackErr, authorizeErr error
 
-		server := &http.Server{Addr: callbackHost}
+		server := &http.Server{Addr: callbackHost, ReadHeaderTimeout: util.GetTimeout()}
 
 		var wg1 sync.WaitGroup
 		wg1.Add(1)
@@ -232,6 +266,7 @@ var loginCmd = &cobra.Command{
 			r, err := c.Get("http://" + callbackHost + "/ping")
 			if err == nil && r.StatusCode == http.StatusOK {
 				log.Debug().Msg("Callback server has started")
+
 				break
 			}
 		}
@@ -247,8 +282,7 @@ var loginCmd = &cobra.Command{
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 
-		err = server.Shutdown(ctx)
-		if err != nil && err != http.ErrServerClosed {
+		if err = server.Shutdown(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			util.Error(err, "shutdown callback server failed")
 		}
 
@@ -278,7 +312,7 @@ var logoutCmd = &cobra.Command{
 			util.Error(err, "Failure saving config")
 		}
 
-		util.Stdout("Successfully logged out\n")
+		util.Stdoutf("Successfully logged out\n")
 	},
 }
 

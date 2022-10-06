@@ -40,7 +40,7 @@ var subscribeCmd = &cobra.Command{
 		}
 		var doc driver.Document
 		for i := int32(0); (subscribeLimit == 0 || i < subscribeLimit) && it.Next(&doc); i++ {
-			util.Stdout("%s\n", string(doc))
+			util.Stdoutf("%s\n", string(doc))
 		}
 		if err := it.Err(); err != nil {
 			util.Error(err, "iterate messages failed")
