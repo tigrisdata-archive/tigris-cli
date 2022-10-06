@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/tigrisdata/tigrisdb/workflows/go-lint/badge.svg)]()
 [![Build Status](https://github.com/tigrisdata/tigrisdb/workflows/go-test/badge.svg)]()
 
-Create databases and collections, read and write data, perform transactions, 
+Create databases and collections, read and write data, perform transactions,
 stream events and setup Tigris locally, all from the command line.
 
 # Documentation
@@ -31,34 +31,38 @@ curl -sSL https://tigris.dev/cli-linux | sudo tar -xz -C /usr/local/bin
 
 ```shell
 $ tigris
-tigris is the command line interface of Tigris data platform
+tigris is a command line interface of Tigris data platform
 
 Usage:
   tigris [command]
 
 Available Commands:
-  alter       alter collection
-  completion  Generate completion script
-  create      creates database or collection
-  delete      delete documents
-  describe    describe database or collection
+  alter       Alters collection
+  completion  Generates completion script for shell
+  config      Configuration commands
+  create      Creates database or collection
+  delete      Deletes document(s)
+  describe    Describes database or collection
+  dev         Starts and stops local development Tigris server
   docs        Generates CLI documentation in Markdown format
-  drop        drop database or collection
-  events      Streams and outputs events
+  drop        Drops database or collection
   generate    Generating helper assets such as sample schema
   help        Help about any command
-  insert      insert document
-  list        list databases of the project or list database collections
-  local       Starting and stopping local Tigris server
-  ping        Check connection to Tigris
-  read        read documents
-  replace     replace document
+  insert      Inserts document(s)
+  list        Lists databases or collections
+  login       Authenticate on the Tigris instance
+  logout      Logout from Tigris instance
+  ping        Checks connection to Tigris
+  publish     Publish message(s)
+  read        Reads and outputs documents
+  replace     Inserts or replaces document(s)
   scaffold    Scaffold a project for specified language
   search      Searches a collection for documents matching the query
   server      Tigris server related commands
-  transact    run a set of operations in a transaction
-  update      update documents
-  version     show tigris cli version
+  subscribe   Subscribes to published messages
+  transact    Executes a set of operations in a transaction
+  update      Updates document(s)
+  version     Shows tigris cli version
 
 Flags:
   -h, --help   help for tigris
