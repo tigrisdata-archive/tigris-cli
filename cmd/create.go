@@ -20,7 +20,7 @@ import (
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Creates database or collection",
+	Short: "Creates database, collection, namespace or application",
 	Args:  cobra.MinimumNArgs(1),
 }
 
