@@ -1,0 +1,43 @@
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    binary: tigris
+
+archives:
+  - format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "tigris_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: 'checksums.txt'
+signs:
+  - artifacts: checksum
+changelog:
+  skip: true
+
+nfpms:
+  - formats:
+      - apk
+      - deb
+      - rpm
+      - termux.deb
+    file_name_template: "tigris_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    maintainer: Yevgeniy Firsov <firsov@tigrisdata.com>
+
+brews:
+  - tap:
+      owner: tigrisdata
+      name: homebrew-tigris
+    folder: Formula
+    homepage: "https://docs.tigrisdata.com"
+    description: "Tigris is a modern, scalable backend for building real-time websites and apps."
+    license: Apache-2.0
+

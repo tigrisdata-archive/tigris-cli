@@ -314,6 +314,9 @@ test_pubsub() {
 	exp_out='{"Field1":123}
 {"Field1":456}
 {"Key1":"ee"}'
+	exp_out1='{"Key1":"ee"}
+{"Field1":123}
+{"Field1":456}'
 
 	(
 	# Give some time for subscribe to start
@@ -325,7 +328,9 @@ test_pubsub() {
 	pid=$!
 
 	out=$($cli subscribe db1 coll_msg '{}' --limit 3)
-	diff -w -u <(echo "$exp_out") <(echo "$out")
+	# There is no ordering guarantee so compare both possibilities
+	diff -w -u <(echo "$exp_out") <(echo "$out") ||
+	diff -w -u <(echo "$exp_out1") <(echo "$out")
 
 	# make sure subhell terminated
 	wait $pid

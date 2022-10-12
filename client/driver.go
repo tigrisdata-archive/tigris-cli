@@ -27,13 +27,16 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-// D is single instance of client.
-var D driver.Driver
-
-// M is single instance of auth service client.
 var (
+	// D is single instance of client.
+	D driver.Driver
+
+	// M is single instance of management service client.
 	M   driver.Management
 	cfg *cconfig.Driver
+
+	// O is single instance of observability service client.
+	O driver.Observability
 )
 
 var ErrUnknownProtocol = fmt.Errorf("unknown protocol set by TIGRIS_PROTOCOL. allowed: grpc, http, https")
@@ -138,6 +141,22 @@ func ManagementGet() driver.Management {
 	}
 
 	return M
+}
+
+func ObservabilityGet() driver.Observability {
+	if O == nil {
+		ctx, cancel := util.GetContext(context.Background())
+		defer cancel()
+
+		drv, err := driver.NewObservability(ctx, cfg)
+		if err != nil {
+			util.Error(err, "tigris client initialization failed")
+		}
+
+		O = drv
+	}
+
+	return O
 }
 
 func Transact(bctx context.Context, db string, fn func(ctx context.Context, tx driver.Tx)) {

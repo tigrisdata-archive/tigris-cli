@@ -1,0 +1,30 @@
+name: tigris
+base: core20
+version: '1.0.0-beta'
+summary: "Tigris command line tool"
+description: Tigris is a modern, scalable backend for building real-time websites and apps.
+
+grade: stable
+confinement: strict
+
+apps:
+  tigris:
+    command: bin/tigris
+    plugs:
+      - network
+      - network-bind
+      - desktop
+      - docker
+
+parts:
+  tigris-cli:
+    source: https://github.com/tigrisdata/tigris-cli.git
+    source-branch: beta
+    plugin: make
+    build-snaps:
+      - go
+      - docker
+
+architectures:
+  - amd64
+  - arm64
