@@ -62,7 +62,7 @@ type TxOp struct {
 
 var ErrUnknownOperationType = fmt.Errorf("unknown operation type")
 
-func execTxOpRead(ctx context.Context, tx driver.Tx, op *Op) {
+func execTxOpRead(ctx context.Context, tx driver.Tx, op *Op) error {
 	filter := json.RawMessage(`{}`)
 	fields := json.RawMessage(`{}`)
 
@@ -76,24 +76,28 @@ func execTxOpRead(ctx context.Context, tx driver.Tx, op *Op) {
 
 	it, err := tx.Read(ctx, op.Collection, driver.Filter(filter), driver.Projection(fields))
 	if err != nil {
-		util.Error(err, "transact operation failed")
+		return util.Error(err, "transact operation read")
 	}
 
 	var d driver.Document
 	for it.Next(&d) {
 		util.Stdoutf("%s\n", string(d))
 	}
+
+	return util.Error(it.Err(), "tx read op")
 }
 
-func execTxOpListColls(ctx context.Context, tx driver.Tx) {
+func execTxOpListColls(ctx context.Context, tx driver.Tx) error {
 	colls, err := tx.ListCollections(ctx)
 	if err != nil {
-		util.Error(err, "transact operation failed")
+		return util.Error(err, "transact operation failed")
 	}
 
 	for _, c := range colls {
 		util.Stdoutf("%s\n", c)
 	}
+
+	return nil
 }
 
 func execTxOpLow(ctx context.Context, tx driver.Tx, tp string, op *Op) error {
@@ -115,24 +119,24 @@ func execTxOpLow(ctx context.Context, tx driver.Tx, tp string, op *Op) error {
 	case DropCollection:
 		err = tx.DropCollection(ctx, op.Collection)
 	case ListCollections:
-		execTxOpListColls(ctx, tx)
+		return execTxOpListColls(ctx, tx)
 	case Read:
-		execTxOpRead(ctx, tx, op)
+		return execTxOpRead(ctx, tx, op)
 	default:
-		util.Error(fmt.Errorf("%w: %s", ErrUnknownOperationType, op.Operation), "")
+		util.Fatal(fmt.Errorf("%w: %s", ErrUnknownOperationType, op.Operation), "")
 	}
 
 	return err
 }
 
-func execTxOp(ctx context.Context, tx driver.Tx, tp string, op *Op) {
+func execTxOp(ctx context.Context, tx driver.Tx, tp string, op *Op) error {
 	if op == nil {
-		return
+		return nil
 	}
 
-	if err := execTxOpLow(ctx, tx, tp, op); err != nil {
-		util.Error(err, "transact operation failed")
-	}
+	err := execTxOpLow(ctx, tx, tp, op)
+
+	return util.Error(err, "transact operation failed")
 }
 
 var transactCmd = &cobra.Command{
@@ -167,29 +171,60 @@ All the read, write and schema operations are supported.`,
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		db := args[0]
-		client.Transact(cmd.Context(), db, func(ctx context.Context, tx driver.Tx) {
-			iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, ops []json.RawMessage) {
-				for _, iop := range ops {
-					var op TxOp
-					if err := json.Unmarshal(iop, &op); err != nil {
-						util.Error(err, "begin transaction failed")
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			return client.Transact(ctx, args[0], func(ctx context.Context, tx driver.Tx) error {
+				return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, ops []json.RawMessage) error {
+					for _, iop := range ops {
+						var op TxOp
+
+						err := json.Unmarshal(iop, &op)
+						util.Fatal(err, "begin transaction")
+
+						if op.Operation != "" {
+							if err = execTxOp(ctx, tx, op.Operation, &op.Op); err != nil {
+								return util.Error(err, "execute tx "+op.Operation)
+							}
+						}
+
+						if err = execTxOp(ctx, tx, InsertOrReplace, op.InsertOrReplace); err != nil {
+							return util.Error(err, "execute tx InsertOrReplace")
+						}
+
+						if err = execTxOp(ctx, tx, Replace, op.Replace); err != nil {
+							return util.Error(err, "execute tx Replace")
+						}
+
+						if err = execTxOp(ctx, tx, Insert, op.Insert); err != nil {
+							return util.Error(err, "execute tx Insert")
+						}
+
+						if err = execTxOp(ctx, tx, Read, op.Read); err != nil {
+							return util.Error(err, "execute tx Read")
+						}
+
+						if err = execTxOp(ctx, tx, Update, op.Update); err != nil {
+							return util.Error(err, "execute tx Update")
+						}
+
+						if err = execTxOp(ctx, tx, Delete, op.Delete); err != nil {
+							return util.Error(err, "execute tx Delete")
+						}
+
+						if err = execTxOp(ctx, tx, CreateOrUpdateCollection, op.CreateOrUpdateCollection); err != nil {
+							return util.Error(err, "execute tx CreateOrUpdateCollection")
+						}
+
+						if err = execTxOp(ctx, tx, DropCollection, op.DropCollection); err != nil {
+							return util.Error(err, "execute tx DropCollection")
+						}
+
+						if err = execTxOp(ctx, tx, ListCollections, op.ListCollections); err != nil {
+							return util.Error(err, "execute tx ListCollections")
+						}
 					}
 
-					if op.Operation != "" {
-						execTxOp(ctx, tx, op.Operation, &op.Op)
-					}
-
-					execTxOp(ctx, tx, InsertOrReplace, op.InsertOrReplace)
-					execTxOp(ctx, tx, Replace, op.Replace)
-					execTxOp(ctx, tx, Insert, op.Insert)
-					execTxOp(ctx, tx, Read, op.Read)
-					execTxOp(ctx, tx, Update, op.Update)
-					execTxOp(ctx, tx, Delete, op.Delete)
-					execTxOp(ctx, tx, CreateOrUpdateCollection, op.CreateOrUpdateCollection)
-					execTxOp(ctx, tx, DropCollection, op.DropCollection)
-					execTxOp(ctx, tx, ListCollections, op.ListCollections)
-				}
+					return nil
+				})
 			})
 		})
 	},

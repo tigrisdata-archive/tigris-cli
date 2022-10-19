@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/spf13/cobra"
@@ -27,15 +28,18 @@ var listDatabasesCmd = &cobra.Command{
 	Use:   "databases",
 	Short: "Lists databases",
 	Run: func(cmd *cobra.Command, _ []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		resp, err := client.Get().ListDatabases(ctx)
-		if err != nil {
-			util.Error(err, "list databases failed")
-		}
-		for _, v := range resp {
-			util.Stdoutf("%s\n", v)
-		}
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			resp, err := client.Get().ListDatabases(ctx)
+			if err != nil {
+				return util.Error(err, "list databases failed")
+			}
+
+			for _, v := range resp {
+				util.Stdoutf("%s\n", v)
+			}
+
+			return nil
+		})
 	},
 }
 
@@ -52,43 +56,43 @@ var describeDatabaseCmd = &cobra.Command{
 	Long:  "Returns schema and metadata for all the collections in the database",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		resp, err := client.Get().DescribeDatabase(ctx, args[0])
-		if err != nil {
-			util.Error(err, "describe collection failed")
-		}
-
-		schemaOnly, err := cmd.Flags().GetBool("schema-only")
-		if err != nil {
-			util.Error(err, "error reading the 'schema-only' option")
-		}
-
-		if schemaOnly {
-			for _, v := range resp.Collections {
-				util.Stdoutf("%s\n", string(v.Schema))
-			}
-		} else {
-			tr := DescribeDatabaseResponse{
-				DB: resp.Db,
-				// Metadata: resp.Metadata,
-			}
-
-			for _, v := range resp.Collections {
-				tr.Collections = append(tr.Collections, &DescribeCollectionResponse{
-					Collection: v.Collection,
-					// Metadata:   v.Metadata,
-					Schema: v.Schema,
-				})
-			}
-
-			b, err := json.Marshal(tr)
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			resp, err := client.Get().DescribeDatabase(ctx, args[0])
 			if err != nil {
-				util.Error(err, "describe database failed")
+				return util.Error(err, "describe collection failed")
 			}
 
-			util.Stdoutf("%s\n", string(b))
-		}
+			schemaOnly, err := cmd.Flags().GetBool("schema-only")
+			if err != nil {
+				util.Fatal(err, "error reading the 'schema-only' option")
+			}
+
+			if schemaOnly {
+				for _, v := range resp.Collections {
+					util.Stdoutf("%s\n", string(v.Schema))
+				}
+			} else {
+				tr := DescribeDatabaseResponse{
+					DB: resp.Db,
+					// Metadata: resp.Metadata,
+				}
+
+				for _, v := range resp.Collections {
+					tr.Collections = append(tr.Collections, &DescribeCollectionResponse{
+						Collection: v.Collection,
+						// Metadata:   v.Metadata,
+						Schema: v.Schema,
+					})
+				}
+
+				b, err := json.Marshal(tr)
+				util.Fatal(err, "describe database")
+
+				util.Stdoutf("%s\n", string(b))
+			}
+
+			return nil
+		})
 	},
 }
 
@@ -97,12 +101,10 @@ var createDatabaseCmd = &cobra.Command{
 	Short: "Creates database",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		err := client.Get().CreateDatabase(ctx, args[0])
-		if err != nil {
-			util.Error(err, "create database failed")
-		}
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			err := client.Get().CreateDatabase(ctx, args[0])
+			return util.Error(err, "create database")
+		})
 	},
 }
 
@@ -111,17 +113,16 @@ var dropDatabaseCmd = &cobra.Command{
 	Short: "Drops database",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		err := client.Get().DropDatabase(ctx, args[0])
-		if err != nil {
-			util.Error(err, "drop database failed")
-		}
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			err := client.Get().DropDatabase(ctx, args[0])
+			return util.Error(err, "drop database")
+		})
 	},
 }
 
 func init() {
 	describeDatabaseCmd.Flags().BoolP("schema-only", "s", false, "dump only schema of all database collections")
+
 	dropCmd.AddCommand(dropDatabaseCmd)
 	createCmd.AddCommand(createDatabaseCmd)
 	listCmd.AddCommand(listDatabasesCmd)

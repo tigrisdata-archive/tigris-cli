@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -52,16 +53,17 @@ Check the docs for more information: https://docs.tigrisdata.com/overview/authen
   }`,
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		app, err := client.ManagementGet().CreateApplication(ctx, args[0], args[1])
-		if err != nil {
-			util.Error(err, "create application failed")
-		}
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			app, err := client.ManagementGet().CreateApplication(ctx, args[0], args[1])
+			if err != nil {
+				return util.Error(err, "create application failed")
+			}
 
-		if err := util.PrettyJSON(app); err != nil {
-			util.Error(err, "create application failed")
-		}
+			err = util.PrettyJSON(app)
+			util.Fatal(err, "create application")
+
+			return nil
+		})
 	},
 }
 
@@ -70,13 +72,15 @@ var dropApplicationCmd = &cobra.Command{
 	Short: "Drop application credentials",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		if err := client.ManagementGet().DeleteApplication(ctx, args[0]); err != nil {
-			util.Error(err, "drop application failed")
-		}
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			if err := client.ManagementGet().DeleteApplication(ctx, args[0]); err != nil {
+				return util.Error(err, "drop application failed")
+			}
 
-		util.Stdoutf("successfully dropped application credentials\n")
+			util.Stdoutf("successfully dropped application credentials\n")
+
+			return nil
+		})
 	},
 }
 
@@ -98,36 +102,36 @@ Output:
 `,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-
-		// no name/descr and no explicit --rotate
-		if len(args) < 2 && !rotate {
-			util.Error(ErrWrongArgs, "alter application failed")
-		}
-
-		if len(args) >= 1 {
-			desc := ""
-			if len(args) > 2 {
-				desc = args[2]
-			}
-			_, err := client.ManagementGet().UpdateApplication(ctx, args[0], args[1], desc)
-			if err != nil {
-				util.Error(err, "alter application failed")
-			}
-		}
-
-		// rotate only when explicitly requested
-		if rotate {
-			sec, err := client.ManagementGet().RotateClientSecret(ctx, args[0])
-			if err != nil {
-				util.Error(err, "alter application failed")
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			// no name/descr and no explicit --rotate
+			if len(args) < 2 && !rotate {
+				util.Fatal(ErrWrongArgs, "alter application failed")
 			}
 
-			if err := util.PrettyJSON(sec); err != nil {
-				util.Error(err, "alter application failed")
+			if len(args) >= 1 {
+				desc := ""
+				if len(args) > 2 {
+					desc = args[2]
+				}
+				_, err := client.ManagementGet().UpdateApplication(ctx, args[0], args[1], desc)
+				if err != nil {
+					return util.Error(err, "alter application failed")
+				}
 			}
-		}
+
+			// rotate only when explicitly requested
+			if rotate {
+				sec, err := client.ManagementGet().RotateClientSecret(ctx, args[0])
+				if err != nil {
+					return util.Error(err, "alter application failed")
+				}
+
+				err = util.PrettyJSON(sec)
+				util.Fatal(err, "alter application failed")
+			}
+
+			return nil
+		})
 	},
 }
 
@@ -136,26 +140,26 @@ var listApplicationsCmd = &cobra.Command{
 	Short: "Lists applications",
 	Long:  "Lists available applications. Optional parameter allows to return only the application with the given name.",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		resp, err := client.ManagementGet().ListApplications(ctx)
-		if err != nil {
-			util.Error(err, "list applications failed")
-		}
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			resp, err := client.ManagementGet().ListApplications(ctx)
+			if err != nil {
+				return util.Error(err, "list applications failed")
+			}
 
-		if len(args) > 0 {
-			for _, v := range resp {
-				if v.Name == args[0] {
-					if err := util.PrettyJSON(v); err != nil {
-						util.Error(err, "list applications failed")
+			if len(args) > 0 {
+				for _, v := range resp {
+					if v.Name == args[0] {
+						err := util.PrettyJSON(v)
+						util.Fatal(err, "list applications filtered")
 					}
 				}
+			} else {
+				err := util.PrettyJSON(resp)
+				util.Fatal(err, "list applications")
 			}
-		} else {
-			if err := util.PrettyJSON(resp); err != nil {
-				util.Error(err, "list applications failed")
-			}
-		}
+
+			return nil
+		})
 	},
 }
 
@@ -163,16 +167,17 @@ var listNamespacesCmd = &cobra.Command{
 	Use:   "namespaces",
 	Short: "Lists namespaces",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		resp, err := client.ManagementGet().ListNamespaces(ctx)
-		if err != nil {
-			util.Error(err, "list namespaces failed")
-		}
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			resp, err := client.ManagementGet().ListNamespaces(ctx)
+			if err != nil {
+				return util.Error(err, "list namespaces")
+			}
 
-		if err := util.PrettyJSON(resp); err != nil {
-			util.Error(err, "list namespaces failed")
-		}
+			err = util.PrettyJSON(resp)
+			util.Fatal(err, "list namespaces failed")
+
+			return nil
+		})
 	},
 }
 
@@ -181,14 +186,15 @@ var createNamespaceCmd = &cobra.Command{
 	Short: "Create namespace",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			if err := client.ManagementGet().CreateNamespace(ctx, args[0]); err != nil {
+				return util.Error(err, "create namespace failed")
+			}
 
-		if err := client.ManagementGet().CreateNamespace(ctx, args[0]); err != nil {
-			util.Error(err, "create namespace failed")
-		}
+			util.Stdoutf("namespace successfully created\n")
 
-		util.Stdoutf("namespace successfully created\n")
+			return nil
+		})
 	},
 }
 

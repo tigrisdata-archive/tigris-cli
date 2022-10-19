@@ -27,6 +27,11 @@ import (
 
 const sampleDBName = "sampledb"
 
+var (
+	create bool
+	stdout bool
+)
+
 var schemas = map[string][]byte{
 	"products": []byte(`{
   "title": "products",
@@ -155,37 +160,39 @@ var sampleSchemaCmd = &cobra.Command{
   %[1]s generate sample-schema --stdout
 `, rootCmd.Root().Name()),
 	Run: func(cmd *cobra.Command, args []string) {
-		create, err := cmd.Flags().GetBool("create")
-		if err != nil {
-			util.Error(err, "error reading the 'create' option")
-		}
-
-		if create {
-			if err := client.Get().CreateDatabase(cmd.Context(), sampleDBName); err != nil {
-				util.Error(err, "create database failed")
-			}
-			client.Transact(cmd.Context(), sampleDBName, func(ctx context.Context, tx driver.Tx) {
-				for _, schema := range schemas {
-					createCollection(ctx, tx, schema)
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			if create {
+				if err := client.Get().CreateDatabase(cmd.Context(), sampleDBName); err != nil {
+					return util.Error(err, "create database")
 				}
-			})
 
-			util.Stdoutf("%v created with the collections\n", sampleDBName)
-		} else {
-			stdout, err := cmd.Flags().GetBool("stdout")
-			if err != nil {
-				util.Error(err, "error reading the 'stdout' option")
-			}
-			for name, schema := range schemas {
-				if stdout {
-					util.Stdoutf("%s\n", string(schema))
-				} else {
-					if err := os.WriteFile(fmt.Sprintf("%v.json", name), schema, 0o600); err != nil {
-						util.Error(err, "error generating sample schema file")
+				if err := client.Transact(cmd.Context(), sampleDBName, func(ctx context.Context, tx driver.Tx) error {
+					for _, schema := range schemas {
+						if err := createCollection(ctx, tx, schema); err != nil {
+							return err
+						}
+					}
+
+					return nil
+				}); err != nil {
+					return err
+				}
+
+				util.Stdoutf("%v created with the collections\n", sampleDBName)
+			} else {
+				for name, schema := range schemas {
+					if stdout {
+						util.Stdoutf("%s\n", string(schema))
+					} else {
+						if err := os.WriteFile(fmt.Sprintf("%v.json", name), schema, 0o600); err != nil {
+							return util.Error(err, "error generating sample schema file")
+						}
 					}
 				}
 			}
-		}
+
+			return nil
+		})
 	},
 }
 
@@ -195,8 +202,8 @@ var generateCmd = &cobra.Command{
 }
 
 func init() {
-	sampleSchemaCmd.Flags().BoolP("create", "c", false, "create the sample database and collections")
-	sampleSchemaCmd.Flags().BoolP("stdout", "s", false, "dump sample schemas to stdout")
+	sampleSchemaCmd.Flags().BoolVarP(&create, "create", "c", false, "create the sample database and collections")
+	sampleSchemaCmd.Flags().BoolVarP(&stdout, "stdout", "s", false, "dump sample schemas to stdout")
 	generateCmd.AddCommand(sampleSchemaCmd)
 	dbCmd.AddCommand(generateCmd)
 }

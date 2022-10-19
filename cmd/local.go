@@ -53,7 +53,7 @@ func stopContainer(client *client.Client, cname string) {
 
 	if err := client.ContainerStop(ctx, cname, nil); err != nil {
 		if !errdefs.IsNotFound(err) {
-			util.Error(err, "error stopping container: %s", cname)
+			util.Fatal(err, "error stopping container: %s", cname)
 		}
 	}
 
@@ -64,7 +64,7 @@ func stopContainer(client *client.Client, cname string) {
 
 	if err := client.ContainerRemove(ctx, cname, opts); err != nil {
 		if !errdefs.IsNotFound(err) {
-			util.Error(err, "error stopping container: %s", cname)
+			util.Fatal(err, "error stopping container: %s", cname)
 		}
 	}
 
@@ -78,7 +78,7 @@ func pullImage(cli *client.Client, image string, port string) {
 
 	reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{})
 	if err != nil {
-		util.Error(err, "error pulling docker image: %s", image)
+		util.Fatal(err, "error pulling docker image: %s", image)
 	}
 
 	log.Debug().Msg("local Docker image pulled")
@@ -87,7 +87,7 @@ func pullImage(cli *client.Client, image string, port string) {
 		if err := util.DockerShowProgress(reader); err != nil {
 			_ = reader.Close()
 
-			util.Error(err, "error pulling docker image: %s", image)
+			util.Fatal(err, "error pulling docker image: %s", image)
 		}
 	} else {
 		_, _ = io.Copy(os.Stdout, reader)
@@ -108,7 +108,7 @@ func startContainer(cli *client.Client, cname string, image string, port string,
 	if port != "" {
 		p, err := nat.ParsePortSpec(port)
 		if err != nil {
-			util.Error(err, "error parsing port: %s", port)
+			util.Fatal(err, "error parsing port: %s", port)
 		}
 
 		for _, v := range p {
@@ -129,13 +129,13 @@ func startContainer(cli *client.Client, cname string, image string, port string,
 			PortBindings: pm,
 		}, nil, nil, cname)
 	if err != nil {
-		util.Error(err, "error creating container docker image: %s", image)
+		util.Fatal(err, "error creating container docker image: %s", image)
 	}
 
 	log.Debug().Msg("starting container")
 
 	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		util.Error(err, "starting container id=%s", resp.ID)
+		util.Fatal(err, "starting container id=%s", resp.ID)
 	}
 
 	log.Debug().Msg("local instance started successfully")
@@ -158,7 +158,7 @@ func waitServerUp(port string) {
 	cfg.ClientID = ""
 
 	if err := tclient.Init(&cfg); err != nil {
-		util.Error(err, "client init failed")
+		util.Fatal(err, "client init failed")
 	}
 
 	var err error
@@ -192,7 +192,7 @@ L:
 	}
 
 	if err != nil {
-		util.Error(err, "tigris initialization failed")
+		util.Fatal(err, "tigris initialization failed")
 	}
 
 	log.Debug().Msg("wait finished successfully")
@@ -205,7 +205,7 @@ var serverUpCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
-			util.Error(err, "error creating docker client")
+			util.Fatal(err, "error creating docker client")
 		}
 
 		port := "8081"
@@ -241,7 +241,7 @@ var serverDownCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
-			util.Error(err, "error creating docker client")
+			util.Fatal(err, "error creating docker client")
 		}
 
 		stopContainer(cli, ContainerName)
@@ -256,14 +256,14 @@ var serverLogsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
-			util.Error(err, "error creating docker client")
+			util.Fatal(err, "error creating docker client")
 		}
 
 		ctx := context.Background()
 
 		follow, err := cmd.Flags().GetBool("follow")
 		if err != nil {
-			util.Error(err, "error reading 'follow' option")
+			util.Fatal(err, "error reading 'follow' option")
 		}
 
 		logs, err := cli.ContainerLogs(ctx, ContainerName, types.ContainerLogsOptions{
@@ -272,7 +272,7 @@ var serverLogsCmd = &cobra.Command{
 			Follow:     follow,
 		})
 		if err != nil {
-			util.Error(err, "error reading container logs")
+			util.Fatal(err, "error reading container logs")
 		}
 
 		_, _ = stdcopy.StdCopy(os.Stdout, os.Stderr, logs)

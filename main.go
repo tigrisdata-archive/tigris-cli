@@ -28,9 +28,8 @@ func main() {
 
 	util.LogConfigure(&config.DefaultConfig.Log)
 
-	if err := client.Init(&config.DefaultConfig); err != nil {
-		util.Error(err, "tigris client initialization failed")
-	}
+	err := client.Init(&config.DefaultConfig)
+	util.Fatal(err, "tigris client initialization")
 
 	cmd.Execute()
 }

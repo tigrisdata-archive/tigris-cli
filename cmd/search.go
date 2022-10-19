@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -72,43 +73,38 @@ var searchCmd = &cobra.Command{
 `, rootCmd.Root().Name(), "search testdb users"),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-
-		request := &driver.SearchRequest{
-			Q:             query,
-			SearchFields:  searchFields,
-			Filter:        driver.Filter(filter),
-			Facet:         driver.Facet(facet),
-			Sort:          driver.SortOrder(sort),
-			IncludeFields: includeFields,
-			ExcludeFields: excludeFields,
-			Page:          page,
-			PageSize:      pageSize,
-		}
-
-		it, err := client.Get().UseDatabase(args[0]).Search(ctx, args[1], request)
-		if err != nil {
-			util.Error(err, "search failed")
-		}
-		var resp driver.SearchResponse
-		for it.Next(&resp) {
-			r := &search.Result[interface{}]{}
-			err := r.From(resp)
-			if err != nil {
-				util.Error(err, "search result conversion failed")
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			request := &driver.SearchRequest{
+				Q:             query,
+				SearchFields:  searchFields,
+				Filter:        driver.Filter(filter),
+				Facet:         driver.Facet(facet),
+				Sort:          driver.SortOrder(sort),
+				IncludeFields: includeFields,
+				ExcludeFields: excludeFields,
+				Page:          page,
+				PageSize:      pageSize,
 			}
 
-			resultJSON, err := json.MarshalIndent(r, "", " ")
+			it, err := client.Get().UseDatabase(args[0]).Search(ctx, args[1], request)
 			if err != nil {
-				util.Error(err, "result marshalling failed")
+				return util.Error(err, "search failed")
 			}
 
-			util.Stdoutf("%s\n", resultJSON)
-		}
-		if err := it.Err(); err != nil {
-			util.Error(err, "search result iteration failed")
-		}
+			var resp driver.SearchResponse
+			for it.Next(&resp) {
+				r := &search.Result[interface{}]{}
+				err := r.From(resp)
+				util.Fatal(err, "search result conversion")
+
+				resultJSON, err := json.MarshalIndent(r, "", " ")
+				util.Fatal(err, "result marshalling")
+
+				util.Stdoutf("%s\n", resultJSON)
+			}
+
+			return util.Error(it.Err(), "search result iteration")
+		})
 	},
 }
 

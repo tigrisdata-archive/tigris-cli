@@ -47,39 +47,33 @@ var GoCmd = &cobra.Command{
 		}
 
 		if _, err := os.Stat(tv.Project); !os.IsNotExist(err) {
-			util.Error(fmt.Errorf("%w: %s", ErrDirAlreadyExists, tv.Project),
+			util.Fatal(fmt.Errorf("%w: %s", ErrDirAlreadyExists, tv.Project),
 				"directory of being scaffolded project already exists")
 		}
 
 		err := os.Mkdir(tv.Project, 0o755)
-		if err != nil {
-			util.Error(err, "")
-		}
+		util.Fatal(err, "mkdir "+tv.Project)
 
 		f, err := os.Create(tv.Project + "/main.go")
-		if err != nil {
-			util.Error(err, "")
-		}
+		util.Fatal(err, "create "+tv.Project+"/main.go")
+
 		defer func() {
 			err := f.Close()
-			util.Error(err, "failed to close main.go")
+			_ = util.Error(err, "close main.go")
 		}()
 
 		tmpl, err := template.New("main").Parse(templates.ScaffoldGo)
-		if err != nil {
-			util.Error(err, "")
-		}
-		if err := tmpl.Execute(f, tv); err != nil {
-			util.Error(err, "")
-		}
+		util.Fatal(err, "template parse")
 
-		if err := os.WriteFile(fmt.Sprintf("%s/go.mod", tv.Project), []byte(fmt.Sprintf(`
+		err = tmpl.Execute(f, tv)
+		util.Fatal(err, "template execute")
+
+		err = os.WriteFile(fmt.Sprintf("%s/go.mod", tv.Project), []byte(fmt.Sprintf(`
 module github.com/%s/%s
 
 go 1.18
-`, tv.Company, tv.Project)), 0o600); err != nil {
-			util.Error(err, "")
-		}
+`, tv.Company, tv.Project)), 0o600)
+		util.Fatal(err, "write go.mod")
 
 		util.Stdoutf(`
 Execute the following to compile and run scaffolded project:

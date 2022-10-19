@@ -43,7 +43,7 @@ func detectArray(r io.RuneScanner) bool {
 				return false
 			}
 
-			util.Error(err, "error reading input")
+			util.Fatal(err, "reading input")
 
 			return false
 		}
@@ -54,7 +54,7 @@ func detectArray(r io.RuneScanner) bool {
 	}
 
 	if err := r.UnreadRune(); err != nil {
-		util.Error(err, "error reading input")
+		util.Fatal(err, "reading input")
 	}
 
 	return c == '['
@@ -63,15 +63,15 @@ func detectArray(r io.RuneScanner) bool {
 func iterateArray(r []byte) []json.RawMessage {
 	arr := make([]json.RawMessage, 0)
 	if err := json.Unmarshal(r, &arr); err != nil {
-		util.Error(err, "reading parsing array of documents")
+		util.Fatal(err, "reading parsing array of documents")
 	}
 
 	return arr
 }
 
 func iterateStream(ctx context.Context, args []string, r io.Reader, fn func(ctx2 context.Context, args []string,
-	docs []json.RawMessage),
-) {
+	docs []json.RawMessage) error,
+) error {
 	dec := json.NewDecoder(r)
 
 	for {
@@ -82,26 +82,29 @@ func iterateStream(ctx context.Context, args []string, r io.Reader, fn func(ctx2
 		for ; i < BatchSize && dec.More(); i++ {
 			var v json.RawMessage
 
-			if err := dec.Decode(&v); err != nil {
-				util.Error(err, "reading documents from stream of documents")
-			}
+			err := dec.Decode(&v)
+			util.Fatal(err, "reading documents from stream of documents")
 
 			docs = append(docs, v)
 		}
 
 		if i > 0 {
-			fn(ctx, args, docs)
+			if err := fn(ctx, args, docs); err != nil {
+				return err
+			}
 		} else {
 			break
 		}
 	}
+
+	return nil
 }
 
 // iterateInput reads repeated command parameters from standard input or args.
 // Supports newline delimited stream of objects and arrays of objects.
 func iterateInput(ctx context.Context, cmd *cobra.Command, docsPosition int, args []string,
-	fn func(ctx2 context.Context, args []string, docs []json.RawMessage),
-) {
+	fn func(ctx2 context.Context, args []string, docs []json.RawMessage) error,
+) error {
 	if len(args) > docsPosition && args[docsPosition] != "-" {
 		docs := make([]json.RawMessage, 0, len(args))
 
@@ -113,9 +116,7 @@ func iterateInput(ctx context.Context, cmd *cobra.Command, docsPosition int, arg
 			}
 		}
 
-		fn(ctx, args, docs)
-
-		return
+		return fn(ctx, args, docs)
 	} else if len(args) <= docsPosition && util.IsTTY(os.Stdin) {
 		_, _ = fmt.Fprintf(os.Stderr, "not enougn arguments\n")
 		_ = cmd.Usage()
@@ -123,14 +124,13 @@ func iterateInput(ctx context.Context, cmd *cobra.Command, docsPosition int, arg
 	}
 
 	// stdin not a TTY or "-" is specified
-	if r := bufio.NewReader(os.Stdin); detectArray(r) {
+	r := bufio.NewReader(os.Stdin)
+	if detectArray(r) {
 		buf, err := io.ReadAll(r)
-		if err != nil {
-			util.Error(err, "error reading documents")
-		}
+		util.Fatal(err, "error reading documents")
 
-		fn(ctx, args, iterateArray(buf))
-	} else {
-		iterateStream(ctx, args, r, fn)
+		return fn(ctx, args, iterateArray(buf))
 	}
+
+	return iterateStream(ctx, args, r, fn)
 }

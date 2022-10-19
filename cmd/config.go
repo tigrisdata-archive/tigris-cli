@@ -31,9 +31,12 @@ var showConfigCmd = &cobra.Command{
 	Short: "Returns effective CLI configuration",
 	Run: func(cmd *cobra.Command, args []string) {
 		info, err := yaml.Marshal(config.DefaultConfig)
-		if err != nil {
-			util.Error(err, "marshal config failed")
+		util.Fatal(err, "marshal config")
+
+		if string(info) == "{}\n" {
+			return
 		}
+
 		util.Stdoutf("%s\n", string(info))
 	},
 }

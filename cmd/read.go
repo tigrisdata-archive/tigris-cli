@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -59,37 +60,39 @@ all the fields of the documents are selected.`,
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		filter := `{}`
-		fields := `{}`
-		if len(args) > 2 {
-			filter = args[2]
-		}
-		if len(args) > 3 {
-			fields = args[3]
-		}
-		it, err := client.Get().UseDatabase(args[0]).Read(ctx, args[1],
-			driver.Filter(filter),
-			driver.Projection(fields),
-			&driver.ReadOptions{Limit: limit, Skip: skip},
-		)
-		if err != nil {
-			util.Error(err, "read documents failed")
-		}
-		defer it.Close()
-		var doc driver.Document
-		for it.Next(&doc) {
-			// Document came through GRPC may have \n at the end already
-			if doc[len(doc)-1] == 0x0A {
-				util.Stdoutf("%s", string(doc))
-			} else {
-				util.Stdoutf("%s\n", string(doc))
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			filter, fields := `{}`, `{}`
+
+			if len(args) > 2 {
+				filter = args[2]
 			}
-		}
-		if err := it.Err(); err != nil {
-			util.Error(err, "iterate documents failed")
-		}
+
+			if len(args) > 3 {
+				fields = args[3]
+			}
+
+			it, err := client.Get().UseDatabase(args[0]).Read(ctx, args[1],
+				driver.Filter(filter),
+				driver.Projection(fields),
+				&driver.ReadOptions{Limit: limit, Skip: skip},
+			)
+			if err != nil {
+				return util.Error(err, "read documents failed")
+			}
+			defer it.Close()
+
+			var doc driver.Document
+			for it.Next(&doc) {
+				// Document came through GRPC may have \n at the end already
+				if doc[len(doc)-1] == 0x0A {
+					util.Stdoutf("%s", string(doc))
+				} else {
+					util.Stdoutf("%s\n", string(doc))
+				}
+			}
+
+			return it.Err()
+		})
 	},
 }
 

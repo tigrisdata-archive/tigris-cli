@@ -32,6 +32,8 @@ linters:
     - gochecknoinits
     - scopelint
 linters-settings:
+  nlreturn:
+    block-size: 2
   goheader:
     template: |-
       Copyright {{ YEAR }} Tigris Data, Inc.

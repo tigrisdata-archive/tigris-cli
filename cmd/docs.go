@@ -26,9 +26,7 @@ var docsCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		err := doc.GenMarkdownTree(rootCmd, args[0])
-		if err != nil {
-			util.Error(err, "error generating Markdown documentation")
-		}
+		util.Fatal(err, "generating Markdown documentation")
 	},
 }
 

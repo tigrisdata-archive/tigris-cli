@@ -52,7 +52,7 @@ func LogConfigure(cfg *config.Log) {
 
 	level := cfg.Level
 	if cfg.Level == "" {
-		level = "info"
+		level = "disabled"
 	}
 
 	lvl, err := zerolog.ParseLevel(level)
@@ -79,7 +79,7 @@ func GetContext(ctx context.Context) (context.Context, context.CancelFunc) {
 }
 
 func Stdoutf(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stdout, format, args...)
+	_, _ = fmt.Fprintf(os.Stdout, format, args...)
 }
 
 func PrettyJSON(s any) error {
@@ -93,8 +93,28 @@ func PrettyJSON(s any) error {
 	return nil
 }
 
-func Error(err error, msg string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "%v\n", err)
+func PrintError(err error) {
+	_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+}
+
+func Error(err error, msg string, args ...interface{}) error {
+	if err == nil {
+		return nil
+	}
+
 	log.Debug().Err(err).Msgf(msg, args...)
+
+	return err
+}
+
+func Fatal(err error, msg string, args ...interface{}) {
+	if err == nil {
+		return
+	}
+
+	PrintError(err)
+
+	_ = Error(err, msg, args...)
+
 	os.Exit(1)
 }

@@ -23,7 +23,7 @@ $cli version
 $cli config show
 
 def_cfg=$($cli config show)
-if [ "$def_cfg" != 'url: localhost:8081' ]; then
+if [ "$def_cfg" != '' ]; then
 	set +x
 	echo "unexpected default config"
 	echo "it can be caused by tigris-cli.yaml in /etc/tigris/, $HOME/tigris/, ./config/, . directories"
@@ -36,6 +36,7 @@ if [ -z "$noup" ]; then
 	$cli local logs >/dev/null 2>&1
 fi
 
+export TIGRIS_URL=localhost:8081
 $cli server info
 $cli server version
 
@@ -73,20 +74,20 @@ db_tests() {
 	#reading schemas from command line parameters
 	$cli create collection db1 "$coll1" "$coll111"
 
-	out=$($cli describe collection db1 coll1)
+	out=$($cli describe collection db1 coll1|tr -d '\n')
 	diff -w -u <(echo '{"collection":"coll1","schema":'"$coll1"'}') <(echo "$out")
 
-	out=$($cli describe database db1)
+	out=$($cli describe database db1|tr -d '\n')
 	# The output order is not-deterministic, try both combinations:
 	# BUG: Http doesn't fill database name
-	diff -u <(echo '{"db":"db1","collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out") ||
-	diff -u <(echo '{"db":"db1","collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
-	diff -u <(echo '{"collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
-	diff -u <(echo '{"collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out")
+	diff -w -u <(echo '{"db":"db1","collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out") ||
+	diff -w -u <(echo '{"db":"db1","collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
+	diff -w -u <(echo '{"collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
+	diff -w -u <(echo '{"collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out")
 
-	out=$($cli describe database db1 --schema-only)
-	diff -w -u <(echo -e "$coll1\n$coll111") <(echo "$out") ||
-	diff -w -u <(echo -e "$coll111\n$coll1") <(echo "$out")
+	out=$($cli describe database db1 --schema-only|tr -d '\n')
+	diff -w -u <(echo -e "$coll1$coll111") <(echo "$out") ||
+	diff -w -u <(echo -e "$coll111$coll1") <(echo "$out")
 
 	#reading schemas from stream
 	# \n at the end to test empty line skipping
@@ -266,6 +267,8 @@ error() {
 # BUG: Unify HTTP and GRPC responses
 # shellcheck disable=SC2086
 db_errors_tests() {
+	$cli list databases
+
 	error "database doesn't exist 'db2'" $cli drop database db2
 
 	error "database doesn't exist 'db2'" $cli drop collection db2 coll1
@@ -342,15 +345,7 @@ main() {
 	test_config
 
 	unset TIGRIS_PROTOCOL
-	unset TIGRIS_URL
-	db_tests
-
-	export TIGRIS_PROTOCOL=grpc
-	$cli config show | grep "protocol: grpc"
-	db_tests
-
-	export TIGRIS_PROTOCOL=http
-	$cli config show | grep "protocol: http"
+	export TIGRIS_URL=localhost:8081
 	db_tests
 
 	export TIGRIS_URL=localhost:8081
