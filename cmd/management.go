@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
@@ -178,19 +177,14 @@ var listNamespacesCmd = &cobra.Command{
 }
 
 var createNamespaceCmd = &cobra.Command{
-	Use:   "namespace {id} {name}",
+	Use:   "namespace {name}",
 	Short: "Create namespace",
-	Args:  cobra.MinimumNArgs(2),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 
-		id, err := strconv.ParseInt(args[0], 10, 32)
-		if err != nil {
-			util.Error(err, "error parsing integer id")
-		}
-
-		if err := client.ManagementGet().CreateNamespace(ctx, int(id), args[1]); err != nil {
+		if err := client.ManagementGet().CreateNamespace(ctx, args[0]); err != nil {
 			util.Error(err, "create namespace failed")
 		}
 
