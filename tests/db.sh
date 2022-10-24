@@ -19,15 +19,25 @@ if [ -z "$cli" ]; then
 	cli="./tigris"
 fi
 
+# Just to check if any config is set
+env|grep TIGRIS || true
+
 $cli version
 $cli config show
 
 def_cfg=$($cli config show)
 if [ "$def_cfg" != '' ]; then
 	set +x
-	echo "unexpected default config"
-	echo "it can be caused by tigris-cli.yaml in /etc/tigris/, $HOME/tigris/, ./config/, . directories"
-	echo "back it up and remove original one"
+	cat <<EOF
+
+Unexpected default config
+
+It can be caused by:
+  * tigris-cli.yaml in /etc/tigris/, $HOME/tigris/, ./config/, . directories
+    back it up and remove original one
+  * TIGRIS_* environment variables set
+
+EOF
 	exit 1
 fi
 
@@ -341,18 +351,94 @@ test_pubsub() {
 	$cli drop collection db1 coll_msg
 }
 
+test_scaffold() {
+	coll_msg='{"title":"names","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"}},"collection_type":"messages"}'
+
+	$cli drop database gen1 || true
+	$cli create database gen1
+	$cli create collection gen1 "$coll_msg"
+
+	exp_out='package main
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/tigrisdata/tigris-client-go/config"
+	"github.com/tigrisdata/tigris-client-go/tigris"
+)
+
+type Name struct {
+	Field1 int64
+	Key1 string
+}
+
+func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	client, err := tigris.NewClient(ctx, &config.Client{Driver: config.Driver{URL: "localhost:8081"}})
+
+	if err != nil {
+		panic(err)
+	}
+	defer client.Close()
+
+	db, err := client.OpenDatabase(ctx, "gen1",
+		&Name{},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	collName := tigris.GetCollection[Name](db)
+
+	itName, err := collName.ReadAll(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	var docName Name
+	for i := 0; itName.Next(&docName) && i < 3; i++ {
+		fmt.Printf("%+v\n", docName)
+	}
+
+	itName.Close()
+
+	//collName.Insert(context.TODO(), &Name{/* Insert fields here */})
+}
+
+// Check full API reference here: https://docs.tigrisdata.com/golang/
+
+// Compile and run:
+// * Put this output to main.go
+// * go mod init
+// * go mod tidy
+// * go build -o gen1 .
+// * ./gen1'
+
+	out=$($cli scaffold go gen1)
+	diff -w -u <(echo "$exp_out") <(echo "$out") ||
+
+	$cli drop database gen1
+}
+
+
 main() { 
 	test_config
 
 	unset TIGRIS_PROTOCOL
 	export TIGRIS_URL=localhost:8081
 	db_tests
+	test_scaffold
 
 	export TIGRIS_URL=localhost:8081
 	export TIGRIS_PROTOCOL=grpc
 	$cli config show | grep "protocol: grpc"
 	$cli config show | grep "url: localhost:8081"
 	db_tests
+	test_scaffold
 
 	export TIGRIS_URL=localhost:8081
 	export TIGRIS_PROTOCOL=http

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"text/template"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -82,6 +83,10 @@ func Stdoutf(format string, args ...interface{}) {
 	_, _ = fmt.Fprintf(os.Stdout, format, args...)
 }
 
+func Stderrf(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(os.Stderr, format, args...)
+}
+
 func PrettyJSON(s any) error {
 	b, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
@@ -117,4 +122,15 @@ func Fatal(err error, msg string, args ...interface{}) {
 	_ = Error(err, msg, args...)
 
 	os.Exit(1)
+}
+
+func ExecTemplate(w io.Writer, tmpl string, vars interface{}) {
+	t, err := template.New("exec_template").Parse(tmpl)
+	if err != nil {
+		_ = Error(err, "error parsing template")
+	}
+
+	if err := t.Execute(w, vars); err != nil {
+		_ = Error(err, "execute template failed")
+	}
 }

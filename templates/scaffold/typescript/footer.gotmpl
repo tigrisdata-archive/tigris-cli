@@ -1,0 +1,47 @@
+
+async function main() {
+{{- if ne .URL "api.preview.tigrisdata.cloud" }}
+    var tigris = new Tigris({
+      serverUrl: "{{.URL}}",
+    });
+{{- else }}
+    var tigris = new Tigris();
+{{- end }}
+    var db = await tigris.createDatabaseIfNotExists("{{.DBName}}");
+
+    await Promise.all([
+{{- range .Collections}}
+      db.createOrUpdateCollection<{{.Name}}>("{{.JSON}}", {{.NameDecap}}Schema),
+{{- end}}
+    ])
+{{range .Collections}}
+    var coll{{.Name}} = db.getCollection<{{.Name}}>("{{.JSON}}");
+
+    const {{.NameDecap}}cursor = coll{{.Name}}.findMany();
+    try {
+      for await (const doc of {{.NameDecap}}cursor) {
+        console.log(doc)
+      }
+    } catch (error) {
+        console.log(error)
+    }
+
+    //coll{{.Name}}.insertOne(<{{.Name}}>{})
+{{ end -}}
+}
+
+main()
+  .then(async () => {
+    console.log("All done ...")
+  })
+  .catch(async (e) => {
+    console.error(e)
+    process.exit(1);
+  })
+
+// Check full API reference here: https://docs.tigrisdata.com/typescript/
+
+// Build and run:
+// * Put this content to index.ts
+// * npm install @tigrisdata/core ts-node
+// * npx ts-node index.ts

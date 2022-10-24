@@ -1,0 +1,14 @@
+package main
+
+import (
+{{"\t"}}"context"
+{{"\t"}}"fmt"
+{{"\t"}}"time"
+{{ if .HasUUID }}
+{{"\t"}}"github.com/google/uuid"
+{{- end }}
+{{"\t"}}"github.com/tigrisdata/tigris-client-go/config"
+{{- if ne .URL "api.preview.tigrisdata.cloud" }}
+{{"\t"}}"github.com/tigrisdata/tigris-client-go/tigris"
+{{- end }}
+)

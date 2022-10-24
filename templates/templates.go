@@ -23,4 +23,19 @@ var (
 	LoginError string
 	//go:embed scaffold/go.gotmpl
 	ScaffoldGo string
+
+	//go:embed scaffold/go/header.gotmpl
+	SchemaGoHeader string
+	//go:embed scaffold/go/footer.gotmpl
+	SchemaGoFooter string
+
+	//go:embed scaffold/java/header.gotmpl
+	SchemaJavaHeader string
+	//go:embed scaffold/java/footer.gotmpl
+	SchemaJavaFooter string
+
+	//go:embed scaffold/typescript/header.gotmpl
+	SchemaTypeScriptHeader string
+	//go:embed scaffold/typescript/footer.gotmpl
+	SchemaTypeScriptFooter string
 )

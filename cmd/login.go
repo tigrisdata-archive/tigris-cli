@@ -20,8 +20,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"html/template"
-	"io"
 	"net/http"
 	"os"
 	"sync"
@@ -73,9 +71,6 @@ var (
 
 	code  string
 	token *oauth2.Token
-
-	tmplSuccess *template.Template
-	tmplError   *template.Template
 )
 
 type tmplVars struct {
@@ -88,7 +83,7 @@ func authorize(auth *Authenticator, state string, audience string) error {
 
 	log.Debug().Str("url", authURL).Msg("Open login link in the browser")
 
-	util.Stdoutf("Opening login page in the browser. Please continue login flow there.\n")
+	util.Stderrf("Opening login page in the browser. Please continue login flow there.\n")
 
 	if err := browser.OpenURL(authURL); err != nil {
 		return util.Error(err, "Error opening login page")
@@ -109,12 +104,6 @@ func getToken(auth *Authenticator, code string) *oauth2.Token {
 	return token
 }
 
-func execTemplate(w io.Writer, tmpl *template.Template, vars *tmplVars) {
-	if err := tmpl.Execute(w, vars); err != nil {
-		log.Err(err).Msg("execute template failed")
-	}
-}
-
 func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, instanceURL string, state string) error {
 	mux := http.NewServeMux()
 	server.Handler = mux
@@ -128,7 +117,7 @@ func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, inst
 
 		if r.URL.Query().Get("state") != state {
 			retError = ErrStateMismatched
-			execTemplate(w, tmplError, &tmplVars{Title: instanceURL, Error: retError.Error()})
+			util.ExecTemplate(w, templates.LoginError, &tmplVars{Title: instanceURL, Error: retError.Error()})
 			log.Debug().Str("want", state).Str("got", r.URL.Query().Get("state")).Msg("state is not matched")
 
 			return
@@ -149,14 +138,14 @@ func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, inst
 		if err := config.Save(config.DefaultName, config.DefaultConfig); err != nil {
 			retError = err
 			log.Err(err).Msg("Error saving config")
-			execTemplate(w, tmplError, &tmplVars{Title: instanceURL, Error: err.Error()})
+			util.ExecTemplate(w, templates.LoginError, &tmplVars{Title: instanceURL, Error: err.Error()})
 
 			return
 		}
 
-		execTemplate(w, tmplSuccess, &tmplVars{Title: instanceURL})
+		util.ExecTemplate(w, templates.LoginSuccessful, &tmplVars{Title: instanceURL})
 
-		util.Stdoutf("Successfully logged in\n")
+		util.Stderrf("Successfully logged in\n")
 	})
 
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
@@ -279,16 +268,6 @@ func loginCmdLow(_ context.Context, host string) error {
 
 	host = getHost(host)
 
-	tmplSuccess, err = template.New("login_success").Parse(templates.LoginSuccessful)
-	if err != nil {
-		return util.Error(err, "error parsing login success template")
-	}
-
-	tmplError, err = template.New("login_error").Parse(templates.LoginError)
-	if err != nil {
-		return util.Error(err, "error parsing login error template")
-	}
-
 	state, err := genRandomState()
 	if err != nil {
 		return err
@@ -375,6 +354,7 @@ var loginCmd = &cobra.Command{
 	Example: `tigris login api.preview.tigrisdata.cloud`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var host string
+
 		if len(args) > 0 {
 			host = args[0]
 		}
@@ -398,7 +378,7 @@ var logoutCmd = &cobra.Command{
 		err := config.Save(config.DefaultName, cfg)
 		util.Fatal(err, "saving config")
 
-		util.Stdoutf("Successfully logged out\n")
+		util.Stderrf("Successfully logged out\n")
 	},
 }
 

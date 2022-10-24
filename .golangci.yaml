@@ -1,9 +1,12 @@
 linters:
   enable-all: true
   disable:
+    - paralleltest
     # zerolog config fails
     # fix later
     - reassign
+    # we prefer whitebox testing
+    - testpackage
 
     # Not working with generics
     # enable in the future

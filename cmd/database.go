@@ -24,6 +24,8 @@ import (
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 )
 
+var schemaOnly bool
+
 var listDatabasesCmd = &cobra.Command{
 	Use:   "databases",
 	Short: "Lists databases",
@@ -31,7 +33,7 @@ var listDatabasesCmd = &cobra.Command{
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			resp, err := client.Get().ListDatabases(ctx)
 			if err != nil {
-				return util.Error(err, "list databases failed")
+				return util.Error(err, "list databases")
 			}
 
 			for _, v := range resp {
@@ -60,11 +62,6 @@ var describeDatabaseCmd = &cobra.Command{
 			resp, err := client.Get().DescribeDatabase(ctx, args[0])
 			if err != nil {
 				return util.Error(err, "describe collection failed")
-			}
-
-			schemaOnly, err := cmd.Flags().GetBool("schema-only")
-			if err != nil {
-				util.Fatal(err, "error reading the 'schema-only' option")
 			}
 
 			if schemaOnly {
@@ -121,7 +118,8 @@ var dropDatabaseCmd = &cobra.Command{
 }
 
 func init() {
-	describeDatabaseCmd.Flags().BoolP("schema-only", "s", false, "dump only schema of all database collections")
+	describeDatabaseCmd.Flags().BoolVarP(&schemaOnly, "schema-only", "s", false,
+		"dump only schema of all database collections")
 
 	dropCmd.AddCommand(dropDatabaseCmd)
 	createCmd.AddCommand(createDatabaseCmd)
