@@ -424,6 +424,9 @@ func main() {
 	$cli drop database gen1
 }
 
+BASEDIR=$(dirname "$0")
+# shellcheck source=tests/import.sh
+source "$BASEDIR/import.sh"
 
 main() { 
 	test_config
@@ -432,6 +435,7 @@ main() {
 	export TIGRIS_URL=localhost:8081
 	db_tests
 	test_scaffold
+	test_import
 
 	export TIGRIS_URL=localhost:8081
 	export TIGRIS_PROTOCOL=grpc
@@ -439,6 +443,7 @@ main() {
 	$cli config show | grep "url: localhost:8081"
 	db_tests
 	test_scaffold
+	test_import
 
 	export TIGRIS_URL=localhost:8081
 	export TIGRIS_PROTOCOL=http

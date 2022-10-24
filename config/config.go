@@ -28,7 +28,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var DefaultConfig = Config{}
+var (
+	DefaultConfig = Config{}
+
+	DefaultURL = "api.preview.tigrisdata.cloud"
+	Domain     = "tigrisdata.cloud"
+)
 
 type Log struct {
 	Level string `json:"level" yaml:"level,omitempty"`
