@@ -56,12 +56,12 @@ var typeScriptCmd = &cobra.Command{
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().DescribeDatabase(ctx, args[0], &driver.DescribeDatabaseOptions{SchemaFormat: "go"})
+			resp, err := client.Get().DescribeDatabase(ctx, args[0], &driver.DescribeDatabaseOptions{SchemaFormat: "typescript"})
 			if err != nil {
 				return util.Error(err, "describe collection failed")
 			}
 
-			err = schema.ScaffoldFromDB(args[0], resp.Collections, "go")
+			err = schema.ScaffoldFromDB(args[0], resp.Collections, "typescript")
 			util.Fatal(err, "scaffold from database")
 
 			return nil
@@ -75,12 +75,12 @@ var javaCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().DescribeDatabase(ctx, args[0], &driver.DescribeDatabaseOptions{SchemaFormat: "go"})
+			resp, err := client.Get().DescribeDatabase(ctx, args[0], &driver.DescribeDatabaseOptions{SchemaFormat: "java"})
 			if err != nil {
 				return util.Error(err, "describe collection failed")
 			}
 
-			err = schema.ScaffoldFromDB(args[0], resp.Collections, "go")
+			err = schema.ScaffoldFromDB(args[0], resp.Collections, "java")
 			util.Fatal(err, "scaffold from database")
 
 			return nil
