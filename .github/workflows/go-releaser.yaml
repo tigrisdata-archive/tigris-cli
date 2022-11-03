@@ -60,6 +60,8 @@ jobs:
           API_KEY=${{secrets.SHORTS_IO_KEY}} VERSION=${GITHUB_REF/refs\/tags\//} /bin/bash scripts/publish.sh
 
       - name: Publish to NPM
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm version --no-git-tag-version ${GITHUB_REF/refs\/tags\//}
           npm publish --access public
