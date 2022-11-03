@@ -20,8 +20,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"html/template"
-	"io"
 	"net/http"
 	"os"
 	"sync"
@@ -31,9 +29,13 @@ import (
 	"github.com/pkg/browser"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/templates"
 	"github.com/tigrisdata/tigris-cli/util"
+	ecode "github.com/tigrisdata/tigris-client-go/code"
+	"github.com/tigrisdata/tigris-client-go/driver"
+	"golang.org/x/net/context/ctxhttp"
 	"golang.org/x/oauth2"
 )
 
@@ -69,9 +71,6 @@ var (
 
 	code  string
 	token *oauth2.Token
-
-	tmplSuccess *template.Template
-	tmplError   *template.Template
 )
 
 type tmplVars struct {
@@ -84,12 +83,10 @@ func authorize(auth *Authenticator, state string, audience string) error {
 
 	log.Debug().Str("url", authURL).Msg("Open login link in the browser")
 
-	util.Stdoutf("Opening login page in the browser. Please continue login flow there.\n")
+	util.Stderrf("Opening login page in the browser. Please continue login flow there.\n")
 
 	if err := browser.OpenURL(authURL); err != nil {
-		util.Error(err, "Error opening login page")
-
-		return err
+		return util.Error(err, "Error opening login page")
 	}
 
 	return nil
@@ -101,16 +98,10 @@ func getToken(auth *Authenticator, code string) *oauth2.Token {
 
 	token, err := auth.Exchange(ctx, code)
 	if err != nil {
-		util.Error(err, "error retrieving token")
+		_ = util.Error(err, "error retrieving token")
 	}
 
 	return token
-}
-
-func execTemplate(w io.Writer, tmpl *template.Template, vars *tmplVars) {
-	if err := tmpl.Execute(w, vars); err != nil {
-		log.Err(err).Msg("execute template failed")
-	}
 }
 
 func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, instanceURL string, state string) error {
@@ -126,7 +117,7 @@ func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, inst
 
 		if r.URL.Query().Get("state") != state {
 			retError = ErrStateMismatched
-			execTemplate(w, tmplError, &tmplVars{Title: instanceURL, Error: retError.Error()})
+			util.ExecTemplate(w, templates.LoginError, &tmplVars{Title: instanceURL, Error: retError.Error()})
 			log.Debug().Str("want", state).Str("got", r.URL.Query().Get("state")).Msg("state is not matched")
 
 			return
@@ -147,14 +138,14 @@ func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, inst
 		if err := config.Save(config.DefaultName, config.DefaultConfig); err != nil {
 			retError = err
 			log.Err(err).Msg("Error saving config")
-			execTemplate(w, tmplError, &tmplVars{Title: instanceURL, Error: err.Error()})
+			util.ExecTemplate(w, templates.LoginError, &tmplVars{Title: instanceURL, Error: err.Error()})
 
 			return
 		}
 
-		execTemplate(w, tmplSuccess, &tmplVars{Title: instanceURL})
+		util.ExecTemplate(w, templates.LoginSuccessful, &tmplVars{Title: instanceURL})
 
-		util.Stdoutf("Successfully logged in\n")
+		util.Stderrf("Successfully logged in\n")
 	})
 
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
@@ -163,7 +154,7 @@ func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, inst
 	})
 
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		util.Error(err, "callback server failed")
+		_ = util.Error(err, "callback server failed")
 
 		if retError == nil {
 			retError = err
@@ -175,19 +166,176 @@ func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, inst
 	return retError
 }
 
-func genRandomState() string {
+func genRandomState() (string, error) {
 	stateBin := make([]byte, 32)
 
 	if n, err := rand.Read(stateBin); err != nil || n != 32 {
-		util.Error(fmt.Errorf("failed to generate random state %w", err), "")
+		return "", util.Error(fmt.Errorf("failed to generate random state %w", err), "")
 	}
 
-	return base64.StdEncoding.EncodeToString(stateBin)
+	return base64.StdEncoding.EncodeToString(stateBin), nil
 }
 
 type Authenticator struct {
 	*oidc.Provider
 	oauth2.Config
+}
+
+func withLogin(cctx context.Context, fn func(ctx context.Context) error) {
+	ctx, cancel := util.GetContext(cctx)
+
+	err := fn(ctx)
+
+	cancel()
+
+	if err == nil {
+		return
+	}
+
+	var ep *driver.Error
+	if !errors.As(err, &ep) || ep.Code != ecode.Unauthenticated ||
+		os.Getenv(driver.EnvClientID) != "" || os.Getenv(driver.EnvClientSecret) != "" ||
+		config.DefaultConfig.ClientID != "" || config.DefaultConfig.ClientSecret != "" {
+		util.PrintError(err)
+		os.Exit(1)
+	}
+
+	lctx, lcancel := util.GetContext(cctx)
+
+	if err = loginCmdLow(lctx, ""); err != nil {
+		lcancel()
+		os.Exit(1)
+	}
+
+	lcancel()
+
+	_ = client.Init(&config.DefaultConfig)
+
+	ctx1, cancel1 := util.GetContext(cctx)
+
+	err = fn(ctx1)
+
+	cancel1()
+
+	if err != nil {
+		util.PrintError(err)
+		os.Exit(1)
+	}
+}
+
+func getHost(host string) string {
+	if host == "" {
+		host = defaultURL
+		if os.Getenv("TIGRIS_URL") != "" {
+			host = os.Getenv("TIGRIS_URL")
+		}
+
+		if config.DefaultConfig.URL != "" {
+			host = config.DefaultConfig.URL
+		}
+	}
+
+	return host
+}
+
+func waitCallbackServerUp() {
+	c := http.Client{Timeout: 5 * time.Second}
+
+	log.Debug().Msg("Waiting for callback server start")
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+		r, err := ctxhttp.Get(ctx, &c, "http://"+callbackHost+"/ping")
+
+		cancel()
+
+		if err == nil {
+			_ = util.Error(r.Body.Close(), "closing ping body")
+
+			if r.StatusCode == http.StatusOK {
+				log.Debug().Msg("Callback server has started")
+
+				break
+			}
+		}
+	}
+}
+
+//nolint:golint,funlen
+func loginCmdLow(_ context.Context, host string) error {
+	var err error
+
+	host = getHost(host)
+
+	state, err := genRandomState()
+	if err != nil {
+		return err
+	}
+
+	inst, ok := instances[host]
+	if !ok {
+		return util.Error(fmt.Errorf("%w: %s", ErrInstanceNotFound, host), "Instance config not found")
+	}
+
+	p, err := oidc.NewProvider(context.Background(), inst.authHost)
+	if err != nil {
+		return util.Error(err, "authorize error")
+	}
+
+	auth := &Authenticator{
+		Provider: p,
+		Config: oauth2.Config{
+			ClientID:    inst.clientID,
+			RedirectURL: callbackURL,
+			Endpoint:    p.Endpoint(),
+		},
+	}
+
+	var callbackErr, authorizeErr error
+
+	server := &http.Server{Addr: callbackHost, ReadHeaderTimeout: util.GetTimeout()}
+
+	var (
+		wg1 sync.WaitGroup
+		wg  sync.WaitGroup
+	)
+
+	wg1.Add(1)
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		callbackErr = callback(&wg1, server, auth, host, state)
+	}()
+
+	waitCallbackServerUp()
+
+	authorizeErr = authorize(auth, state, inst.audience)
+
+	log.Debug().Msg("Waiting for login flow to finish in the browser")
+
+	wg1.Wait()
+
+	log.Debug().Msg("Shutting down callback server")
+
+	ctx1, cancel := util.GetContext(context.Background())
+	defer cancel()
+
+	if err = server.Shutdown(ctx1); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return util.Error(err, "shutdown callback server failed")
+	}
+
+	log.Debug().Msg("Callback handler finished")
+
+	wg.Wait()
+
+	if authorizeErr != nil {
+		return util.Error(authorizeErr, "authorize error")
+	}
+
+	return util.Error(callbackErr, "callback error")
 }
 
 var loginCmd = &cobra.Command{
@@ -205,97 +353,14 @@ var loginCmd = &cobra.Command{
 * You can now return to the terminal and start using the CLI`,
 	Example: `tigris login api.preview.tigrisdata.cloud`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var err error
-		tmplSuccess, err = template.New("login_success").Parse(templates.LoginSuccessful)
-		if err != nil {
-			util.Error(err, "error parsing login success template")
-		}
-
-		tmplError, err = template.New("login_error").Parse(templates.LoginError)
-		if err != nil {
-			util.Error(err, "error parsing login error template")
-		}
-
-		state := genRandomState()
-
-		host := defaultURL
-		if os.Getenv("TIGRIS_URL") != "" {
-			host = os.Getenv("TIGRIS_URL")
-		}
+		var host string
 
 		if len(args) > 0 {
 			host = args[0]
 		}
 
-		inst, ok := instances[host]
-		if !ok {
-			util.Error(fmt.Errorf("%w: %s", ErrInstanceNotFound, host), "Instance config not found")
-		}
-
-		p, err := oidc.NewProvider(context.Background(), inst.authHost)
-		if err != nil {
-			util.Error(err, "authorize error")
-		}
-
-		auth := &Authenticator{
-			Provider: p,
-			Config: oauth2.Config{
-				ClientID:    inst.clientID,
-				RedirectURL: callbackURL,
-				Endpoint:    p.Endpoint(),
-			},
-		}
-
-		var callbackErr, authorizeErr error
-
-		server := &http.Server{Addr: callbackHost, ReadHeaderTimeout: util.GetTimeout()}
-
-		var wg1 sync.WaitGroup
-		wg1.Add(1)
-		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			callbackErr = callback(&wg1, server, auth, host, state)
-		}()
-
-		c := http.Client{Timeout: 5 * time.Second}
-
-		log.Debug().Err(err).Msg("Waiting for callback server start")
-		for {
-			r, err := c.Get("http://" + callbackHost + "/ping")
-			if err == nil && r.StatusCode == http.StatusOK {
-				log.Debug().Msg("Callback server has started")
-
-				break
-			}
-		}
-
-		authorizeErr = authorize(auth, state, inst.audience)
-
-		log.Debug().Msg("Waiting for login flow to finish in the browser")
-
-		wg1.Wait()
-
-		log.Debug().Msg("Shutting down callback server")
-
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-
-		if err = server.Shutdown(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			util.Error(err, "shutdown callback server failed")
-		}
-
-		log.Debug().Msg("Callback handler finished")
-
-		wg.Wait()
-
-		if authorizeErr != nil {
-			util.Error(authorizeErr, "authorize error")
-		}
-
-		if callbackErr != nil {
-			util.Error(callbackErr, "callback error")
+		if err := loginCmdLow(cmd.Context(), host); err != nil {
+			os.Exit(1)
 		}
 	},
 }
@@ -304,15 +369,16 @@ var logoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "Logout from Tigris instance",
 	Run: func(cmd *cobra.Command, args []string) {
-		config.DefaultConfig.Token = ""
-		config.DefaultConfig.ClientSecret = ""
-		config.DefaultConfig.ClientID = ""
-		config.DefaultConfig.URL = ""
-		if err := config.Save(config.DefaultName, config.DefaultConfig); err != nil {
-			util.Error(err, "Failure saving config")
-		}
+		cfg := config.DefaultConfig
+		cfg.Token = ""
+		cfg.ClientSecret = ""
+		cfg.ClientID = ""
+		cfg.URL = ""
 
-		util.Stdoutf("Successfully logged out\n")
+		err := config.Save(config.DefaultName, cfg)
+		util.Fatal(err, "saving config")
+
+		util.Stderrf("Successfully logged out\n")
 	},
 }
 

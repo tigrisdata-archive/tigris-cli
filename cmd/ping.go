@@ -29,6 +29,7 @@ var pingCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
+
 		_, err := client.Get().ListDatabases(ctx)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "FAILED\n")

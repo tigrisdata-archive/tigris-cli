@@ -28,9 +28,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var DefaultConfig = Config{
-	URL: "localhost:8081",
-}
+var DefaultConfig = Config{}
 
 type Log struct {
 	Level string `json:"level" yaml:"level,omitempty"`

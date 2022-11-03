@@ -79,9 +79,7 @@ var completionCmd = &cobra.Command{
 		case "powershell":
 			err = cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
 		}
-		if err != nil {
-			util.Error(err, "shell completion generation failed")
-		}
+		util.Fatal(err, "shell completion generation")
 	},
 }
 

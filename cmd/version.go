@@ -15,6 +15,8 @@
 package cmd
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/config"
@@ -33,13 +35,16 @@ var serverVersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Returns server's version",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		resp, err := client.Get().Info(ctx)
-		if err != nil {
-			util.Error(err, "get server info failed")
-		}
-		util.Stdoutf("tigris server version at %s is %s\n", config.DefaultConfig.URL, resp.ServerVersion)
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			resp, err := client.Get().Info(ctx)
+			if err != nil {
+				return util.Error(err, "get server info")
+			}
+
+			util.Stdoutf("tigris server version at %s is %s\n", config.DefaultConfig.URL, resp.ServerVersion)
+
+			return nil
+		})
 	},
 }
 

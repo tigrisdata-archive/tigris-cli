@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -36,12 +37,10 @@ var deleteCmd = &cobra.Command{
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		_, err := client.Get().UseDatabase(args[0]).Delete(ctx, args[1], driver.Filter(args[2]))
-		if err != nil {
-			util.Error(err, "delete documents failed")
-		}
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			_, err := client.Get().UseDatabase(args[0]).Delete(ctx, args[1], driver.Filter(args[2]))
+			return util.Error(err, "delete documents")
+		})
 	},
 }
 

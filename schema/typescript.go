@@ -12,24 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package schema
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/spf13/cobra/doc"
-	"github.com/tigrisdata/tigris-cli/util"
+	"strings"
+
+	"github.com/tigrisdata/tigris-cli/templates"
 )
 
-var docsCmd = &cobra.Command{
-	Use:   "docs {output directory}",
-	Short: "Generates CLI documentation in Markdown format",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		err := doc.GenMarkdownTree(rootCmd, args[0])
-		util.Fatal(err, "generating Markdown documentation")
-	},
+type JSONToTypeScript struct{}
+
+func (*JSONToTypeScript) GetHeaderTemplate() string {
+	return templates.SchemaTypeScriptHeader
 }
 
-func init() {
-	rootCmd.AddCommand(docsCmd)
+func (*JSONToTypeScript) GetFooterTemplate() string {
+	return templates.SchemaTypeScriptFooter
+}
+
+func (*JSONToTypeScript) HasTime(schema string) bool {
+	return strings.Contains(schema, "DATE_TIME")
+}
+
+func (*JSONToTypeScript) HasUUID(schema string) bool {
+	return strings.Contains(schema, "UUID")
 }

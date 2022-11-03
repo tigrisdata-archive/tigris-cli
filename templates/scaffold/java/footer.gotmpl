@@ -1,0 +1,57 @@
+
+public class {{.DBNameCamel}}App {
+    public static void main(String[] args) throws TigrisException {
+        TigrisConfiguration configuration = TigrisConfiguration.newBuilder("{{.URL}}")
+            .withAuthConfig(new TigrisConfiguration.AuthConfig("paste client_id here", "paste client_secret here"))
+            .build();
+
+        TigrisClient client = StandardTigrisClient.getInstance(configuration);
+        TigrisDatabase db = client.createDatabaseIfNotExists("{{.DBName}}");
+
+        db.createOrUpdateCollections(
+{{- $first := true -}}
+{{- range .Collections}}
+    {{- if $first}}{{$first = false}}{{else}},{{end}}
+            {{.Name}}.class
+{{- end}}
+        );
+{{range .Collections}}
+        TigrisCollection<{{.Name}}> coll{{.Name}} = db.getCollection({{.Name}}.class);
+        coll{{.Name}}.insert(new {{.Name}}( /* Document fields here */));
+{{- end}}
+    }
+}
+
+// Check full API reference here: https://docs.tigrisdata.com/java/
+
+// Build and run:
+// * mkdir -p src/main/java/com/tigrisdata/client/schema/
+// * Put this output to src/main/java/com/tigrisdata/client/schema/{{.DBNameCamel}}App.java
+// * Put the following in the pom.xml
+// * mvn clean compile
+
+/*
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.tigrisdata</groupId>
+    <artifactId>{{.DBName}}</artifactId>
+    <version>1.0.0</version>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.tigrisdata</groupId>
+            <artifactId>tigris-client</artifactId>
+            <version>1.0.0-beta.4</version>
+        </dependency>
+    </dependencies>
+    <properties>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+</project>
+*/

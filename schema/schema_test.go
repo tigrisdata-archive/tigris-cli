@@ -12,24 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package schema
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/spf13/cobra/doc"
+	"os"
+	"testing"
+
+	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
 )
 
-var docsCmd = &cobra.Command{
-	Use:   "docs {output directory}",
-	Short: "Generates CLI documentation in Markdown format",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		err := doc.GenMarkdownTree(rootCmd, args[0])
-		util.Fatal(err, "generating Markdown documentation")
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(docsCmd)
+func TestMain(m *testing.M) {
+	util.LogConfigure(&config.Log{Level: "debug"})
+	os.Exit(m.Run())
 }

@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -32,19 +33,19 @@ var subscribeCmd = &cobra.Command{
 	Example: fmt.Sprintf("%[1]s subscribe testdb", rootCmd.Root().Name()),
 	Args:    cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := cmd.Context()
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			it, err := client.Get().UseDatabase(args[0]).Subscribe(ctx, args[1], driver.Filter(args[2]))
+			if err != nil {
+				return util.Error(err, "subscribe messages failed")
+			}
 
-		it, err := client.Get().UseDatabase(args[0]).Subscribe(ctx, args[1], driver.Filter(args[2]))
-		if err != nil {
-			util.Error(err, "subscribe messages failed")
-		}
-		var doc driver.Document
-		for i := int32(0); (subscribeLimit == 0 || i < subscribeLimit) && it.Next(&doc); i++ {
-			util.Stdoutf("%s\n", string(doc))
-		}
-		if err := it.Err(); err != nil {
-			util.Error(err, "iterate messages failed")
-		}
+			var doc driver.Document
+			for i := int32(0); (subscribeLimit == 0 || i < subscribeLimit) && it.Next(&doc); i++ {
+				util.Stdoutf("%s\n", string(doc))
+			}
+
+			return util.Error(it.Err(), "iterate messages failed")
+		})
 	},
 }
 

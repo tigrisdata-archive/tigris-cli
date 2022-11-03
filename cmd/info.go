@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/spf13/cobra"
@@ -26,17 +27,21 @@ var infoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "Returns server information",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		resp, err := client.Get().Info(ctx)
-		if err != nil {
-			util.Error(err, "get server info failed")
-		}
-		info, err := json.MarshalIndent(resp, "", "  ")
-		if err != nil {
-			util.Error(err, "get server info failed")
-		}
-		util.Stdoutf("%s\n", string(info))
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			resp, err := client.Get().Info(ctx)
+			if err != nil {
+				return util.Error(err, "get server info")
+			}
+
+			info, err := json.MarshalIndent(resp, "", "  ")
+			if err != nil {
+				util.Fatal(err, "marshal server info")
+			}
+
+			util.Stdoutf("%s\n", string(info))
+
+			return nil
+		})
 	},
 }
 

@@ -17,10 +17,8 @@ package client
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
-	"os"
-	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
 	cconfig "github.com/tigrisdata/tigris-client-go/config"
@@ -39,64 +37,34 @@ var (
 	O driver.Observability
 )
 
-var ErrUnknownProtocol = fmt.Errorf("unknown protocol set by TIGRIS_PROTOCOL. allowed: grpc, http, https")
-
-func initProtocol(config *config.Config) error {
-	switch proto := strings.ToLower(strings.Trim(config.Protocol, " ")); proto {
-	case "grpc":
-		driver.DefaultProtocol = driver.GRPC
-	case "https", "http":
-		driver.DefaultProtocol = driver.HTTP
-	case "":
-	default:
-		return fmt.Errorf("%w, got: %s", ErrUnknownProtocol, proto)
-	}
-
-	return nil
-}
-
-func initURL(config *config.Config) string {
-	// URL prefix has precedence over environment variable
-	url := config.URL
-	//nolint:golint,gocritic
-	if strings.HasPrefix(config.URL, "http://") {
-		driver.DefaultProtocol = driver.HTTP
-	} else if strings.HasPrefix(config.URL, "https://") {
-		driver.DefaultProtocol = driver.HTTP
-	} else if strings.HasPrefix(config.URL, "grpc://") {
-		driver.DefaultProtocol = driver.GRPC
-		url = strings.TrimPrefix(config.URL, "grpc://")
-	}
-
-	// Client would use HTTPS if scheme is not explicitly specified.
-	// Avoid this for localhost connections.
-	if !strings.Contains(url, "://") && driver.DefaultProtocol == driver.HTTP &&
-		(strings.HasPrefix(url, "localhost") || strings.HasPrefix(url, "127.0.0.1")) {
-		url = "http://" + url
-	}
-
-	return url
-}
-
 func Init(config *config.Config) error {
-	if err := initProtocol(config); err != nil {
-		return err
-	}
-
-	url := initURL(config)
-
 	cfg = &cconfig.Driver{
-		URL:          url,
+		URL:          config.URL,
 		ClientID:     config.ClientID,
 		ClientSecret: config.ClientSecret,
 		Token:        config.Token,
+		Protocol:     config.Protocol,
 	}
 
-	if config.UseTLS || cfg.ClientSecret != "" || cfg.ClientID != "" || cfg.Token != "" {
+	if config.UseTLS || (cfg.URL == "" && cfg.Protocol == "") {
 		cfg.TLS = &tls.Config{MinVersion: tls.VersionTLS12}
 	}
 
-	_ = os.Unsetenv("TIGRIS_PROTOCOL")
+	if D != nil {
+		log.Err(D.Close()).Msg("close failed")
+	}
+
+	if O != nil {
+		log.Err(O.Close()).Msg("close failed")
+	}
+
+	if M != nil {
+		log.Err(M.Close()).Msg("close failed")
+	}
+
+	D = nil
+	M = nil
+	O = nil
 
 	return nil
 }
@@ -119,9 +87,8 @@ func InitLow() error {
 
 // Get returns an instance of client.
 func Get() driver.Driver {
-	if err := InitLow(); err != nil {
-		util.Error(err, "tigris client initialization failed")
-	}
+	err := InitLow()
+	util.Fatal(err, "tigris client initialization")
 
 	return D
 }
@@ -133,9 +100,7 @@ func ManagementGet() driver.Management {
 		defer cancel()
 
 		drv, err := driver.NewManagement(ctx, cfg)
-		if err != nil {
-			util.Error(err, "tigris client initialization failed")
-		}
+		util.Fatal(err, "tigris client initialization")
 
 		M = drv
 	}
@@ -149,9 +114,7 @@ func ObservabilityGet() driver.Observability {
 		defer cancel()
 
 		drv, err := driver.NewObservability(ctx, cfg)
-		if err != nil {
-			util.Error(err, "tigris client initialization failed")
-		}
+		util.Fatal(err, "tigris client initialization")
 
 		O = drv
 	}
@@ -159,20 +122,22 @@ func ObservabilityGet() driver.Observability {
 	return O
 }
 
-func Transact(bctx context.Context, db string, fn func(ctx context.Context, tx driver.Tx)) {
+func Transact(bctx context.Context, db string, fn func(ctx context.Context, tx driver.Tx) error) error {
 	ctx, cancel := util.GetContext(bctx)
 	defer cancel()
 
 	tx, err := Get().BeginTx(ctx, db)
 	if err != nil {
-		util.Error(err, "begin transaction failed")
+		return util.Error(err, "begin transaction")
 	}
 
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	fn(ctx, tx)
-
-	if err := tx.Commit(ctx); err != nil {
-		util.Error(err, "commit transaction failed")
+	if err = fn(ctx, tx); err != nil {
+		return err
 	}
+
+	err = tx.Commit(ctx)
+
+	return util.Error(err, "commit transaction")
 }

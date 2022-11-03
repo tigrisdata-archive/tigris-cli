@@ -54,17 +54,19 @@ var replaceCmd = &cobra.Command{
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		iterateInput(cmd.Context(), cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) {
-			ptr := unsafe.Pointer(&docs)
-			_, err := client.Get().UseDatabase(args[0]).Replace(ctx, args[1], *(*[]driver.Document)(ptr))
-			if err != nil {
-				util.Error(err, "replace documents failed")
-			}
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			return iterateInput(ctx, cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
+				ptr := unsafe.Pointer(&docs)
+				_, err := client.Get().UseDatabase(args[0]).Replace(ctx, args[1], *(*[]driver.Document)(ptr))
+
+				return util.Error(err, "replace documents failed")
+			})
 		})
 	},
 }
 
 func init() {
 	replaceCmd.Flags().Int32VarP(&BatchSize, "batch_size", "b", BatchSize, "set batch size")
+
 	dbCmd.AddCommand(replaceCmd)
 }

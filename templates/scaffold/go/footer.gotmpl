@@ -1,0 +1,49 @@
+
+func main() {
+{{"\t"}}ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+{{"\t"}}defer cancel()
+{{ if ne .URL "api.preview.tigrisdata.cloud" }}
+{{"\t"}}client, err := tigris.NewClient(ctx, &config.Client{Driver: config.Driver{URL: "{{.URL}}"}})
+{{ else }}
+{{"\t"}}client, err := tigris.NewClient(ctx)
+{{- end }}
+{{"\t"}}if err != nil {
+{{"\t"}}{{"\t"}}panic(err)
+{{"\t"}}}
+{{"\t"}}defer client.Close()
+
+{{"\t"}}db, err := client.OpenDatabase(ctx, "{{.DBName}}",
+{{- range .Collections}}
+{{"\t\t"}}&{{.Name}}{},
+{{- end}}
+{{"\t"}})
+{{"\t"}}if err != nil {
+{{"\t"}}{{"\t"}}panic(err)
+{{"\t"}}}
+{{range .Collections}}
+{{"\t"}}coll{{.Name}} := tigris.GetCollection[{{.Name}}](db)
+
+{{"\t"}}it{{.Name}}, err := coll{{.Name}}.ReadAll(ctx)
+{{"\t"}}if err != nil {
+{{"\t"}}{{"\t"}}panic(err)
+{{"\t"}}}
+
+{{"\t"}}var doc{{.Name}} {{.Name}}
+{{"\t"}}for i := 0; it{{.Name}}.Next(&doc{{.Name}}) && i < 3; i++ {
+{{"\t"}}{{"\t"}}fmt.Printf("%+v\n", doc{{.Name}})
+{{"\t"}}}
+
+{{"\t"}}it{{.Name}}.Close()
+
+{{"\t"}}//coll{{.Name}}.Insert(context.TODO(), &{{.Name}}{/* Insert fields here */})
+{{end -}}
+}
+
+// Check full API reference here: https://docs.tigrisdata.com/golang/
+
+// Compile and run:
+// * Put this output to main.go
+// * go mod init
+// * go mod tidy
+// * go build -o {{.DBName}} .
+// * ./{{.DBName}}
