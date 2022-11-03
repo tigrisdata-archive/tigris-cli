@@ -1,8 +1,7 @@
 {
     "name": "@tigrisdata/tigris-cli",
-    "version": "1.0.0-beta.4",
+    "version": "1.0.0-beta.5",
     "description": "Tigris data platfrom CLI",
-    "main": "index.js",
     "scripts": {
         "postinstall": "go-npm install",
         "preuninstall": "go-npm uninstall"
@@ -20,6 +19,9 @@
         "name": "tigris",
         "path": "./bin",
         "url": "https://github.com/tigrisdata/tigris-cli/releases/download/v{{version}}/tigris_{{version}}_{{platform}}_{{arch}}.tar.gz"
+    },
+    "bin": {
+        "tigris": "./bin/tigris"
     },
     "files": [],
     "homepage": "https://www.tigrisdata.com",
