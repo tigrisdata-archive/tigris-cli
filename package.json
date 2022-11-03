@@ -1,0 +1,29 @@
+{
+    "name": "@tigrisdata/tigris-cli",
+    "version": "1.0.0-beta.4",
+    "description": "Tigris data platfrom CLI",
+    "main": "index.js",
+    "scripts": {
+        "postinstall": "go-npm install",
+        "preuninstall": "go-npm uninstall"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/tigrisdata/tigris-cli.git"
+    },
+    "author": "Yevgeniy Firsov",
+    "license": "Apache-2.0",
+    "bugs": {
+        "url": "https://github.com/tigrisdata/tigris-cli/issues"
+    },
+    "goBinary": {
+        "name": "tigris",
+        "path": "./bin",
+        "url": "https://github.com/tigrisdata/tigris-cli/releases/download/v{{version}}/tigris_{{version}}_{{platform}}_{{arch}}.tar.gz"
+    },
+    "files": [],
+    "homepage": "https://www.tigrisdata.com",
+    "dependencies": {
+        "go-npm": "^0.1.9"
+    }
+}
