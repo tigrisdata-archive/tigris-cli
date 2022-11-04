@@ -45,7 +45,7 @@ func createCollection(ctx context.Context, tx driver.Tx, raw driver.Schema) erro
 
 	err := tx.CreateOrUpdateCollection(ctx, schema.Name, raw)
 
-	return util.Error(err, "create collection")
+	return util.Error(err, "create collection: %v", schema.Name)
 }
 
 // DescribeCollectionResponse adapter to convert Schema field to json.RawMessage.
@@ -62,7 +62,8 @@ var describeCollectionCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().UseDatabase(getProjectName()).DescribeCollection(ctx, args[0])
+			resp, err := client.Get().UseDatabase(getProjectName()).DescribeCollection(ctx, args[0],
+				&driver.DescribeCollectionOptions{SchemaFormat: format})
 			if err != nil {
 				return util.Error(err, "describe collection")
 			}
@@ -101,9 +102,10 @@ var listCollectionsCmd = &cobra.Command{
 }
 
 var createCollectionCmd = &cobra.Command{
-	Use:   "collection {schema}...|-",
-	Short: "Creates collection(s)",
-	Long:  "Creates collections with provided schema.",
+	Use:     "collection {schema}...|-",
+	Aliases: []string{"collections"},
+	Short:   "Creates collection(s)",
+	Long:    "Creates collections with provided schema.",
 	Example: fmt.Sprintf(`
   # Pass the schema as a string
   %[1]s create collection --project=testdb '{
@@ -157,7 +159,7 @@ var createCollectionCmd = &cobra.Command{
 				return iterateInput(ctx, cmd, 0, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 					for _, v := range docs {
 						if err := createCollection(ctx, tx, driver.Schema(v)); err != nil {
-							return err
+							return util.Error(err, "create collection %v", string(v))
 						}
 					}
 
@@ -238,6 +240,9 @@ func init() {
 	addProjectFlag(listCollectionsCmd)
 	addProjectFlag(alterCollectionCmd)
 	addProjectFlag(describeCollectionCmd)
+
+	describeCollectionCmd.Flags().StringVarP(&format, "format", "f", "",
+		"output schema in the requested format: go, typescript, java")
 
 	dropCmd.AddCommand(dropCollectionCmd)
 	createCmd.AddCommand(createCollectionCmd)

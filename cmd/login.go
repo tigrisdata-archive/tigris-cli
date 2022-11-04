@@ -193,7 +193,7 @@ func withLogin(cctx context.Context, fn func(ctx context.Context) error) {
 	var ep *driver.Error
 	if !errors.As(err, &ep) || ep.Code != ecode.Unauthenticated ||
 		os.Getenv(driver.EnvClientID) != "" || os.Getenv(driver.EnvClientSecret) != "" ||
-		config.DefaultConfig.ClientID != "" || config.DefaultConfig.ClientSecret != "" {
+		config.DefaultConfig.ClientID != "" || config.DefaultConfig.ClientSecret != "" || !util.IsTTY(os.Stdin) {
 		util.PrintError(err)
 		os.Exit(1)
 	}

@@ -21,12 +21,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
+	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
 var (
 	rotate bool
 
-	ErrWrongArgs = fmt.Errorf("please provide name and description to update or use --rotate to rotate the secret")
+	ErrWrongArgs   = fmt.Errorf("please provide name and description to update or use --rotate to rotate the secret")
+	ErrAppNotFound = fmt.Errorf("application not found")
 )
 
 var createApplicationCmd = &cobra.Command{
@@ -152,26 +154,42 @@ Output:
 	},
 }
 
+func getApplication(ctx context.Context, filter string) (*driver.Application, error) {
+	resp, err := client.ManagementGet().ListApplications(ctx)
+	if err != nil {
+		return nil, util.Error(err, "list applications failed")
+	}
+
+	for _, v := range resp {
+		if v.Name == filter {
+			return v, nil
+		}
+	}
+
+	return nil, ErrAppNotFound
+}
+
 var listApplicationsCmd = &cobra.Command{
 	Use:   "applications [name]",
 	Short: "Lists applications",
 	Long:  "Lists available applications. Optional parameter allows to return only the application with the given name.",
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.ManagementGet().ListApplications(ctx)
-			if err != nil {
-				return util.Error(err, "list applications failed")
-			}
-
 			if len(args) > 0 {
-				for _, v := range resp {
-					if v.Name == args[0] {
-						err := util.PrettyJSON(v)
-						util.Fatal(err, "list applications filtered")
-					}
+				app, err := getApplication(ctx, args[0])
+				if err != nil {
+					return err
 				}
+
+				err = util.PrettyJSON(app)
+				util.Fatal(err, "list applications")
 			} else {
-				err := util.PrettyJSON(resp)
+				resp, err := client.ManagementGet().ListApplications(ctx)
+				if err != nil {
+					return util.Error(err, "list applications failed")
+				}
+
+				err = util.PrettyJSON(resp)
 				util.Fatal(err, "list applications")
 			}
 

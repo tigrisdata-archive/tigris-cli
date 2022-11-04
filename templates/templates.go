@@ -14,28 +14,41 @@
 
 package templates
 
-import _ "embed"
+import (
+	"embed"
+)
 
 var (
 	//go:embed login/success.gohtml
 	LoginSuccessful string
 	//go:embed login/error.gohtml
 	LoginError string
-	//go:embed scaffold/go.gotmpl
-	ScaffoldGo string
 
-	//go:embed scaffold/go/header.gotmpl
-	SchemaGoHeader string
-	//go:embed scaffold/go/footer.gotmpl
-	SchemaGoFooter string
+	//go:embed scaffold/go/base
+	//go:embed scaffold/go/base/**/*
+	//go:embed scaffold/go/base/.*
+	ScaffoldGoBase embed.FS
 
-	//go:embed scaffold/java/header.gotmpl
-	SchemaJavaHeader string
-	//go:embed scaffold/java/footer.gotmpl
-	SchemaJavaFooter string
+	//go:embed scaffold/go/gin
+	//go:embed scaffold/go/gin/**/*
+	ScaffoldGoGin embed.FS
 
-	//go:embed scaffold/typescript/header.gotmpl
-	SchemaTypeScriptHeader string
-	//go:embed scaffold/typescript/footer.gotmpl
-	SchemaTypeScriptFooter string
+	//go:embed scaffold/typescript/base
+	//go:embed scaffold/typescript/base/src/**/*
+	ScaffoldTypeScriptBase embed.FS
+
+	//go:embed scaffold/typescript/express
+	//go:embed scaffold/typescript/express/src/**/*
+	//go:embed scaffold/typescript/express/.*
+	ScaffoldTypeScriptExpress embed.FS
+
+	//go:embed scaffold/java/spring
+	//go:embed scaffold/java/spring/src/main/java/_java_pkg_
+	//go:embed scaffold/java/spring/src/main/java/_java_pkg_/_*
+	//go:embed scaffold/java/spring/src/main/java/_java_pkg_/**/*
+	//go:embed scaffold/java/spring/.gitignore
+	ScaffoldJavaSpring embed.FS
+
+	//go:embed schema
+	Schema embed.FS
 )

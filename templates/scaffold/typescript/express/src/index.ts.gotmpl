@@ -1,0 +1,64 @@
+import express from "express";
+import { DB, Tigris } from "@tigrisdata/core";
+{{range .Collections}}
+import { {{.Name}}, {{.NameDecap}}Schema } from "./models/{{.JSONSingular}}";
+{{- end}}
+{{range .Collections}}
+import { {{.Name}}Route } from "./routes/{{.JSONSingular}}";
+{{- end}}
+
+export class App {
+  private readonly app: express.Application;
+  private readonly port: string | number;
+  private readonly dbName: string;
+  private readonly tigris: Tigris;
+  private db: DB;
+
+  constructor() {
+    this.app = express();
+    this.port = process.env.PORT || 3000;
+    this.dbName = "{{.DBName}}";
+
+    // For the Tigris preview environment use the following initialization.
+    // Configuration input is supplied from .env file - refer to README.md
+    this.tigris = new Tigris();
+
+    await this.setup();
+  }
+
+  public async setup() {
+    this.app.use(express.json());
+    await this.initializeTigris();
+    await this.setupRoutes();
+  }
+
+  public async initializeTigris() {
+    // create database (if not exists)
+    this.db = await this.tigris.createDatabaseIfNotExists(this.dbName);
+    console.log("db: " + this.dbName + " created successfully");
+
+    // register collections schema and wait for it to finish
+    await Promise.all([
+   {{- range .Collections}}
+      this.db.createOrUpdateCollection<{{.Name}}>("{{.JSON}}", {{.NameDecap}}Schema),
+   {{- end}}
+    ]);
+  }
+
+  public setupRoutes() {
+   {{- range .Collections}}
+    new {{.Name}}Route(this.db, this.app);
+   {{- end}}
+  }
+
+  public start() {
+    this.app.listen(this.port, '0.0.0.0', () => {
+      console.log(
+        `⚡️[server]: Server is running at http://0.0.0.0:${this.port}`
+      );
+    });
+  }
+}
+
+const app: App = new App();
+app.start();

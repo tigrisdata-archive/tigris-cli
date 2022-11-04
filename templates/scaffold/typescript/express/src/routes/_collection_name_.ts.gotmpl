@@ -1,0 +1,127 @@
+{{- with .Collection -}}
+import express, { NextFunction, Request, Response, Router } from "express";
+import { Collection, DB } from "@tigrisdata/core";
+import { SearchRequest } from "@tigrisdata/core/dist/search/types";
+import { {{.Name}} } from "../models/{{.JSONSingular}}";
+import { Route } from "./routes";
+{{- if ne (len .PrimaryKey) 1}}
+import { LogicalOperator } from "@tigrisdata/core/dist/types";
+{{- end}}
+
+export class {{.Name}}Route implements Route {
+  private readonly db: DB;
+  private readonly {{.NamePluralDecap}}: Collection<{{.Name}}>;
+  private readonly router: Router;
+  private readonly path: string;
+
+  constructor(db: DB, app: express.Application) {
+    this.{{.NamePluralDecap}} = db.getCollection<{{.Name}}>("{{.JSON}}");
+    this.path = "/{{.JSON}}";
+    this.router = Router();
+    this.db = db;
+    this.setupRoutes(app);
+  }
+
+  public create{{.Name}} = async (req: Request, res: Response, next: NextFunction) => {
+    const {{.NameDecap}}: {{.Name}} = req.body;
+    this.{{.NamePluralDecap}}
+      .insertOne({{.NameDecap}})
+      .then(({{.NameDecap}}) => {
+        res.status(200).json({{.NameDecap}});
+      })
+      .catch((error) => {
+        next(error);
+      });
+  };
+
+  public get{{.Name}} = async (req: Request, res: Response, next: NextFunction) => {
+    this.{{.NamePluralDecap}}
+      .findOne({
+      {{- if eq (len .PrimaryKey) 1}}
+        {{- range .PrimaryKey}}
+        {{.}}: req.params.{{.}},
+        {{- end}}
+        {{- else}}
+        op: LogicalOperator.AND,
+        selectorFilters: [
+        {{- range .PrimaryKey}}
+          { {{.}}: req.params.{{.}} },
+        {{- end}}
+        ]
+      {{- end}}
+      })
+      .then(({{.NameDecap}}) => {
+        if ({{.NameDecap}} !== undefined) {
+          res.status(200).json({{.NameDecap}});
+        } else {
+          res.status(404).json({ error: "{{.Name}} not found" });
+        }
+      })
+      .catch((error) => {
+        next(error);
+      });
+  };
+
+  public getAll{{.NamePluralDecap}} = async (req: Request, res: Response, next: NextFunction) => {
+    const {{.NamePluralDecap}}List: {{.Name}}[] = [];
+    const {{.NamePluralDecap}}Cursor = this.{{.NamePluralDecap}}.findMany();
+    try {
+      for await (const doc of {{.NamePluralDecap}}Cursor) {
+        {{.NamePluralDecap}}List.push(doc);
+      }
+    } catch (error) {
+      next(error);
+    }
+
+    res.status(200).json({{.NamePluralDecap}}List);
+  };
+
+  public delete{{.Name}} = async (req: Request, res: Response, next: NextFunction) => {
+    this.{{.NamePluralDecap}}
+      .deleteOne({
+      {{- if eq (len .PrimaryKey) 1}}
+        {{- range .PrimaryKey}}
+        {{.}}: req.params.{{.}},
+        {{- end}}
+        {{- else}}
+        op: LogicalOperator.AND,
+        selectorFilters: [
+        {{- range .PrimaryKey}}
+          { {{.}}: req.params.{{.}} },
+        {{- end}}
+        ]
+      {{- end}}
+      })
+      .then((response) => {
+        res.status(200).json(response);
+      })
+      .catch((error) => {
+        next(error);
+      });
+  };
+
+  public search{{.Name}} = async (req: Request, res: Response, next: NextFunction) => {
+    const searchRequest: SearchRequest<{{.Name}}> = req.body;
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json");
+    const resultStream = this.{{.NamePluralDecap}}.searchStream(searchRequest);
+    try {
+      for await (const result of resultStream) {
+        res.write(JSON.stringify(result));
+      }
+    } catch (error) {
+      next(error);
+    }
+    res.end();
+  };
+
+  setupRoutes(app: express.Application) {
+    this.router.get(`${this.path}{{range .PrimaryKey}}/:{{.}}{{end}}`, this.get{{.Name}});
+    this.router.get(`${this.path}`, this.getAll{{.NamePluralDecap}});
+    this.router.post(`${this.path}`, this.create{{.Name}});
+    this.router.delete(`${this.path}{{range .PrimaryKey}}/:{{.}}{{end}}`, this.delete{{.Name}});
+    this.router.post(`${this.path}/search`, this.search{{.Name}});
+    app.use("/", this.router);
+  }
+}
+{{end}}

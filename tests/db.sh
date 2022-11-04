@@ -315,81 +315,8 @@ db_errors_tests() {
 }
 
 db_generate_schema_test() {
-  error "sampledb created with the collections" $cli generate sample-schema --create
+  $cli generate sample-schema --create
   $cli delete-project -f sampledb
-}
-
-test_scaffold() {
-	coll_msg='{"title":"names","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"}},"collection_type":"messages"}'
-
-	$cli delete-project -f gen1 || true
-	$cli create project gen1
-	$cli create collection --project=gen1 "$coll_msg"
-
-	exp_out='package main
-
-import (
-	"context"
-	"fmt"
-	"time"
-
-	"github.com/tigrisdata/tigris-client-go/config"
-	"github.com/tigrisdata/tigris-client-go/tigris"
-)
-
-type Name struct {
-	Field1 int64
-	Key1 string
-}
-
-func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	client, err := tigris.NewClient(ctx, &config.Client{Driver: config.Driver{URL: "localhost:8081"}})
-
-	if err != nil {
-		panic(err)
-	}
-	defer client.Close()
-
-	db, err := client.OpenDatabase(ctx, "gen1",
-		&Name{},
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	collName := tigris.GetCollection[Name](db)
-
-	itName, err := collName.ReadAll(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	var docName Name
-	for i := 0; itName.Next(&docName) && i < 3; i++ {
-		fmt.Printf("%+v\n", docName)
-	}
-
-	itName.Close()
-
-	//collName.Insert(context.TODO(), &Name{/* Insert fields here */})
-}
-
-// Check full API reference here: https://docs.tigrisdata.com/golang/
-
-// Compile and run:
-// * Put this output to main.go
-// * go mod init
-// * go mod tidy
-// * go build -o gen1 .
-// * ./gen1'
-
-	out=$($cli scaffold go --project=gen1)
-	diff -w -u <(echo "$exp_out") <(echo "$out") ||
-
-	$cli delete-project -f gen1
 }
 
 BASEDIR=$(dirname "$0")
@@ -397,6 +324,8 @@ BASEDIR=$(dirname "$0")
 source "$BASEDIR/import.sh"
 # shellcheck disable=SC1091,SC1090
 source "$BASEDIR/backup.sh"
+# shellcheck disable=SC1091,SC1090
+source "$BASEDIR/scaffold.sh"
 
 main() { 
 	test_config

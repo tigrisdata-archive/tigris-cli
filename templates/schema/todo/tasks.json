@@ -1,0 +1,43 @@
+{
+  "title": "tasks",
+  "description": "Collection of documents with tasks details",
+  "properties": {
+    "id": {
+      "description": "A unique identifier for the task",
+      "type": "integer",
+      "autoGenerate": true
+    },
+    "name": {
+      "description": "Name of the task",
+      "type": "string",
+      "maxLength": 100
+    },
+    "details": {
+      "description": "Detail explanation of the task",
+      "type": "string"
+    },
+    "tags": {
+      "description": "The list of task categories",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "name": "tag"
+      }
+    },
+    "due_at": {
+      "description": "Task due date",
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed": {
+      "description": "Indicate task completion state",
+      "type": "boolean"
+    },
+    "completed_at": {
+      "description": "Task completion date",
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "primary_key": ["id"]
+}

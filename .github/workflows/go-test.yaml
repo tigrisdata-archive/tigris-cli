@@ -23,8 +23,10 @@ jobs:
 
       - if: matrix.os == 'macOS-latest'
         run: |
-          brew install jq colima docker
+          brew install jq colima docker docker-compose tree
           colima start
+          mkdir -p ~/.docker/cli-plugins
+          ln -sfn $(brew --prefix)/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose
 
       - run: chocolatey install jq
         if: matrix.os == 'windows-latest'

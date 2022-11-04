@@ -37,6 +37,8 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.Flags().BoolVarP(&util.Quiet, "quiet", "q", false,
+		"Suppress informational messages")
 }
 
 var errUnableToReadProject = fmt.Errorf("please specify project name")
