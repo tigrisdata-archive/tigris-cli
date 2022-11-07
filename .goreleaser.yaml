@@ -31,6 +31,13 @@ nfpms:
       - termux.deb
     file_name_template: "tigris_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     maintainer: Yevgeniy Firsov <firsov@tigrisdata.com>
+    contents:
+      - src: /tmp/bash.completions
+        dst: /etc/bash_completion.d/tigris
+      - src: /tmp/fish.completions
+        dst: /usr/share/fish/completions/tigris.fish
+      - src: /tmp/zsh.completions
+        dst: /usr/local/share/zsh/site-functions/_tigris
 
 brews:
   - tap:

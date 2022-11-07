@@ -34,6 +34,14 @@ jobs:
         with:
           node-version: 16
 
+      - name: Genearate shell completions
+        run: |
+          make
+          ./tigris completion bash >/tmp/bash.completions
+          ./tigris completion fish >/tmp/fish.completions
+          ./tigris completion zsh >/tmp/zsh.completions
+          make clean
+
       - name: Goreleaser
         uses: goreleaser/goreleaser-action@v3
         with:
