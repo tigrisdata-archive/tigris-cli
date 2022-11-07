@@ -32,14 +32,23 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
+
+      - name: Genearate shell completions
+        run: |
+          make
+          mkdir -p .tmp
+          ./tigris completion bash >.tmp/bash.completions
+          ./tigris completion fish >.tmp/fish.completions
+          ./tigris completion zsh >.tmp/zsh.completions
+          make clean
 
       - name: Goreleaser
         uses: goreleaser/goreleaser-action@v3
         with:
           distribution: goreleaser
           version: latest
-          args: release --rm-dist
+          args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
@@ -47,6 +56,9 @@ jobs:
       - name: Build Snap
         uses: snapcore/action-build@v1
         id: build
+        with:
+          path: pkg/snap
+
       - name: Publish Snap
         uses: snapcore/action-publish@v1
         env:
@@ -63,5 +75,13 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          cd pkg/npm
+          sh ../../scripts/update_npm_checksums.sh
           npm version --no-git-tag-version ${GITHUB_REF/refs\/tags\//}
           npm publish --access public
+          cd ../..
+
+      - name: Test installation
+        run: |
+          /bin/bash scripts/test_pkg_install.sh || true
+
