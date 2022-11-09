@@ -21,3 +21,6 @@ tigris
 out
 gen
 .tmp
+
+# vscode
+.vscode
