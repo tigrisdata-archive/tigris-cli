@@ -134,3 +134,13 @@ func ExecTemplate(w io.Writer, tmpl string, vars interface{}) {
 		_ = Error(err, "execute template failed")
 	}
 }
+
+func Contains(l []string, s string) bool {
+	for _, v := range l {
+		if v == s {
+			return true
+		}
+	}
+
+	return false
+}

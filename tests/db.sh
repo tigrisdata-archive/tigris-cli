@@ -431,12 +431,15 @@ source "$BASEDIR/import.sh"
 main() { 
 	test_config
 
+	# Exercise tests via HTTP
 	unset TIGRIS_PROTOCOL
 	export TIGRIS_URL=localhost:8081
 	db_tests
 	test_scaffold
 	test_import
+	test_backup
 
+	# Exercise tests via GRPC
 	export TIGRIS_URL=localhost:8081
 	export TIGRIS_PROTOCOL=grpc
 	$cli config show | grep "protocol: grpc"
@@ -444,6 +447,7 @@ main() {
 	db_tests
 	test_scaffold
 	test_import
+	test_backup
 
 	export TIGRIS_URL=localhost:8081
 	export TIGRIS_PROTOCOL=http
