@@ -4,7 +4,7 @@
 
 const fetch = require('node-fetch'); const path = require('path');
 const tar = require('tar'); const mkdirp = require('mkdirp');
-const fs = require('fs'); const { exec } = require('child_process');
+const fs = require('fs'); const { execSync } = require('child_process');
 const crypto = require('crypto');
 
 // Mapping from Node's `process.arch` to Golang's `$GOARCH`
@@ -23,39 +23,32 @@ const PLATFORM_MAPPING = {
 };
 
 function getInstallationPath(callback) {
-  // `npm bin` will output the path where binary files should be installed
-  exec('npm bin', (err, stdout, stderr) => {
-    let dir = null;
-    if (err || stderr || !stdout || stdout.length === 0) {
-      // We couldn't infer path from `npm bin`. Let's try to get it from
-      // Environment variables set by NPM when it runs.
-      // npm_config_prefix points to NPM's installation directory where `bin`
-      // folder is available Ex: /Users/foo/.nvm/versions/node/v4.3.0
-      const { env } = process;
-      if (env && env.npm_config_prefix) {
-        dir = path.join(env.npm_config_prefix, 'bin');
-      }
-    } else {
-      dir = stdout.trim();
-    }
+  const out = execSync('npm root');
+
+  let dir = null;
+  if (out.length === 0) {
+    console.error("couldn't determine executable path");
+  } else {
+    dir = `${out.toString().trim()}/.bin`;
+
+    console.log(`Installing tigris binary to:  ${dir}`);
 
     mkdirp.sync(dir);
 
     callback(null, dir);
-  });
+  }
 }
 
 function verifyAndPlaceBinary(binName, binPath, hash, checksums, callback) {
   if (!fs.existsSync(path.join(binPath, binName))) {
     return callback(
-      `Downloaded binary does not contain the binary specified in configuration - ${binPath}/${
-        binName}`,
+      `Downloaded binary does not contain the binary specified in configuration - ${binPath}/${binName}`,
     );
   }
 
   const sum = checksums[`${PLATFORM_MAPPING[process.platform]}_${ARCH_MAPPING[process.arch]}`];
   if (sum === undefined || sum !== hash) {
-    return callback('cannot validate checksum of the downloaded package. got ${hash}, expected %{sum}');
+    return callback(`cannot validate checksum of the downloaded package. got ${hash}, expected ${sum}`);
   }
 
   getInstallationPath((err, installationPath) => {
@@ -99,14 +92,12 @@ function validateConfiguration(packageJson) {
 
 function parsePackageJson() {
   if (!(process.arch in ARCH_MAPPING)) {
-    console.error(`Installation is not supported for this architecture: ${
-      process.arch}`);
+    console.error(`Installation is not supported for this architecture: ${process.arch}`);
     return null;
   }
 
   if (!(process.platform in PLATFORM_MAPPING)) {
-    console.error(`Installation is not supported for this platform: ${
-      process.platform}`);
+    console.error(`Installation is not supported for this platform: ${process.platform}`);
     return null;
   }
 
@@ -114,7 +105,7 @@ function parsePackageJson() {
   if (!fs.existsSync(packageJsonPath)) {
     console.error(
       'Unable to find package.json. '
-        + 'Please run this script at root of the package you want to be installed',
+            + 'Please run this script at root of the package you want to be installed',
     );
     return null;
   }
@@ -172,16 +163,25 @@ function install(callback) {
   console.log(`Downloading from URL: ${opts.url}`);
   fetch(opts.url).then((res) => {
     const hash = crypto.createHash('sha256').setEncoding('hex');
-    res.body.pipe(hash).on('end', () => {
-      hash.end();
-    });
-    res.body.pipe(
-      tar.x({
-        C: opts.binPath,
-      }, ['tigris']),
-    ).on('end', () => {
-      verifyAndPlaceBinary(opts.binName, opts.binPath, hash.read(), opts.checksums, callback);
-    });
+    res.body.pipe(hash).on('end', () => { hash.end(); });
+    res.body
+      .pipe(
+        tar.x(
+          {
+            C: opts.binPath,
+          },
+          ['tigris'],
+        ),
+      )
+      .on('end', () => {
+        verifyAndPlaceBinary(
+          opts.binName,
+          opts.binPath,
+          hash.read(),
+          opts.checksums,
+          callback,
+        );
+      });
   });
 
   return null;
@@ -203,7 +203,10 @@ function uninstall(callback) {
 }
 
 // Parse command line arguments and call the right method
-const actions = { install, uninstall };
+const actions = {
+  install,
+  uninstall,
+};
 
 const { argv } = process;
 
@@ -212,7 +215,9 @@ if (argv && argv.length > 2) {
   if (cmd === undefined) {
     cmd = 'install';
   } else if (!actions[cmd]) {
-    console.log('Invalid command to go-npm. `install` and `uninstall` are the only supported commands');
+    console.log(
+      'Invalid command to go-npm. `install` and `uninstall` are the only supported commands',
+    );
     process.exit(1);
   }
 
