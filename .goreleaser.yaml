@@ -9,6 +9,9 @@ builds:
       - amd64
       - arm64
     binary: tigris
+    ldflags:
+      - -w -extldflags '-static'
+      - -X 'github.com/tigrisdata/tigris-cli/util.Version={{.Version}}'
 
 archives:
   - format_overrides:
