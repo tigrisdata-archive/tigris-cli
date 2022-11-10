@@ -17,6 +17,7 @@ package client
 import (
 	"context"
 	"crypto/tls"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/tigrisdata/tigris-cli/config"
@@ -37,16 +38,17 @@ var (
 	O driver.Observability
 )
 
-func Init(config *config.Config) error {
+func Init(inCfg *config.Config) error {
 	cfg = &cconfig.Driver{
-		URL:          config.URL,
-		ClientID:     config.ClientID,
-		ClientSecret: config.ClientSecret,
-		Token:        config.Token,
-		Protocol:     config.Protocol,
+		URL:          inCfg.URL,
+		ClientID:     inCfg.ClientID,
+		ClientSecret: inCfg.ClientSecret,
+		Token:        inCfg.Token,
+		Protocol:     inCfg.Protocol,
 	}
 
-	if config.UseTLS || (cfg.URL == "" && cfg.Protocol == "") {
+	if inCfg.UseTLS || (cfg.URL == "" && cfg.Protocol == "") ||
+		strings.HasSuffix(cfg.URL, config.Domain) {
 		cfg.TLS = &tls.Config{MinVersion: tls.VersionTLS12}
 	}
 
@@ -65,6 +67,8 @@ func Init(config *config.Config) error {
 	D = nil
 	M = nil
 	O = nil
+
+	log.Debug().Interface("config", cfg).Msg("config")
 
 	return nil
 }

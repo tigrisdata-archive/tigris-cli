@@ -20,3 +20,4 @@ tigris
 *.iml
 out
 gen
+.tmp

@@ -1,6 +1,7 @@
 linters:
   enable-all: true
   disable:
+    - godox # TODO and FIXME in the code
     - paralleltest
     # zerolog config fails
     # fix later
@@ -37,6 +38,8 @@ linters:
 linters-settings:
   nlreturn:
     block-size: 2
+  cyclop:
+    max-complexity: 12
   goheader:
     template: |-
       Copyright {{ YEAR }} Tigris Data, Inc.

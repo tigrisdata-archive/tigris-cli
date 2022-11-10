@@ -54,8 +54,6 @@ var (
 	callbackHost = "localhost:8585"
 	callbackURL  = "http://" + callbackHost + "/callback"
 
-	defaultURL = "api.preview.tigrisdata.cloud"
-
 	instances = map[string]instance{
 		"api.dev.tigrisdata.cloud": {
 			clientID: "zXKltgV3JhGwUqOCUWNmtU7aX5TytKGx",
@@ -225,9 +223,9 @@ func withLogin(cctx context.Context, fn func(ctx context.Context) error) {
 
 func getHost(host string) string {
 	if host == "" {
-		host = defaultURL
-		if os.Getenv("TIGRIS_URL") != "" {
-			host = os.Getenv("TIGRIS_URL")
+		host = config.DefaultURL
+		if os.Getenv(driver.EnvURL) != "" {
+			host = os.Getenv(driver.EnvURL)
 		}
 
 		if config.DefaultConfig.URL != "" {

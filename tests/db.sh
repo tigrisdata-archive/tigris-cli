@@ -41,6 +41,7 @@ EOF
 	exit 1
 fi
 
+#shellcheck disable=SC2154
 if [ -z "$noup" ]; then
 	TIGRIS_LOG_LEVEL=debug $cli local up 8081
 	$cli local logs >/dev/null 2>&1
@@ -274,7 +275,6 @@ error() {
 	diff -u <(echo "$exp_out") <(echo "$out")
 }
 
-# BUG: Unify HTTP and GRPC responses
 # shellcheck disable=SC2086
 db_errors_tests() {
 	$cli list databases
@@ -424,6 +424,9 @@ func main() {
 	$cli drop database gen1
 }
 
+BASEDIR=$(dirname "$0")
+# shellcheck disable=SC1091,SC1090
+source "$BASEDIR/import.sh"
 
 main() { 
 	test_config
@@ -432,6 +435,7 @@ main() {
 	export TIGRIS_URL=localhost:8081
 	db_tests
 	test_scaffold
+	test_import
 
 	export TIGRIS_URL=localhost:8081
 	export TIGRIS_PROTOCOL=grpc
@@ -439,6 +443,7 @@ main() {
 	$cli config show | grep "url: localhost:8081"
 	db_tests
 	test_scaffold
+	test_import
 
 	export TIGRIS_URL=localhost:8081
 	export TIGRIS_PROTOCOL=http

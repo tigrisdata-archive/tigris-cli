@@ -17,11 +17,14 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
 )
+
+var pingTimeout time.Duration
 
 var pingCmd = &cobra.Command{
 	Use:   "ping",
@@ -30,7 +33,31 @@ var pingCmd = &cobra.Command{
 		ctx, cancel := util.GetContext(cmd.Context())
 		defer cancel()
 
-		_, err := client.Get().ListDatabases(ctx)
+		err := client.InitLow()
+		if err == nil {
+			_, err = client.D.Health(ctx)
+		}
+		_ = util.Error(err, "ping")
+
+		end := time.Now().Add(pingTimeout)
+		sleep := 32 * time.Millisecond
+
+		for err != nil && pingTimeout > 0 && time.Now().Add(sleep).Before(end) {
+			_ = util.Error(err, "ping sleep %v", sleep)
+			time.Sleep(sleep)
+
+			if err = client.InitLow(); err == nil {
+				_, err = client.D.Health(ctx)
+			}
+
+			sleep *= 2
+
+			if rem := time.Until(end); sleep > rem && rem > 0 {
+				sleep = rem
+				_ = util.Error(err, "ping sleep1 %v", sleep)
+			}
+		}
+
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "FAILED\n")
 			os.Exit(1)
@@ -41,5 +68,7 @@ var pingCmd = &cobra.Command{
 }
 
 func init() {
+	pingCmd.Flags().DurationVarP(&pingTimeout, "timeout", "t", 0, "wait for ping to succeed for the specified timeout")
+
 	dbCmd.AddCommand(pingCmd)
 }
