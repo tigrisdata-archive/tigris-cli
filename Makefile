@@ -16,7 +16,7 @@ ${BIN}: ${GO_SRC} go.sum
 lint:
 	golangci-lint run --fix
 	shellcheck tests/*.sh
-	cd pkg/npm && npx eslint install.js; cd -
+	cd pkg/npm && npm i; npx eslint install.js
 
 go.sum: go.mod
 	go mod download

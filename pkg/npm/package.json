@@ -1,6 +1,6 @@
 {
     "name": "@tigrisdata/tigris-cli",
-    "version": "1.0.0-beta.5",
+    "version": "1.0.0-beta.7",
     "description": "Tigris data platfrom CLI",
     "scripts": {
         "postinstall": "node install.js install",
