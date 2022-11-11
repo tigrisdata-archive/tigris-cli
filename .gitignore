@@ -5,6 +5,7 @@
 *.so
 *.dylib
 tigris
+pkg/npm/node_modules
 
 # JSON files
 *.json
