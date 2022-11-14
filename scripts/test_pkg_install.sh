@@ -6,6 +6,9 @@ if [ -z "$VERSION" ]; then
 	echo "Set VERSION variable to test installation of"
 fi
 
+#Delete v prefix from v1.0.0-beta.X
+VERSION=${VERSION/#v}
+
 tigris version && exit 1
 sudo snap install tigris
 which tigris
