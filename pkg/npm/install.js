@@ -27,7 +27,7 @@ function getInstallationPath(callback) {
   if (out.length === 0) {
     console.error("couldn't determine executable path");
   } else {
-    dir = `${out.toString().trim()}/.bin`;
+    dir = `${out.toString().trim()}/bin`;
 
     console.log(`Installing tigris binary to:  ${dir}`);
 
