@@ -42,5 +42,5 @@ jobs:
 
       - name: Test installation
         run: |
-          VERSION=v1.0.0-beta.9 /bin/bash scripts/test_pkg_install.sh
+          VERSION=1.0.0-beta.9 /bin/bash scripts/test_pkg_install.sh
 

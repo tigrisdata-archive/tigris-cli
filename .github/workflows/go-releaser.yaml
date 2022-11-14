@@ -33,6 +33,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Genearate shell completions
         run: |
@@ -77,12 +78,11 @@ jobs:
         run: |
           cd pkg/npm
           sh ../../scripts/update_npm_checksums.sh
-          npm whoami
           npm version --no-git-tag-version ${GITHUB_REF/refs\/tags\//}
           npm publish --access public
           cd ../..
 
       - name: Test installation
         run: |
-          /bin/bash scripts/test_pkg_install.sh || true
+          VERSION=${GITHUB_REF/refs\/tags\//} /bin/bash scripts/test_pkg_install.sh
 

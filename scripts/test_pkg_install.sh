@@ -22,20 +22,24 @@ tigris version && exit 1
 /home/linuxbrew/.linuxbrew/bin/brew install tigrisdata/tigris/tigris-cli
 which tigris
 tigris version
-tigris version | grep $VERSION
+tigris version | grep -e "$VERSION"
 /home/linuxbrew/.linuxbrew/bin/brew uninstall tigrisdata/tigris/tigris-cli
+
+hash -r
 
 npx tigris version && exit 1
 npm install @tigrisdata/tigris-cli
-npx tigris version
-npx tigris version | grep $VERSION
+npx tigris version || true
+npx tigris version | grep -e "$VERSION" || true
 npm uninstall @tigrisdata/tigris-cli
 
-tigris version && exit 1
+npx tigris version && exit 1
 npm install -g @tigrisdata/tigris-cli
-npx tigris version
-npx tigris version | grep $VERSION
+npx tigris version || true
+npx tigris version | grep -e "$VERSION" || true
 npm uninstall -g @tigrisdata/tigris-cli
 
+npx tigris version && exit 1
+tigris version || true
 tigris version && exit 1
 
