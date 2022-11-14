@@ -232,3 +232,6 @@ EOF
 
 	$cli drop database db_import_test
 }
+
+# Call test
+test_import
