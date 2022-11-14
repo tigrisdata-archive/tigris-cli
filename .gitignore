@@ -22,3 +22,6 @@ pkg/npm/node_modules
 out
 gen
 .tmp
+
+# vscode
+.vscode
