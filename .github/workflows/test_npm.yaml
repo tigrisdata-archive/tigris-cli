@@ -32,18 +32,15 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Publish to NPM
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          cd pkg/npm
-          cat .nmprc || true
-          cat ../../.npmrc || true
           npm whoami
-          cd ../..
 
       - name: Test installation
         run: |
-          /bin/bash scripts/test_pkg_install.sh || true
+          VERSION=v1.0.0-beta.9 /bin/bash scripts/test_pkg_install.sh
 
