@@ -30,19 +30,21 @@ tigris version | grep -e "$VERSION"
 
 hash -r
 
+# Test local NPM install
 npx tigris version && exit 1
 npm install @tigrisdata/tigris-cli
-npx tigris version || true
-npx tigris version | grep -e "$VERSION" || true
+npx tigris version
+npx tigris version | grep -e "$VERSION"
 npm uninstall @tigrisdata/tigris-cli
 
+# Test global NPM install
 npx tigris version && exit 1
+tigris version && exit 1
 npm install -g @tigrisdata/tigris-cli
-npx tigris version || true
-npx tigris version | grep -e "$VERSION" || true
+tigris version
+tigris version | grep -e "$VERSION"
 npm uninstall -g @tigrisdata/tigris-cli
 
 npx tigris version && exit 1
-tigris version || true
 tigris version && exit 1
 
