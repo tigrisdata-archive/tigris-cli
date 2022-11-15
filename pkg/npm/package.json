@@ -1,10 +1,10 @@
 {
     "name": "@tigrisdata/tigris-cli",
-    "version": "1.0.0-beta.10",
+    "version": "1.0.0-beta.11",
     "description": "Tigris data platfrom CLI",
     "scripts": {
         "postinstall": "node install.js install",
-        "preuninstall": "node nstall.js uninstall"
+        "preuninstall": "node install.js uninstall"
     },
     "repository": {
         "type": "git",
