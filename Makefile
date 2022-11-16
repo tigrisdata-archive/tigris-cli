@@ -23,7 +23,7 @@ go.sum: go.mod
 
 test: ${BIN} go.sum
 	go test $(TEST_PARAM) ./...
-	/bin/bash tests/*.sh
+	/bin/bash tests/db.sh
 
 install: ${BIN}
 	install -d $(DESTDIR)$(PREFIX)/bin

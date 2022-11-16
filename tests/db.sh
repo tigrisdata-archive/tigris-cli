@@ -427,6 +427,8 @@ func main() {
 BASEDIR=$(dirname "$0")
 # shellcheck disable=SC1091,SC1090
 source "$BASEDIR/import.sh"
+# shellcheck disable=SC1091,SC1090
+source "$BASEDIR/backup.sh"
 
 main() { 
 	test_config
