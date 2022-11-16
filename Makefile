@@ -16,14 +16,14 @@ ${BIN}: ${GO_SRC} go.sum
 lint:
 	golangci-lint run --fix
 	shellcheck tests/*.sh
-	cd pkg/npm && npm i; npx eslint install.js
+	cd pkg/npm && TIGRIS_SKIP_VERIFY=1 npm i; npx eslint install.js
 
 go.sum: go.mod
 	go mod download
 
 test: ${BIN} go.sum
 	go test $(TEST_PARAM) ./...
-	/bin/bash tests/*.sh
+	/bin/bash tests/db.sh
 
 install: ${BIN}
 	install -d $(DESTDIR)$(PREFIX)/bin

@@ -6,6 +6,7 @@ const fetch = require('node-fetch'); const path = require('path');
 const tar = require('tar'); const mkdirp = require('mkdirp');
 const fs = require('fs'); const { execSync } = require('child_process');
 const crypto = require('crypto');
+const process = require('node:process');
 
 // Mapping from Node's `process.arch` to Golang's `$GOARCH`
 const ARCH_MAPPING = {
@@ -23,11 +24,13 @@ const PLATFORM_MAPPING = {
 function getInstallationPath(callback) {
   const out = execSync('npm root');
 
-  let dir = null;
   if (out.length === 0) {
     console.error("couldn't determine executable path");
   } else {
-    dir = `${out.toString().trim()}/../bin`;
+    let dir = `${out.toString().trim()}/../bin`;
+    if (process.env.npm_config_global) {
+      dir = `${out.toString().trim()}/@tigrisdata/tigris-cli/bin`;
+    }
 
     console.log(`Installing tigris binary to:  ${dir}`);
 
@@ -45,7 +48,7 @@ function verifyAndPlaceBinary(binName, binPath, hash, checksums, callback) {
   }
 
   const sum = checksums[`${PLATFORM_MAPPING[process.platform]}_${ARCH_MAPPING[process.arch]}`];
-  if (sum === undefined || sum !== hash) {
+  if (process.env.TIGRIS_SKIP_VERIFY === undefined && (sum === undefined || sum !== hash)) {
     return callback(`cannot validate checksum of the downloaded package. got ${hash}, expected ${sum}`);
   }
 
