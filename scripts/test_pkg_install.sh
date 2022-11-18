@@ -45,6 +45,8 @@ tigris version
 tigris version | grep -e "$VERSION"
 npm uninstall -g @tigrisdata/tigris-cli
 
+hash -r
+
 npx tigris version && exit 1
 tigris version && exit 1
 

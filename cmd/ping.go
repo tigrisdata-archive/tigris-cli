@@ -46,6 +46,12 @@ var pingCmd = &cobra.Command{
 			_ = util.Error(err, "ping sleep %v", sleep)
 			time.Sleep(sleep)
 
+			if client.D != nil {
+				_ = util.Error(client.D.Close(), "client close")
+			}
+
+			client.D = nil
+
 			if err = client.InitLow(); err == nil {
 				_, err = client.D.Health(ctx)
 			}
