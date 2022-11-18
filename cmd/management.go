@@ -30,16 +30,16 @@ var (
 )
 
 var createApplicationCmd = &cobra.Command{
-	Use:   "application {name} {description}",
-	Short: "Create application credentials",
-	Long: `Creates new application credentials.
+	Use:   "application {project} {name} {description}",
+	Short: "Create application my_project1 my_api_key",
+	Long: `Creates new application credentials for the given project/database.
 The output contains client_id and client_secret,
 which can be used to authenticate using our official client SDKs.
 Set the client_id and client_secret in the configuration of the corresponding SDK
 Check the docs for more information: https://docs.tigrisdata.com/overview/authentication
 `,
 	Example: `
-  tigris create application service1 "main api service"
+  tigris create application my_project1 my_api_key "main api service"
 
   Output:
 
@@ -49,12 +49,13 @@ Check the docs for more information: https://docs.tigrisdata.com/overview/authen
     "description": "main api service",
     "secret": "<client secret here",
     "created_at": 1663802082000,
-    "created_by": "github|3436058"
+    "created_by": "github|3436058",
+    "project": ["<project_name>"]
   }`,
-	Args: cobra.MinimumNArgs(2),
+	Args: cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			app, err := client.ManagementGet().CreateApplication(ctx, args[0], args[1])
+			app, err := client.ManagementGet().CreateApplication(ctx, args[0], args[1], args[2])
 			if err != nil {
 				return util.Error(err, "create application failed")
 			}
@@ -136,19 +137,21 @@ Output:
 }
 
 var listApplicationsCmd = &cobra.Command{
-	Use:   "applications [name]",
+	Use:   "applications {project} [name]",
 	Short: "Lists applications",
-	Long:  "Lists available applications. Optional parameter allows to return only the application with the given name.",
+	Args:  cobra.MinimumNArgs(1),
+	Long: `Lists available applications for the project. 
+		Optional parameter [name] allows to return only the application with the given name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.ManagementGet().ListApplications(ctx)
+			resp, err := client.ManagementGet().ListApplications(ctx, args[0])
 			if err != nil {
 				return util.Error(err, "list applications failed")
 			}
 
-			if len(args) > 0 {
+			if len(args) > 1 {
 				for _, v := range resp {
-					if v.Name == args[0] {
+					if v.Name == args[1] {
 						err := util.PrettyJSON(v)
 						util.Fatal(err, "list applications filtered")
 					}
