@@ -27,8 +27,10 @@ import (
 var schemaOnly bool
 
 var listDatabasesCmd = &cobra.Command{
-	Use:   "databases",
-	Short: "Lists databases",
+	Use:     "databases",
+	Aliases: []string{"projects"},
+	Short:   "Lists databases/projects",
+	Long:    "Project is an alias for Database - this command will list all projects/databases",
 	Run: func(cmd *cobra.Command, _ []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			resp, err := client.Get().ListDatabases(ctx)
@@ -94,9 +96,11 @@ var describeDatabaseCmd = &cobra.Command{
 }
 
 var createDatabaseCmd = &cobra.Command{
-	Use:   "database {db}",
-	Short: "Creates database",
-	Args:  cobra.ExactArgs(1),
+	Use:     "database {db}",
+	Aliases: []string{"project"},
+	Short:   "Creates database/project",
+	Long:    "Project is an alias for Database - this command will create a project/database",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			err := client.Get().CreateDatabase(ctx, args[0])
@@ -106,9 +110,11 @@ var createDatabaseCmd = &cobra.Command{
 }
 
 var dropDatabaseCmd = &cobra.Command{
-	Use:   "database {db}",
-	Short: "Drops database",
-	Args:  cobra.ExactArgs(1),
+	Use:     "database {db}",
+	Aliases: []string{"project"},
+	Short:   "Drops database/project",
+	Long:    "Project is an alias for Database - this command will drop a project/database",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			err := client.Get().DropDatabase(ctx, args[0])
