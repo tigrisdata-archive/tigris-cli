@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -67,74 +68,108 @@ func listCollections(ctx context.Context, dbName string) ([]string, error) {
 	return collections, nil
 }
 
-func makeDir(dirname string) {
-	if err := os.Mkdir(dirname, 0o700); err != nil {
-		util.Fatal(err, "error creating directory %s", dirname)
+func writeCollection(ctx context.Context, db, collection string) error {
+	var doc driver.Document
+
+	it, err := client.Get().UseDatabase(db).Read(ctx, collection,
+		driver.Filter(`{}`),
+		driver.Projection(`{}`),
+	)
+	if err != nil {
+		return util.Error(err, "read failed")
 	}
+	defer it.Close()
+
+	filename := fmt.Sprintf("%s/%s.%s.json", destDir, db, collection)
+
+	f, err := os.Create(filename)
+	if err != nil {
+		return util.Error(err, "failed writing file")
+	}
+
+	writer := bufio.NewWriter(f)
+	for it.Next(&doc) {
+		_, err := writer.WriteString(string(doc) + "\n")
+		util.Fatal(err, "error writing file %s", filename)
+	}
+
+	if err = writer.Flush(); err != nil {
+		return util.Error(err, "failed to flush file")
+	}
+
+	if err = f.Close(); err != nil {
+		return util.Error(err, "failed to close file")
+	}
+
+	util.Stdoutf(" [*] %s\n", filename)
+
+	return nil
+}
+
+func writeSchema(ctx context.Context, db string) error {
+	resp, err := client.Get().DescribeDatabase(ctx, db)
+	if err != nil {
+		return util.Error(err, "describe collection failed")
+	}
+
+	filename := fmt.Sprintf("%s/%s.schema", destDir, db)
+	for _, v := range resp.Collections {
+		err := os.WriteFile(filename, []byte(string(v.Schema)), 0o600)
+		return util.Error(err, "error writing schema file")
+	}
+
+	util.Stdoutf(" [.] %s\n", filename)
+
+	return nil
+}
+
+func createBackupDir(dirname string) error {
+	util.Stdoutf(" [i] ensuring backup dir exists %s\n", destDir)
+
+	if err := os.Mkdir(dirname, 0o700); err != nil {
+		return util.Error(err, "error creating directory %s", dirname)
+	}
+
+	return nil
 }
 
 var backupCmd = &cobra.Command{
 	Use:   "backup [filters]",
-	Short: "Dumps documents and schemas to JSON files",
-	Long: `Dumps documents and schemas to JSON files
-	in the current working directory.
+	Short: "Dumps documents and schemas to JSON files on a quiesced database",
+	Long: `Dumps documents and schemas to JSON files on a quiesced database
+	into the directory specified in the argument.
 
 	If a database filter is provided it only dumps the schemas of the databases specified.
 	Likewise, collection filters will limit the output to matching collection names.`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(_ context.Context) error {
-			util.Stdoutf(" [o] using timeout %d\n", backupTimeout)
-
+			util.Stdoutf(" [i] using timeout %d\n", backupTimeout)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(backupTimeout)*time.Second)
 			defer cancel()
 
 			databases, err := listDatabases(ctx)
 			if err != nil {
-				return util.Error(err, "list databases")
+				return util.Error(err, "failed to list databases")
+			}
+
+			if err := createBackupDir(destDir); err != nil {
+				return util.Error(err, "failed to create backup dir")
 			}
 
 			for _, db := range databases {
+				if err := writeSchema(ctx, db); err != nil {
+					return util.Error(err, "failed to write schema")
+				}
+
 				collections, err := listCollections(ctx, db)
 				if err != nil {
 					return util.Error(err, "error listing collections")
 				}
-
-				// Dump schema
-				resp, err := client.Get().DescribeDatabase(ctx, db)
-				if err != nil {
-					return util.Error(err, "describe collection failed")
-				}
-
-				makeDir(destDir)
-				filename := fmt.Sprintf("%s/%s.schema", destDir, db)
-				for _, v := range resp.Collections {
-					err := os.WriteFile(filename, []byte(string(v.Schema)), 0o600)
-					util.Fatal(err, "error writing schema file")
-				}
-				util.Stdoutf(" [.] %s\n", filename)
-
 				for _, collection := range collections {
-					filter, fields := `{}`, `{}`
-					it, err := client.Get().UseDatabase(db).Read(ctx, collection,
-						driver.Filter(filter),
-						driver.Projection(fields),
-						nil,
-					)
-					if err != nil {
-						return util.Error(err, "read failed")
+					if err := writeCollection(ctx, db, collection); err != nil {
+						return util.Error(err, "failed to write collection")
 					}
-					defer it.Close()
-
-					// Dump data
-					filename = fmt.Sprintf("%s/%s.%s.json", destDir, db, collection)
-					var doc driver.Document
-					for it.Next(&doc) {
-						err := os.WriteFile(filename, []byte(string(doc)+"\n"), 0o600)
-						util.Fatal(err, "error writing file %s", filename)
-					}
-
-					util.Stdoutf(" [*] %s\n", filename)
 				}
 			}
 
@@ -144,7 +179,7 @@ var backupCmd = &cobra.Command{
 }
 
 func init() {
-	backupCmd.Flags().StringVarP(&destDir, "directory", "d", "./",
+	backupCmd.Flags().StringVarP(&destDir, "directory", "d", "./tigris-backup",
 		"destination directory for backups")
 	backupCmd.Flags().StringSliceVarP(&dbFilter, "databases", "D", []string{},
 		"limit data dump to specified databases")
