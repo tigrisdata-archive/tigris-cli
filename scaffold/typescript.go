@@ -15,12 +15,7 @@
 package scaffold
 
 import (
-	"embed"
 	"strings"
-
-	"github.com/pkg/errors"
-	"github.com/tigrisdata/tigris-cli/templates"
-	"github.com/tigrisdata/tigris-cli/util"
 )
 
 type JSONToTypeScript struct{}
@@ -31,17 +26,4 @@ func (*JSONToTypeScript) HasTime(schema string) bool {
 
 func (*JSONToTypeScript) HasUUID(schema string) bool {
 	return strings.Contains(schema, "UUID")
-}
-
-func (*JSONToTypeScript) GetFS(dir string) embed.FS {
-	switch dir {
-	case "base":
-		return templates.ScaffoldTypeScriptBase
-	case "express", "":
-		return templates.ScaffoldTypeScriptExpress
-	default:
-		util.Fatal(errors.Wrapf(ErrUnknownScaffoldType, "type: %s", dir), "get fs")
-	}
-
-	return embed.FS{} // this should never happen
 }

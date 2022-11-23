@@ -21,7 +21,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
-	"github.com/tigrisdata/tigris-cli/scaffold"
 	"github.com/tigrisdata/tigris-cli/util"
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -108,30 +107,29 @@ var createProjectCmd = &cobra.Command{
 	# Create Tigris project with no collections
 	%[1]s %[2]s 
 
-	# Create project and bootstrap collections from the template
-	%[1]s %[2]s --template todo
+	# Create project and bootstrap collections from the schemaTemplate
+	%[1]s %[2]s --schema-template todo
 
 	# Create project and scaffold application code using TypeSript and Express framework'
 	%[1]s %[2]s --framework=express
 
 	# Both bootstrap collections and scaffold Express application
-	%[1]s %[2]s --template todo --framework=express
+	%[1]s %[2]s --schema-template todo --framework=express
+
+	# Create project and create application code from the examples repository
+	%[1]s %[2]s --schema-template todo --framework=express
 `, rootCmd.Root().Name(), "create project"),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			if template != "" {
-				if err := scaffold.Schema(ctx, args[0], template, true, false); err != nil {
-					return util.Error(err, "bootstrapping schema: %s", template)
-				}
-			} else {
-				_, err := client.Get().CreateProject(ctx, args[0])
-				if err != nil {
-					return util.Error(err, "create project")
-				}
+			_, err := client.Get().CreateProject(ctx, args[0])
+			if err != nil {
+				return util.Error(err, "create project")
 			}
 
-			if framework != "" {
-				return scaffoldProject(ctx, args[0])
+			project = args[0]
+
+			if fromExample != "" || schemaTemplate != "" || framework != "" {
+				return scaffoldProject(ctx)
 			}
 
 			return nil

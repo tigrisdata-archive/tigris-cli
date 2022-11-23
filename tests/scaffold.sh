@@ -2,142 +2,191 @@
 
 set -ex
 
+TMP_DIR=/tmp/cli-test
+PORT=8080
+
 if [ -z "$cli" ]; then
-	cli="./tigris"
+  mkdir -p $TMP_DIR/bin
+  curl -sSL https://tigris.dev/cli-linux | tar -xz -C $TMP_DIR/bin
+
+  cli="$TMP_DIR/bin/tigris"
 fi
 
-APP_PORT=8080
+$cli config show
+env|grep TIGRIS
+
+export TIGRIS_URL=localhost:8081
+
+#if [ -z "$noup" ]; then
+#  $cli local up
+#fi
 
 # first parameter is path
 # second parameter is document to write
 request() {
-  curl -X POST "localhost:$APP_PORT/$1" -H 'Content-Type: application/json' -d "$2"
+  curl --fail -X POST "localhost:$PORT/$1" -H 'Content-Type: application/json' -d "$2"
   echo
 }
 
+# first parameter is to add /api to the path for nextjs app
+# second parameter is to pluralize read path for express and gin
 test_crud_routes() {
   sleep 3 # give some time server to start
 
-  request users '{"id":1, "name":"John","balance":100}' #Id=1
-  request users '{"id":2, "name":"Jane","balance":200}' #Id=2
+  request "$1"users '{"id":1, "name":"John","balance":100}' #Id=1
+  request "$1"users '{"id":2, "name":"Jane","balance":200}' #Id=2
 
-  request products '{"id":1, "name":"Avocado","price":10,"quantity":5}' #Id=1
-  request products '{"id":2, "name":"Gold","price":3000,"quantity":1}' #Id=2
+  request "$1"products '{"id":1, "name":"Avocado","price":10,"quantity":5}' #Id=1
+  request "$1"products '{"id":2, "name":"Gold","price":3000,"quantity":1}' #Id=2
 
   #low balance
-  request orders '{"id":1, "user_id":1,"productItems":[{"Id":2,"Quantity":1}]}' || true
+  request "$1"orders '{"id":1, "user_id":1,"productItems":[{"Id":2,"Quantity":1}]}' || true
   # low stock
-  request orders '{"id":2, "user_id":1,"productItems":[{"Id":1,"Quantity":10}]}' || true
+  request "$1"orders '{"id":2, "user_id":1,"productItems":[{"Id":1,"Quantity":10}]}' || true
 
-  request orders '{"id":3, "user_id":1,"productItems":[{"Id":1,"Quantity":5}]}' #Id=1
+  request "$1"orders '{"id":3, "user_id":1,"productItems":[{"Id":1,"Quantity":5}]}' #Id=1
 
-  curl localhost:$APP_PORT/users/1
+  curl --fail localhost:$PORT/"$1"user"$2"/1
   echo
-  curl localhost:$APP_PORT/products/1
+  curl --fail localhost:$PORT/"$1"product"$2"/1
   echo
-  curl localhost:$APP_PORT/orders/1
+  curl --fail localhost:$PORT/"$1"order"$2"/1
   echo
 
   # search
-  request users/search '{"q":"john"}'
-  request products/search '{"q":"avocado","searchFields": ["name"]}'
+  if [ -n "$3" ]; then
+    request "$1"users/search '{"q":"john"}'
+    request "$1"products/search '{"q":"avocado","searchFields": ["name"]}'
+  else
+    curl --fail "localhost:$PORT/${1}users/search?q=john"
+    curl --fail "localhost:$PORT/${1}products/search?q=avocado&searchFields=name"
+  fi
+}
+
+start_service() {
+  TIGRIS_URL=tigris-local-server:8081 docker compose up -d tigris
+  $cli ping --timeout=20s
+  #sleep 5
+  $cli create project "$db"
+  TIGRIS_URL=tigris-local-server:8081 docker compose up --build -d service
 }
 
 db=eshop
 
 clean() {
-  $cli delete-project -f --project $db || true
-  rm -rf /tmp/cli-test/
+  $cli delete-project -f $db || true
+  rm -rf /tmp/cli-test/$db
 }
 
 scaffold() {
-  $cli create project --project $db \
-    --template=ecommerce \
+  $cli local up
+
+  clean
+
+  $cli create project $db \
+    --schema-template=ecommerce \
     --framework="$2" \
     --language "$1" \
-    --package-name="github.com/tigrisdata/$db" \
+    --package-name="$3" \
+    --components="$4" \
     --output-directory=/tmp/cli-test
-}
 
-test_base_go() {
-  clean
-
-  scaffold go base
-
-  tree /tmp/cli-test/$db
-  cd /tmp/cli-test/$db
-
-  task run
-
-  cd -
-
-  clean
-}
-
-test_base_typescript() {
-  clean
-
-  scaffold typescript base
-
-  tree /tmp/cli-test/$db
-  cd /tmp/cli-test/$db
-
-  npm ci
-  npm start
-
-  cd -
-
-  clean
+  $cli local down
 }
 
 test_gin_go() {
-  clean
-
-  scaffold go gin
+  scaffold go gin "github.com/tigrisdata/$db"
 
   tree /tmp/cli-test/$db
   cd /tmp/cli-test/$db
 
-  task "$1"
+  task run:docker
+
+  export PORT=8080
+
+  test_crud_routes "" "s"
+
+  task clean
 
   cd -
-
-  test_crud_routes
 
   clean
 }
 
 test_express_typescript() {
-  clean
-
-  scaffold typescript express
+  scaffold typescript express "eshop"
 
   tree /tmp/cli-test/$db
   cd /tmp/cli-test/$db
 
-  npm ci
-  npm run "$1"
+  npm i
+
+  export PORT=3000
+
+  start_service
 
   cd -
 
+  test_crud_routes "" "s" "search is post"
+
+  docker compose down
+
+  clean
+}
+
+test_nextjs_typescript() {
+  scaffold typescript nextjs "eshop"
+
+  tree /tmp/cli-test/$db
+  cd /tmp/cli-test/$db
+
+  npm i
+
+  export PORT=3000
+  export APP_ENV=development
+
+  start_service
+  npm run predev
+
+  cd -
+
+  test_crud_routes "api/"
+
+  docker compose down
+
+  clean
+}
+
+test_spring_java() {
+  $cli local up
+
+  clean
+
+  scaffold java spring "com.tigrisdata.$db"
+
+  $cli local down
+
+  tree /tmp/cli-test/$db
+  cd /tmp/cli-test/$db
+
+  export PORT=8080
+
+  start_service
+
   test_crud_routes
+
+  docker compose down
+
+  cd -
 
   clean
 }
 
 test_scaffold() {
-  #FIXME: Reenabled after next CLI release
-  #The tests use released version of CLI
-  #and unreleased commit adds Colima support on MacOS
-  #and fixes server health check on startup
-  return
-
-  test_gin_go run:docker
-  test_base_go
-
-  export PORT=8080
-
-  test_express_typescript start:docker
-  test_base_typescript
+  test_gin_go
+  test_express_typescript
+#  test_spring_java
+  test_nextjs_typescript
 }
 
+test_scaffold

@@ -16,61 +16,81 @@ package scaffold
 
 import (
 	"bufio"
-	"bytes"
-	"embed"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/gertd/go-pluralize"
 	"github.com/go-git/go-git/v5"
+	gitconfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/iancoleman/strcase"
 	"github.com/rs/zerolog/log"
-	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/schema"
 )
 
 var (
-	ErrUnsupportedFormat = fmt.Errorf("unsupported format. supported formats are: JSON, TypeScript, Go, Java")
+	ErrUnsupportedFormat    = fmt.Errorf("unsupported language. supported are: TypeScript, Go, Java")
+	ErrTemplatesInvalidPath = fmt.Errorf("only local templates path substitution is allowed")
+
+	templatesRepoURL = "https://github.com/tigrisdata/tigris-templates"
+	examplesRepoURL  = "https://github.com/tigrisdata/tigris-examples-%s"
 
 	plural = pluralize.NewClient()
+
+	ErrUnknownFramewrok = fmt.Errorf("unknown framework")
+	ErrDirAlreadyExists = fmt.Errorf("output directory already exists")
 )
 
-var templateDeps = map[string][]string{
-	"gin":     {"base"},
-	"express": {"base"},
+type Config struct {
+	TemplatesPath   string
+	OutputDirectory string
+	PackageName     string
+	ProjectName     string
+	Example         string
+	Framework       string
+	Components      []string
+	Collections     []*api.CollectionDescription
+	Language        string
+	URL             string
+	ClientID        string
+	ClientSecret    string
 }
 
 type tmplVars struct {
-	URL          string
-	Collections  []Collection
-	Collection   Collection
-	DBName       string
-	DBNameCamel  string
-	PackageName  string
-	ClientID     string
-	ClientSecret string
+	URL              string
+	Collections      []Collection
+	Collection       Collection
+	ProjectName      string
+	ProjectNameCamel string
+	PackageName      string
+	ClientID         string
+	ClientSecret     string
 }
 
 type JSONToLangType interface {
 	HasTime(string) bool
 	HasUUID(string) bool
-	GetFS(dir string) embed.FS
 }
 
 type Collection struct {
-	Name      string // UserName
-	NameDecap string // userName
-	JSON      string // user_names
-	Schema    string
+	Name       string // UserName
+	NameDecap  string // userName
+	JSON       string // user_names
+	Schema     string
+	JSONSchema string
 
 	JSONSingular string // user_name
 
@@ -81,6 +101,42 @@ type Collection struct {
 
 	HasTime bool
 	HasUUID bool
+}
+
+func ensureLocalTemplates(base string, lang string, envVar string, repoURL string) string {
+	templatePath := ensureTemplatesDir(base, lang)
+
+	if os.Getenv(envVar) != "" {
+		// Do not allow remote path substitution
+		_, err := url.ParseRequestURI(os.Getenv(envVar))
+		if err == nil && !os.IsPathSeparator(repoURL[0]) {
+			util.Fatal(ErrTemplatesInvalidPath, "get examples path from env")
+		}
+
+		repoURL = os.Getenv(envVar)
+		repoURL, err = filepath.Abs(repoURL)
+		util.Fatal(err, "translate relative examples path to absolute: %v", repoURL)
+	}
+
+	// FIXME: come up with more reliable way of detecting URL vs local file path
+	if _, err := url.ParseRequestURI(repoURL); err == nil && !os.IsPathSeparator(repoURL[0]) {
+		CloneGitRepo(context.Background(), repoURL, templatePath)
+	} else {
+		templatePath = repoURL
+		log.Debug().Str("path", templatePath).Msg("using local templates")
+	}
+
+	return templatePath
+}
+
+func EnsureLocalExamples(lang string) string {
+	log.Debug().Msg("ensureLocalExamples")
+	return ensureLocalTemplates("examples", lang, "TIGRIS_EXAMPLES_PATH", examplesRepoURL)
+}
+
+func EnsureLocalTemplates() string {
+	log.Debug().Msg("ensureLocalTemplates")
+	return ensureLocalTemplates("templates", "", "TIGRIS_TEMPLATES_PATH", templatesRepoURL)
 }
 
 func getGenerator(lang string) JSONToLangType {
@@ -100,7 +156,7 @@ func getGenerator(lang string) JSONToLangType {
 	return genType
 }
 
-func getSchemas(inSchema []byte, lang string) (string, *schema.Schema) {
+func decodeSchemas(inSchema []byte, lang string) (string, *schema.Schema, string) {
 	schemas := make(map[string]string)
 
 	err := json.Unmarshal(inSchema, &schemas)
@@ -120,17 +176,13 @@ func getSchemas(inSchema []byte, lang string) (string, *schema.Schema) {
 	err = json.Unmarshal([]byte(schemas["json"]), &js)
 	util.Fatal(err, "unmarshalling json schema")
 
-	return s, &js
+	return s, &js, schemas["json"]
 }
 
 func writeCollection(_ *tmplVars, w *bufio.Writer, collection *api.CollectionDescription,
 	lang string, genType JSONToLangType,
 ) *Collection {
-	s, js := getSchemas(collection.Schema, lang)
-
-	if js.CollectionType == "messages" {
-		return nil
-	}
+	s, js, jss := decodeSchemas(collection.Schema, lang)
 
 	if w != nil {
 		_, err := w.Write([]byte(s))
@@ -150,7 +202,8 @@ func writeCollection(_ *tmplVars, w *bufio.Writer, collection *api.CollectionDes
 		NamePlural:      namePlural,
 		NamePluralDecap: strings.ToLower(namePlural[0:1]) + namePlural[1:],
 
-		Schema: s,
+		Schema:     s,
+		JSONSchema: jss,
 
 		PrimaryKey: js.PrimaryKey,
 
@@ -159,30 +212,25 @@ func writeCollection(_ *tmplVars, w *bufio.Writer, collection *api.CollectionDes
 	}
 }
 
-func ExecFileTemplate(fn string, tmpl string, vars any) {
-	buf := bytes.Buffer{}
-	w := bufio.NewWriter(&buf)
+func substCollectionFn(fn string, c *Collection) string {
+	name := strings.ReplaceAll(fn, "_collection_name_", c.JSONSingular)
+	name = strings.ReplaceAll(name, "_collection_names_", c.JSON)
+	name = strings.ReplaceAll(name, "_Collection_name_", c.Name)
+	name = strings.ReplaceAll(name, "_Collection_names_", c.NamePlural)
 
-	util.ExecTemplate(w, tmpl, vars)
-
-	err := w.Flush()
-	util.Fatal(err, "flushing template writer")
-
-	err = os.WriteFile(fn, buf.Bytes(), 0o600)
-	util.Fatal(err, "write file")
+	return name
 }
 
-func walkDir(ffs embed.FS, rootPath string, pkgName string, outDir string, vars *tmplVars,
-	collections []*api.CollectionDescription, lang string, genType JSONToLangType,
-) error {
-	return fs.WalkDir(ffs, rootPath, func(path string, d fs.DirEntry, err error) error {
-		util.Fatal(err, "walk embedded template directory")
+func walkDir(ffs fs.FS, rootPath string, outDir string, vars *tmplVars) error {
+	return fs.WalkDir(ffs, ".", func(path string, d fs.DirEntry, err error) error {
+		util.Fatal(err, "walk template directory. rootPath '%v'", rootPath)
 
 		log.Debug().Str("path", path).Msg("walk-dir")
 
 		if !d.IsDir() {
-			b, err := ffs.ReadFile(path)
-			util.Fatal(err, "read template file")
+			tmpl, err := fs.ReadFile(ffs, path)
+			// b, err := ffs.ReadFile(path) // embed.FS
+			util.Fatal(err, "read template file: %s", path)
 
 			path = strings.TrimSuffix(path, ".gotmpl")
 			path = strings.TrimSuffix(path, ".gohtml")
@@ -191,31 +239,32 @@ func walkDir(ffs embed.FS, rootPath string, pkgName string, outDir string, vars 
 			dir = strings.TrimPrefix(dir, rootPath)
 			fn := filepath.Base(path)
 
-			dir = strings.ReplaceAll(dir, "_java_pkg_", strings.ReplaceAll(pkgName, ".", string(filepath.Separator)))
+			dir = strings.ReplaceAll(dir, "_java_pkg_", strings.ReplaceAll(vars.PackageName, ".", string(filepath.Separator)))
+			dir = strings.ReplaceAll(dir, "_db_name_", vars.ProjectName)
 
-			err = os.MkdirAll(filepath.Join(outDir, dir), 0o755)
-			util.Fatal(err, "MkdirAll: %s", dir)
+			dir = filepath.Join(outDir, dir)
+			fn = strings.ReplaceAll(fn, "_db_name_", vars.ProjectNameCamel)
 
-			fn = strings.ReplaceAll(fn, "_db_name_", vars.DBNameCamel)
+			if strings.Contains(strings.ToLower(dir+fn), "_collection_name_") ||
+				strings.Contains(strings.ToLower(dir+fn), "_collection_names_") {
+				log.Debug().Interface("colls", vars.Collections).Msg("per coll")
 
-			if strings.Contains(strings.ToLower(fn), "_collection_name_") ||
-				strings.Contains(strings.ToLower(fn), "_collection_names_") {
-				for _, v := range collections {
-					c := writeCollection(vars, nil, v, lang, genType)
-					if c == nil {
-						continue
-					}
+				for _, c := range vars.Collections {
+					vars.Collection = c
 
-					vars.Collection = *c
+					ofn := substCollectionFn(fn, &vars.Collection)
+					odir := substCollectionFn(dir, &vars.Collection)
+					oname := filepath.Join(odir, ofn)
 
-					name := strings.ReplaceAll(fn, "_collection_name_", c.JSONSingular)
-					name = strings.ReplaceAll(name, "_collection_names_", c.JSON)
-					name = strings.ReplaceAll(name, "_Collection_name_", c.Name)
-					name = strings.ReplaceAll(name, "_Collection_names_", c.NamePlural)
-					ExecFileTemplate(filepath.Join(outDir, dir, name), string(b), vars)
+					err = os.MkdirAll(odir, 0o755)
+					util.Fatal(err, "MkdirAll: %s", odir)
+
+					util.ExecFileTemplate(oname, string(tmpl), vars)
 				}
 			} else {
-				ExecFileTemplate(filepath.Join(outDir, dir, fn), string(b), vars)
+				err = os.MkdirAll(dir, 0o755)
+				util.Fatal(err, "MkdirAll: %s", dir)
+				util.ExecFileTemplate(filepath.Join(dir, fn), string(tmpl), vars)
 			}
 		}
 
@@ -223,59 +272,121 @@ func walkDir(ffs embed.FS, rootPath string, pkgName string, outDir string, vars 
 	})
 }
 
-func project(outDir string, pkgName string, db string, flavor string, collections []*api.CollectionDescription,
-	lang string,
-	clientID string,
-	clientSecret string,
-) {
-	genType := getGenerator(lang)
+func project(cfg *Config) {
+	genType := getGenerator(cfg.Language)
 
-	if pkgName == "" {
-		pkgName = db
+	if cfg.PackageName == "" {
+		cfg.PackageName = cfg.ProjectName
 	}
 
 	vars := tmplVars{
-		URL:          config.DefaultConfig.URL,
-		DBName:       db,
-		DBNameCamel:  strcase.ToCamel(db),
-		PackageName:  pkgName,
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
+		URL:              cfg.URL,
+		ProjectName:      cfg.ProjectName,
+		ProjectNameCamel: strcase.ToCamel(cfg.ProjectName),
+		PackageName:      cfg.PackageName,
+		ClientID:         cfg.ClientID,
+		ClientSecret:     cfg.ClientSecret,
 	}
 
-	ffs := genType.GetFS(flavor)
+	colls := make([]Collection, 0, len(cfg.Collections))
 
-	colls := make([]Collection, 0, len(collections))
-
-	for _, v := range collections {
-		c := writeCollection(&vars, nil, v, lang, genType)
-		if c != nil {
-			colls = append(colls, *c)
-		}
+	for _, v := range cfg.Collections {
+		c := writeCollection(&vars, nil, v, cfg.Language, genType)
+		colls = append(colls, *c)
 	}
 
 	vars.Collections = colls
 
-	rootPath := filepath.Join("scaffold", lang, flavor)
+	if cfg.Example != "" {
+		rootPath := filepath.Join(cfg.TemplatesPath, cfg.Example)
 
-	err := walkDir(ffs, rootPath, pkgName, outDir, &vars, collections, lang, genType)
-	util.Fatal(err, "walk templates dir %s", flavor)
-}
+		ffs := os.DirFS(rootPath)
 
-func Project(outDir string, pkgName string, dbName string, flavor string, colls []*api.CollectionDescription,
-	lang string,
-	clientID string,
-	clientSecret string,
-) {
-	outDir = filepath.Join(outDir, dbName)
+		err := walkDir(ffs, rootPath, cfg.OutputDirectory, &vars)
+		util.Fatal(err, "processing examples")
 
-	for _, v := range templateDeps[flavor] {
-		project(outDir, pkgName, dbName, v, colls, lang, clientID, clientSecret)
+		return
 	}
 
-	project(outDir, pkgName, dbName, flavor, colls, lang, clientID, clientSecret)
+	l := cfg.Language // overwrite ts -> typescript in path
+	if cfg.Language == "ts" {
+		l = "typescript"
+	}
 
-	InitGit(outDir)
+	rootPath := filepath.Join(cfg.TemplatesPath, "source", l, cfg.Framework)
+
+	if _, err := os.Stat(rootPath); os.IsNotExist(err) {
+		util.Infof("Available frameworks for language '%s:", l)
+
+		list := util.ListDir(filepath.Join(cfg.TemplatesPath, "source", l))
+
+		for k := range list {
+			if k != "base" {
+				util.Infof("\t* %s", k)
+			}
+		}
+
+		util.Infof("")
+
+		util.Fatal(fmt.Errorf("%w: %s", ErrUnknownFramewrok, cfg.Framework), "frameworks")
+	}
+
+	err := execComponents(rootPath, cfg.OutputDirectory, cfg.Components, &vars)
+	util.Fatal(err, "processed components")
+}
+
+func execComponents(rootPath string, outDir string, components []string, vars *tmplVars) error {
+	list := util.ListDir(rootPath)
+
+	keys := make([]string, 0, len(list))
+	for k := range list {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, v := range keys {
+		l := strings.SplitN(v, "_", 2)
+
+		if len(l) > 1 {
+			l[0] = l[1]
+		}
+
+		include := len(components) == 0
+
+		for _, c := range components {
+			if c == l[0] {
+				include = true
+			}
+		}
+
+		if include {
+			log.Debug().Str("component", l[0]).Msg("processing component")
+
+			componentPath := filepath.Join(rootPath, v)
+			ffs := os.DirFS(componentPath)
+
+			if err := walkDir(ffs, componentPath, outDir, vars); err != nil {
+				return fmt.Errorf("%w: walk templates dir %s", err, componentPath)
+			}
+		}
+	}
+
+	return nil
+}
+
+func Project(cfg *Config) {
+	cfg.OutputDirectory = filepath.Join(cfg.OutputDirectory, cfg.ProjectName)
+
+	log.Debug().Str("outDir", cfg.OutputDirectory).Msg("check output directory exists")
+
+	if _, err := os.Stat(cfg.OutputDirectory); err == nil {
+		util.Fatal(fmt.Errorf("%w: %s", ErrDirAlreadyExists, cfg.OutputDirectory), "output directory already exists")
+	}
+
+	project(cfg)
+
+	InitGit(cfg.OutputDirectory)
 }
 
 func InitGit(outDir string) {
@@ -302,4 +413,79 @@ func InitGit(outDir string) {
 		},
 	})
 	util.Fatal(err, "git commit initial")
+}
+
+func ensureTemplatesDir(base string, lang string) string {
+	c, err := os.UserCacheDir()
+	util.Fatal(err, "get cache directory")
+
+	path := filepath.Join(c, "tigris", base)
+	if lang != "" {
+		path = filepath.Join(c, "tigris", fmt.Sprintf("%s-%s", base, lang))
+	}
+
+	err = os.MkdirAll(path, 0o755)
+	util.Fatal(err, "mkdir cache directory: %s", path)
+
+	return path
+}
+
+func cloneGitRepo(ctx context.Context, url string, path string) error {
+	remoteBranch := "beta"
+
+	log.Debug().Str("url", url).Str("path", path).Msg("Cloning git repo")
+
+	_, err := git.PlainCloneContext(ctx, path, false, &git.CloneOptions{
+		URL:           url,
+		ReferenceName: plumbing.NewBranchReferenceName(remoteBranch),
+		Depth:         1,
+	})
+
+	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
+		_ = util.Error(err, "updating existing repo url %v, dir %v", url, path)
+
+		var repo *git.Repository
+
+		if repo, err = git.PlainOpen(path); err != nil {
+			return util.Error(err, "OpenRepo url %v, dir %v", url, path)
+		}
+
+		// Fetched updated remote branch
+		err = repo.FetchContext(ctx, &git.FetchOptions{
+			Force: true, Depth: 1,
+			RefSpecs: []gitconfig.RefSpec{
+				gitconfig.RefSpec("+refs/heads/" + remoteBranch + ":refs/remotes/origin/" + remoteBranch),
+			},
+		})
+		if errors.Is(err, git.NoErrAlreadyUpToDate) {
+			log.Debug().Msg("templates repository is up-to-date")
+
+			err = nil
+		}
+
+		// Checking out just fetched remote branch
+		tr, err := repo.Worktree()
+		if err != nil {
+			return util.Error(err, "getting git worktree")
+		}
+
+		err = tr.Checkout(&git.CheckoutOptions{Branch: plumbing.NewRemoteReferenceName("origin", remoteBranch)})
+		if err != nil {
+			return util.Error(err, "checking out fetched branch")
+		}
+	}
+
+	return util.Error(err, "CloneGitRepo url %v, dir %v", url, path)
+}
+
+func CloneGitRepo(ctx context.Context, url string, path string) {
+	if err := cloneGitRepo(ctx, url, path); err == nil {
+		return
+	}
+
+	err := os.RemoveAll(path)
+	_ = util.Error(err, "remove existing repo: %s", path)
+
+	err = cloneGitRepo(ctx, url, path)
+	util.Fatal(err, "retrying git repo clone")
 }

@@ -17,7 +17,7 @@ set -exv
 PS4='${LINENO}: '
 
 if [ -z "$cli" ]; then
-	cli="./tigris"
+	cli="$(pwd)/tigris"
 fi
 
 # Just to check if any config is set
@@ -325,7 +325,7 @@ db_errors_tests() {
 }
 
 db_generate_schema_test() {
-  $cli generate sample-schema --create
+  $cli generate sample-schema --project sampledb --create
   $cli delete-project -f sampledb
 }
 

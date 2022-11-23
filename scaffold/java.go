@@ -15,12 +15,7 @@
 package scaffold
 
 import (
-	"embed"
 	"strings"
-
-	"github.com/pkg/errors"
-	"github.com/tigrisdata/tigris-cli/templates"
-	"github.com/tigrisdata/tigris-cli/util"
 )
 
 type JSONToJava struct{}
@@ -31,15 +26,4 @@ func (*JSONToJava) HasTime(schema string) bool {
 
 func (*JSONToJava) HasUUID(schema string) bool {
 	return strings.Contains(schema, "private UUID")
-}
-
-func (*JSONToJava) GetFS(dir string) embed.FS {
-	switch dir {
-	case "spring":
-		return templates.ScaffoldJavaSpring
-	default:
-		util.Fatal(errors.Wrapf(ErrUnknownScaffoldType, "type: %s", dir), "get fs")
-	}
-
-	return embed.FS{} // this should never happen
 }
