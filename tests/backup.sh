@@ -13,8 +13,8 @@ test_backup() {
   DATAFILE="${TESTDIR}/${TESTDB}.${TESTCOLL}.json"
 
   # Initialize test database
-  $cli drop database "${TESTDB}" || true
-  $cli create database "${TESTDB}"
+  $cli drop project "${TESTDB}" || true
+  $cli create project "${TESTDB}"
 
   # Add test data
   cat <<EOF | TIGRIS_LOG_LEVEL=debug $cli import "${TESTDB}" "${TESTCOLL}" --create-collection --primary-key=uuid_field --autogenerate=uuid_field

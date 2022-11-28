@@ -5,8 +5,8 @@ if [ -z "$cli" ]; then
 fi
 
 test_import() {
-  $cli drop database db_import_test || true
-  $cli create database db_import_test
+  $cli drop project db_import_test || true
+  $cli create project db_import_test
 
   cat <<EOF | TIGRIS_LOG_LEVEL=debug $cli import db_import_test import_test --create-collection --primary-key=uuid_field --autogenerate=uuid_field
 {
@@ -230,5 +230,5 @@ EOF
   out=$($cli describe collection db_import_test import_test_multi_pk|jq -S .)
   diff -w -u <(echo "$exp_out") <(echo "$out")
 
-	$cli drop database db_import_test
+	$cli drop proejct db_import_test
 }

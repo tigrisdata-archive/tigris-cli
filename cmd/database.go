@@ -26,16 +26,15 @@ import (
 
 var schemaOnly bool
 
-var listDatabasesCmd = &cobra.Command{
-	Use:     "databases",
-	Aliases: []string{"projects"},
-	Short:   "Lists databases/projects",
-	Long:    "Project is an alias for Database - this command will list all projects/databases",
+var listProjectsCmd = &cobra.Command{
+	Use:   "projects",
+	Short: "Lists projects",
+	Long:  "This command will list all projects.",
 	Run: func(cmd *cobra.Command, _ []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			resp, err := client.Get().ListDatabases(ctx)
 			if err != nil {
-				return util.Error(err, "list databases")
+				return util.Error(err, "list projects")
 			}
 
 			for _, v := range resp {
@@ -95,30 +94,28 @@ var describeDatabaseCmd = &cobra.Command{
 	},
 }
 
-var createDatabaseCmd = &cobra.Command{
-	Use:     "database {db}",
-	Aliases: []string{"project"},
-	Short:   "Creates database/project",
-	Long:    "Project is an alias for Database - this command will create a project/database",
-	Args:    cobra.ExactArgs(1),
+var createProjectCmd = &cobra.Command{
+	Use:   "project {project}",
+	Short: "Creates project",
+	Long:  "This command will create a project.",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			err := client.Get().CreateDatabase(ctx, args[0])
-			return util.Error(err, "create database")
+			return util.Error(err, "create project")
 		})
 	},
 }
 
-var dropDatabaseCmd = &cobra.Command{
-	Use:     "database {db}",
-	Aliases: []string{"project"},
-	Short:   "Drops database/project",
-	Long:    "Project is an alias for Database - this command will drop a project/database",
-	Args:    cobra.ExactArgs(1),
+var dropProjectCmd = &cobra.Command{
+	Use:   "project {project}",
+	Short: "Drops project",
+	Long:  "This command will drop a project.",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			err := client.Get().DropDatabase(ctx, args[0])
-			return util.Error(err, "drop database")
+			return util.Error(err, "drop project")
 		})
 	},
 }
@@ -127,8 +124,8 @@ func init() {
 	describeDatabaseCmd.Flags().BoolVarP(&schemaOnly, "schema-only", "s", false,
 		"dump only schema of all database collections")
 
-	dropCmd.AddCommand(dropDatabaseCmd)
-	createCmd.AddCommand(createDatabaseCmd)
-	listCmd.AddCommand(listDatabasesCmd)
+	dropCmd.AddCommand(dropProjectCmd)
+	createCmd.AddCommand(createProjectCmd)
+	listCmd.AddCommand(listProjectsCmd)
 	describeCmd.AddCommand(describeDatabaseCmd)
 }

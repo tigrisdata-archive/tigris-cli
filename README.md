@@ -38,22 +38,25 @@ Usage:
 
 Available Commands:
   alter       Alters collection
+  backup      Dumps documents and schemas to JSON files on a quiesced database
   completion  Generates completion script for shell
   config      Configuration commands
-  create      Creates database or collection
+  create      Creates database/project, collection, namespace or application
   delete      Deletes document(s)
   describe    Describes database or collection
   dev         Starts and stops local development Tigris server
   docs        Generates CLI documentation in Markdown format
-  drop        Drops database or collection
+  drop        Drops database, collection or application
   generate    Generating helper assets such as sample schema
   help        Help about any command
+  import      Import documents into collection
   insert      Inserts document(s)
-  list        Lists databases or collections
+  list        Lists databases/projects, collections or namespaces
   login       Authenticate on the Tigris instance
   logout      Logout from Tigris instance
   ping        Checks connection to Tigris
   publish     Publish message(s)
+  quota       Quota related commands
   read        Reads and outputs documents
   replace     Inserts or replaces document(s)
   scaffold    Scaffold a project for specified language
@@ -68,6 +71,7 @@ Flags:
   -h, --help   help for tigris
 
 Use "tigris [command] --help" for more information about a command.
+
 ```
 
 # Examples
