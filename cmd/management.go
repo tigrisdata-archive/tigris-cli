@@ -67,17 +67,17 @@ Check the docs for more information: https://docs.tigrisdata.com/overview/authen
 	},
 }
 
-var dropApplicationCmd = &cobra.Command{
+var deleteApplicationCmd = &cobra.Command{
 	Use:   "application {id}",
-	Short: "Drop application credentials",
+	Short: "Deletes application credentials",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			if err := client.ManagementGet().DeleteApplication(ctx, args[0]); err != nil {
-				return util.Error(err, "drop application failed")
+				return util.Error(err, "delete application failed")
 			}
 
-			util.Stdoutf("successfully dropped application credentials\n")
+			util.Stdoutf("successfully deleted application credentials\n")
 
 			return nil
 		})
@@ -201,7 +201,7 @@ var createNamespaceCmd = &cobra.Command{
 func init() {
 	alterApplicationCmd.Flags().BoolVarP(&rotate, "rotate", "r", false, "Rotate application secret")
 
-	dropCmd.AddCommand(dropApplicationCmd)
+	deleteCmd.AddCommand(deleteApplicationCmd)
 	createCmd.AddCommand(createApplicationCmd)
 	listCmd.AddCommand(listApplicationsCmd)
 	alterCmd.AddCommand(alterApplicationCmd)

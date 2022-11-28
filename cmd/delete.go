@@ -15,33 +15,13 @@
 package cmd
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigris-cli/client"
-	"github.com/tigrisdata/tigris-cli/util"
-	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete {db} {collection} {filter}",
-	Short: "Deletes document(s)",
-	Long:  "Deletes documents according to the provided filter.",
-	Example: fmt.Sprintf(`
-  # Delete a user where the value of the id field is 2
-  %[1]s delete testdb users '{"id": 2}'
-
-  # Delete users where the value of id field is 1 or 3
-  %[1]s delete testdb users '{"$or": [{"id": 1}, {"id": 3}]}'
-`, rootCmd.Root().Name()),
-	Args: cobra.MinimumNArgs(3),
-	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			_, err := client.Get().UseDatabase(args[0]).Delete(ctx, args[1], driver.Filter(args[2]))
-			return util.Error(err, "delete documents")
-		})
-	},
+	Use:   "delete",
+	Short: "delete project, collection or application",
+	Args:  cobra.MinimumNArgs(1),
 }
 
 func init() {

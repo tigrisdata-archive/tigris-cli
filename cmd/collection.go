@@ -171,9 +171,9 @@ var createCollectionCmd = &cobra.Command{
 	},
 }
 
-var dropCollectionCmd = &cobra.Command{
-	Use:   "collection {db}",
-	Short: "Drops collection",
+var deleteCollectionCmd = &cobra.Command{
+	Use:   "collection {project}",
+	Short: "Deletes collection",
 	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
@@ -181,7 +181,7 @@ var dropCollectionCmd = &cobra.Command{
 				return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 					for _, v := range docs {
 						if err := tx.DropCollection(ctx, string(v)); err != nil {
-							return util.Error(err, "drop collection")
+							return util.Error(err, "delete collection")
 						}
 					}
 
@@ -236,7 +236,7 @@ var alterCollectionCmd = &cobra.Command{
 }
 
 func init() {
-	dropCmd.AddCommand(dropCollectionCmd)
+	deleteCmd.AddCommand(deleteCollectionCmd)
 	createCmd.AddCommand(createCollectionCmd)
 	listCmd.AddCommand(listCollectionsCmd)
 	alterCmd.AddCommand(alterCollectionCmd)

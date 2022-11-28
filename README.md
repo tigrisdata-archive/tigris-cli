@@ -38,22 +38,24 @@ Usage:
 
 Available Commands:
   alter       Alters collection
+  backup      Dumps documents and schemas to JSON files on a quiesced database
   completion  Generates completion script for shell
   config      Configuration commands
-  create      Creates database or collection
-  delete      Deletes document(s)
+  create      Creates database/project, collection, namespace or application
+  delete      delete project, collection or application
   describe    Describes database or collection
   dev         Starts and stops local development Tigris server
   docs        Generates CLI documentation in Markdown format
-  drop        Drops database or collection
   generate    Generating helper assets such as sample schema
   help        Help about any command
+  import      Import documents into collection
   insert      Inserts document(s)
-  list        Lists databases or collections
+  list        Lists databases/projects, collections or namespaces
   login       Authenticate on the Tigris instance
   logout      Logout from Tigris instance
   ping        Checks connection to Tigris
   publish     Publish message(s)
+  quota       Quota related commands
   read        Reads and outputs documents
   replace     Inserts or replaces document(s)
   scaffold    Scaffold a project for specified language
@@ -80,8 +82,8 @@ tigris local up
 tigris generate sample-schema --create
 
 # Create database and collection
-tigris create database testdb
-tigris create collection testdb \
+tigris create project my-first-project
+tigris create collection my-first-project \
 '{
     "title": "users",
     "description": "Collection of documents with details of users",
@@ -102,17 +104,17 @@ tigris create collection testdb \
 }'
 
 # Insert some data
-tigris insert_or_replace sampledb users \
+tigris insert_or_replace my-first-project users \
 '[
     {"id": 1, "name": "Jania McGrory", "balance": 6045.7},
     {"id": 2, "name": "Bunny Instone", "balance": 2948.87}
 ]'
 
 # Read data
-tigris read sampledb users '{"id": 1}'
+tigris read my-first-project users '{"id": 1}'
 
 # Perform a transaction
-tigris transact sampledb \
+tigris transact my-first-project \
 '[
   {
     "insert": {

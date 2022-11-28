@@ -75,9 +75,9 @@ db_tests() {
 	echo "============"
 	$cli ping
 
-	$cli drop database db1 || true
+	$cli delete database db1 || true
 
-	$cli create database db1
+	$cli create project db1
 
 	coll1='{"title":"coll1","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"},"Field2":{"type":"integer"}},"primary_key":["Key1"],"collection_type":"documents"}'
 	coll111='{"title":"coll111","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"}},"primary_key":["Key1"],"collection_type":"documents"}'
@@ -242,7 +242,7 @@ EOF
 	test_pubsub
 
 	$cli drop collection db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7 coll111
-	$cli drop database db1
+	$cli delete database db1
 }
 
 db_negative_tests() {
@@ -260,9 +260,9 @@ db_negative_tests() {
 	$cli insert db1 && exit 1
 	$cli delete db1 coll1 && exit 1
 	$cli create collection && exit 1
-	$cli create database && exit 1
+	$cli create project && exit 1
 	$cli drop collection db1 && exit 1
-	$cli drop database && exit 1
+	$cli delete project && exit 1
 	$cli list collections && exit 1
 
 	true
@@ -279,7 +279,7 @@ error() {
 db_errors_tests() {
 	$cli list databases
 
-	error "database doesn't exist 'db2'" $cli drop database db2
+	error "database doesn't exist 'db2'" $cli delete database db2
 
 	error "database doesn't exist 'db2'" $cli drop collection db2 coll1
 
@@ -297,7 +297,7 @@ db_errors_tests() {
 
 	error "database doesn't exist 'db2'" $cli delete db2 coll1 '{}'
 
-	$cli create database db2
+	$cli create project db2
 	error "collection doesn't exist 'coll1'" $cli insert db2 coll1 '{}'
 
 	error "collection doesn't exist 'coll1'" $cli read db2 coll1 '{}' ||
@@ -310,12 +310,12 @@ db_errors_tests() {
 	error "schema name is missing" $cli create collection db1 \
 		'{ "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
 
-	$cli drop database db2
+	$cli delete database db2
 }
 
 db_generate_schema_test() {
   error "sampledb created with the collections" $cli generate sample-schema --create
-  $cli drop database sampledb
+  $cli delete database sampledb
 }
 
 test_pubsub() {
@@ -354,8 +354,8 @@ test_pubsub() {
 test_scaffold() {
 	coll_msg='{"title":"names","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"}},"collection_type":"messages"}'
 
-	$cli drop database gen1 || true
-	$cli create database gen1
+	$cli delete database gen1 || true
+	$cli create project gen1
 	$cli create collection gen1 "$coll_msg"
 
 	exp_out='package main
@@ -421,7 +421,7 @@ func main() {
 	out=$($cli scaffold go gen1)
 	diff -w -u <(echo "$exp_out") <(echo "$out") ||
 
-	$cli drop database gen1
+	$cli delete database gen1
 }
 
 BASEDIR=$(dirname "$0")

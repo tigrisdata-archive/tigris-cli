@@ -34,7 +34,7 @@ const (
 	Replace                  = "replace" // alias for insert_or_replace
 	InsertOrReplace          = "insert_or_replace"
 	CreateOrUpdateCollection = "create_or_update_collection"
-	DropCollection           = "drop_collection"
+	DeleteCollection         = "delete_collection"
 	ListCollections          = "list_collections"
 )
 
@@ -116,7 +116,7 @@ func execTxOpLow(ctx context.Context, tx driver.Tx, tp string, op *Op) error {
 		_, err = tx.Replace(ctx, op.Collection, *(*[]driver.Document)(ptr), &driver.ReplaceOptions{})
 	case CreateOrUpdateCollection:
 		err = tx.CreateOrUpdateCollection(ctx, op.Collection, driver.Schema(op.Schema))
-	case DropCollection:
+	case DeleteCollection:
 		err = tx.DropCollection(ctx, op.Collection)
 	case ListCollections:
 		return execTxOpListColls(ctx, tx)
@@ -214,8 +214,8 @@ All the read, write and schema operations are supported.`,
 							return util.Error(err, "execute tx CreateOrUpdateCollection")
 						}
 
-						if err = execTxOp(ctx, tx, DropCollection, op.DropCollection); err != nil {
-							return util.Error(err, "execute tx DropCollection")
+						if err = execTxOp(ctx, tx, DeleteCollection, op.DropCollection); err != nil {
+							return util.Error(err, "execute tx DeleteCollection")
 						}
 
 						if err = execTxOp(ctx, tx, ListCollections, op.ListCollections); err != nil {
