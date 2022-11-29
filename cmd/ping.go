@@ -31,13 +31,14 @@ var pingCmd = &cobra.Command{
 	Short: "Checks connection to Tigris",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
 
 		err := client.InitLow()
 		if err == nil {
 			_, err = client.D.Health(ctx)
 		}
 		_ = util.Error(err, "ping")
+
+		cancel()
 
 		end := time.Now().Add(pingTimeout)
 		sleep := 32 * time.Millisecond
@@ -52,9 +53,13 @@ var pingCmd = &cobra.Command{
 
 			client.D = nil
 
+			ctx, cancel = util.GetContext(cmd.Context())
+
 			if err = client.InitLow(); err == nil {
 				_, err = client.D.Health(ctx)
 			}
+
+			cancel()
 
 			sleep *= 2
 
