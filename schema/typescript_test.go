@@ -17,6 +17,7 @@ package schema
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -308,7 +309,7 @@ main()
 
 			config.DefaultConfig.URL = "localhost:8081"
 			buf := scaffoldFromDB("test_db", v.in, "ts")
-			assert.Equal(t, v.exp, string(buf))
+			assert.Equal(t, v.exp, strings.ReplaceAll(string(buf), "\r\n", "\n"))
 		})
 	}
 }

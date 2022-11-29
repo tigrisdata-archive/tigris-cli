@@ -16,6 +16,7 @@ package schema
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -227,7 +228,7 @@ func main() {
 			}
 
 			buf := scaffoldFromDB("test_db", v.in, "go")
-			assert.Equal(t, v.exp, string(buf))
+			assert.Equal(t, v.exp, strings.ReplaceAll(string(buf), "\r\n", "\n"))
 		})
 	}
 }

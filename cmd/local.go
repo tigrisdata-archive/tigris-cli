@@ -46,6 +46,31 @@ var (
 	ErrServerStartTimeout = fmt.Errorf("timeout waiting server to start")
 )
 
+func getClient(ctx context.Context) *client.Client {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	util.Fatal(err, "error creating docker client")
+
+	ctx, cancel := util.GetContext(ctx)
+	defer cancel()
+
+	p, err := cli.Ping(ctx)
+	if err != nil {
+		home, err := os.UserHomeDir()
+		util.Fatal(err, "getting home dir")
+
+		cli, err = client.NewClientWithOpts(client.FromEnv,
+			client.WithHost("unix://"+home+"/.colima/default/docker.sock"), client.WithAPIVersionNegotiation())
+		util.Fatal(err, "error creating docker client")
+
+		p, err = cli.Ping(ctx)
+		util.Fatal(err, "pinging docker daemon")
+	}
+
+	log.Debug().Interface("version", p).Msg("docker version")
+
+	return cli
+}
+
 func stopContainer(client *client.Client, cname string) {
 	ctx := context.Background()
 
@@ -203,10 +228,7 @@ var serverUpCmd = &cobra.Command{
 	Aliases: []string{"up"},
 	Short:   "Starts an instance of Tigris for local development",
 	Run: func(cmd *cobra.Command, args []string) {
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err != nil {
-			util.Fatal(err, "error creating docker client")
-		}
+		cli := getClient(cmd.Context())
 
 		port := "8081"
 		if len(args) > 0 {
@@ -239,10 +261,7 @@ var serverDownCmd = &cobra.Command{
 	Aliases: []string{"down"},
 	Short:   "Stops local Tigris instance",
 	Run: func(cmd *cobra.Command, args []string) {
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err != nil {
-			util.Fatal(err, "error creating docker client")
-		}
+		cli := getClient(cmd.Context())
 
 		stopContainer(cli, ContainerName)
 
@@ -254,19 +273,14 @@ var serverLogsCmd = &cobra.Command{
 	Use:   "logs",
 	Short: "Shows logs from local Tigris instance",
 	Run: func(cmd *cobra.Command, args []string) {
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err != nil {
-			util.Fatal(err, "error creating docker client")
-		}
-
-		ctx := context.Background()
+		cli := getClient(cmd.Context())
 
 		follow, err := cmd.Flags().GetBool("follow")
 		if err != nil {
 			util.Fatal(err, "error reading 'follow' option")
 		}
 
-		logs, err := cli.ContainerLogs(ctx, ContainerName, types.ContainerLogsOptions{
+		logs, err := cli.ContainerLogs(cmd.Context(), ContainerName, types.ContainerLogsOptions{
 			ShowStdout: true,
 			ShowStderr: true,
 			Follow:     follow,
