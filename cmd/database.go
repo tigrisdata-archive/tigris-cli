@@ -105,23 +105,10 @@ var createProjectCmd = &cobra.Command{
 	},
 }
 
-var dropProjectCmd = &cobra.Command{
-	Use:   "project",
-	Short: "Drops project",
-	Long:  "This command will drop a project.",
-	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			err := client.Get().DropDatabase(ctx, getProjectName())
-			return util.Error(err, "drop project")
-		})
-	},
-}
-
 func init() {
 	describeDatabaseCmd.Flags().BoolVarP(&schemaOnly, "schema-only", "s", false,
 		"dump only schema of all database collections")
 
-	dropCmd.AddCommand(dropProjectCmd)
 	createCmd.AddCommand(createProjectCmd)
 	listCmd.AddCommand(listProjectsCmd)
 	describeCmd.AddCommand(describeDatabaseCmd)

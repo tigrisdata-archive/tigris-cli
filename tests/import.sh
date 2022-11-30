@@ -5,7 +5,7 @@ if [ -z "$cli" ]; then
 fi
 
 test_import() {
-  $cli drop project --project=db_import_test || true
+  $cli delete-project -f --project=db_import_test || true
   $cli create project --project=db_import_test
 
   cat <<EOF | TIGRIS_LOG_LEVEL=debug $cli import --project=db_import_test import_test --create-collection --primary-key=uuid_field --autogenerate=uuid_field
