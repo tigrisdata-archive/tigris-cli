@@ -45,16 +45,33 @@ Check the docs for more information: https://docs.tigrisdata.com/overview/authen
 
   {
     "id": "<client id here>",
-    "name": "service2",
+    "name": "service1",
     "description": "main api service",
     "secret": "<client secret here",
     "created_at": 1663802082000,
     "created_by": "github|3436058"
-  }`,
-	Args: cobra.MinimumNArgs(2),
+  }
+
+  tigris create application service2
+
+  Output:
+
+  {
+    "id": "<client id here>",
+    "name": "service2",
+    "secret": "<client secret here",
+    "created_at": 1663802082001,
+    "created_by": "github|3436058"
+  }
+`,
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			app, err := client.ManagementGet().CreateApplication(ctx, args[0], args[1])
+			description := ""
+			if len(args) > 1 {
+				description = args[1]
+			}
+			app, err := client.ManagementGet().CreateApplication(ctx, args[0], description)
 			if err != nil {
 				return util.Error(err, "create application failed")
 			}
