@@ -15,9 +15,12 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 var rootCmd = &cobra.Command{
@@ -34,4 +37,26 @@ func Execute() {
 }
 
 func init() {
+}
+
+var errUnableToReadProject = fmt.Errorf("please specify project name")
+
+func getProjectName() string {
+	// first user supplied flag
+	// second env variable
+	// third config file
+	if project == "" {
+		project = config.DefaultConfig.Project
+		if project == "" {
+			util.Fatal(errUnableToReadProject, "unable to read project")
+		}
+	}
+
+	return project
+}
+
+var project string
+
+func addProjectFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringVarP(&project, "project", "p", "", "Specifies project: --project=foo")
 }

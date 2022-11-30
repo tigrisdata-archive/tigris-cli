@@ -5,10 +5,10 @@ if [ -z "$cli" ]; then
 fi
 
 test_import() {
-  $cli drop project db_import_test || true
-  $cli create project db_import_test
+  $cli drop project --project=db_import_test || true
+  $cli create project --project=db_import_test
 
-  cat <<EOF | TIGRIS_LOG_LEVEL=debug $cli import db_import_test import_test --create-collection --primary-key=uuid_field --autogenerate=uuid_field
+  cat <<EOF | TIGRIS_LOG_LEVEL=debug $cli import --project=db_import_test import_test --create-collection --primary-key=uuid_field --autogenerate=uuid_field
 {
 	"str_field" : "str_value",
 	"int_field" : 1,
@@ -143,13 +143,13 @@ EOF
   }
 }'
 
-  out=$($cli describe collection db_import_test import_test)
+  out=$($cli describe collection --project=db_import_test import_test)
   diff -w -u <(echo "$exp_out") <(echo "$out")
 
-  error "collection doesn't exist 'import_test_no_create'"  $cli import db_import_test import_test_no_create '{ "str_field" : "str_value" }'
+  error "collection doesn't exist 'import_test_no_create'"  $cli import --project=db_import_test import_test_no_create '{ "str_field" : "str_value" }'
 
   # evolve schema in a batch
-  $cli import db_import_test import_test1 --create-collection --primary-key=id '{ "id" : 1, "str_field" : "str_value" }' '{ "id" : 2, "int_field": 1 }'
+  $cli import --project=db_import_test import_test1 --create-collection --primary-key=id '{ "id" : 1, "str_field" : "str_value" }' '{ "id" : 2, "int_field": 1 }'
 
   exp_out='{
   "collection": "import_test1",
@@ -172,11 +172,11 @@ EOF
   }
 }'
 
-  out=$($cli describe collection db_import_test import_test1)
+  out=$($cli describe collection --project=db_import_test import_test1)
   diff -w -u <(echo "$exp_out") <(echo "$out")
 
   # evolve schema
-  $cli import db_import_test import_test1 '{ "id" : 3, "uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }'
+  $cli import --project=db_import_test import_test1 '{ "id" : 3, "uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }'
 
   exp_out='{
   "collection": "import_test1",
@@ -203,10 +203,10 @@ EOF
   }
 }'
 
-  out=$($cli describe collection db_import_test import_test1|jq -S .)
+  out=$($cli describe collection --project=db_import_test import_test1|jq -S .)
   diff -w -u <(echo "$exp_out") <(echo "$out")
 
-  $cli import db_import_test import_test_multi_pk --create-collection --primary-key=str_field,str_field1 '{ "str_field" : "str_value", "str_field1" : "stf_value1" }'
+  $cli import --project=db_import_test import_test_multi_pk --create-collection --primary-key=str_field,str_field1 '{ "str_field" : "str_value", "str_field1" : "stf_value1" }'
 
   exp_out='{
   "collection": "import_test_multi_pk",
@@ -227,8 +227,8 @@ EOF
   }
 }'
 
-  out=$($cli describe collection db_import_test import_test_multi_pk|jq -S .)
+  out=$($cli describe collection --project=db_import_test import_test_multi_pk|jq -S .)
   diff -w -u <(echo "$exp_out") <(echo "$out")
 
-	$cli drop proejct db_import_test
+	$cli drop proejct --project=db_import_test
 }

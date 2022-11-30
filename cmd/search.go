@@ -39,7 +39,7 @@ var (
 )
 
 var searchCmd = &cobra.Command{
-	Use:   "search {db} {collection}",
+	Use:   "search {collection}",
 	Short: "Searches a collection for documents matching the query",
 	Long:  "Executes a search query against collection and returns the search results.",
 	//nolint:golint,lll
@@ -70,8 +70,8 @@ var searchCmd = &cobra.Command{
 
 # Find users with last name exactly matching "Wong"
 %[1]s %[2]s --filter '{"lastName": "Wong"}'
-`, rootCmd.Root().Name(), "search testdb users"),
-	Args: cobra.MinimumNArgs(2),
+`, rootCmd.Root().Name(), "search --project=testdb users"),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			request := &driver.SearchRequest{
@@ -86,7 +86,7 @@ var searchCmd = &cobra.Command{
 				PageSize:      pageSize,
 			}
 
-			it, err := client.Get().UseDatabase(args[0]).Search(ctx, args[1], request)
+			it, err := client.Get().UseDatabase(getProjectName()).Search(ctx, args[0], request)
 			if err != nil {
 				return util.Error(err, "search failed")
 			}
@@ -124,5 +124,6 @@ func init() {
 	searchCmd.Flags().Int32VarP(&page, "page", "p", 1, "page of results to retrieve")
 	searchCmd.Flags().Int32VarP(&pageSize, "pageSize", "c", 20, "count of results to be returned per page")
 
+	addProjectFlag(searchCmd)
 	dbCmd.AddCommand(searchCmd)
 }

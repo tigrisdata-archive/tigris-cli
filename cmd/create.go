@@ -20,10 +20,11 @@ import (
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Creates database/project, collection, namespace or application",
+	Short: "Creates project, collection, namespace or application",
 	Args:  cobra.MinimumNArgs(1),
 }
 
 func init() {
+	addProjectFlag(createCmd)
 	dbCmd.AddCommand(createCmd)
 }

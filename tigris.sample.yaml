@@ -27,3 +27,6 @@
 # Specifies request timeout
 # Default is 5 seconds
 #timeout: 3s
+
+# Specify the project you want to work on. If you specify here you can avoid specifying `--project` as CLI flag.
+#project: test_project
