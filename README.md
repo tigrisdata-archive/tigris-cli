@@ -37,33 +37,34 @@ Usage:
   tigris [command]
 
 Available Commands:
-  alter       Alters collection
-  backup      Dumps documents and schemas to JSON files on a quiesced database
-  completion  Generates completion script for shell
-  config      Configuration commands
-  create      Creates project, collection, namespace or application
-  delete      Deletes document(s)
-  describe    Describes database or collection
-  dev         Starts and stops local development Tigris server
-  docs        Generates CLI documentation in Markdown format
-  drop        Drops project, collection or application
-  generate    Generating helper assets such as sample schema
-  help        Help about any command
-  import      Import documents into collection
-  insert      Inserts document(s)
-  list        Lists projects, collections or namespaces
-  login       Authenticate on the Tigris instance
-  logout      Logout from Tigris instance
-  ping        Checks connection to Tigris
-  quota       Quota related commands
-  read        Reads and outputs documents
-  replace     Inserts or replaces document(s)
-  scaffold    Scaffold a project for specified language
-  search      Searches a collection for documents matching the query
-  server      Tigris server related commands
-  transact    Executes a set of operations in a transaction
-  update      Updates document(s)
-  version     Shows tigris cli version
+  alter          Alters collection
+  backup         Dumps documents and schemas to JSON files on a quiesced database
+  completion     Generates completion script for shell
+  config         Configuration commands
+  create         Creates project, collection, namespace or application
+  delete         Deletes document(s)
+  delete-project Deletes project
+  describe       Describes database or collection
+  dev            Starts and stops local development Tigris server
+  docs           Generates CLI documentation in Markdown format
+  drop           Drops collection or application
+  generate       Generating helper assets such as sample schema
+  help           Help about any command
+  import         Import documents into collection
+  insert         Inserts document(s)
+  list           Lists projects, collections or namespaces
+  login          Authenticate on the Tigris instance
+  logout         Logout from Tigris instance
+  ping           Checks connection to Tigris
+  quota          Quota related commands
+  read           Reads and outputs documents
+  replace        Inserts or replaces document(s)
+  scaffold       Scaffold a project for specified language
+  search         Searches a collection for documents matching the query
+  server         Tigris server related commands
+  transact       Executes a set of operations in a transaction
+  update         Updates document(s)
+  version        Shows tigris cli version
 
 Flags:
   -h, --help   help for tigris
