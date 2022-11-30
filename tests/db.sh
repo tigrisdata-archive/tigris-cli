@@ -78,7 +78,7 @@ db_tests() {
 	echo "============"
 	$cli ping
 
-	$cli drop project --project=db1 || true
+	$cli delete-project -f --project=db1 || true
 
 	$cli create project --project=db1
 
@@ -244,7 +244,7 @@ EOF
 	db_generate_schema_test
 
 	$cli drop collection --project=db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7 coll111
-	$cli drop project --project=db1
+	$cli delete-project -f --project=db1
 }
 
 db_negative_tests() {
@@ -264,7 +264,7 @@ db_negative_tests() {
 	$cli create collection && exit 1
 	$cli create project && exit 1
 	$cli drop collection --project=db1 && exit 1
-	$cli drop project && exit 1
+	$cli delete-project && exit 1
 	$cli list collections && exit 1 # project not set should error out
 	true
 }
@@ -280,7 +280,7 @@ error() {
 db_errors_tests() {
 	$cli list projects
 
-	error "database doesn't exist 'db2'" $cli drop project --project=db2
+	error "database doesn't exist 'db2'" $cli delete-project -f --project=db2
 
 	error "database doesn't exist 'db2'" $cli drop collection --project=db2 coll1
 
@@ -311,18 +311,18 @@ db_errors_tests() {
 	error "schema name is missing" $cli create collection --project=db1 \
 		'{ "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
 
-	$cli drop project --project=db2
+	$cli delete-project -f --project=db2
 }
 
 db_generate_schema_test() {
   error "sampledb created with the collections" $cli generate sample-schema --create
-  $cli drop project --project=sampledb
+  $cli delete-project -f --project=sampledb
 }
 
 test_scaffold() {
 	coll_msg='{"title":"names","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"}},"collection_type":"messages"}'
 
-	$cli drop project --project=gen1 || true
+	$cli delete-project -f --project=gen1 || true
 	$cli create project --project=gen1
 	$cli create collection --project=gen1 "$coll_msg"
 
@@ -389,7 +389,7 @@ func main() {
 	out=$($cli scaffold go --project=gen1)
 	diff -w -u <(echo "$exp_out") <(echo "$out") ||
 
-	$cli drop project --project=gen1
+	$cli delete-project -f --project=gen1
 }
 
 BASEDIR=$(dirname "$0")

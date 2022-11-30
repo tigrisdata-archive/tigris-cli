@@ -13,7 +13,7 @@ test_backup() {
   DATAFILE="${TESTDIR}/${TESTDB}.${TESTCOLL}.json"
 
   # Initialize test database
-  $cli drop project "--project=${TESTDB}" || true
+  $cli delete-project -f "--project=${TESTDB}" || true
   $cli create project "--project=${TESTDB}"
 
   # Add test data
