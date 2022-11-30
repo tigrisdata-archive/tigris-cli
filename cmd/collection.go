@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//nolint:golint,dupl
 package cmd
 
 import (
@@ -57,13 +56,13 @@ type DescribeCollectionResponse struct {
 }
 
 var describeCollectionCmd = &cobra.Command{
-	Use:   "collection {db} {collection}",
+	Use:   "collection {collection}",
 	Short: "Describes collection",
 	Long:  "Returns collection schema including metadata",
-	Args:  cobra.MinimumNArgs(2),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().UseDatabase(args[0]).DescribeCollection(ctx, args[1])
+			resp, err := client.Get().UseDatabase(getProjectName()).DescribeCollection(ctx, args[0])
 			if err != nil {
 				return util.Error(err, "describe collection")
 			}
@@ -83,12 +82,11 @@ var describeCollectionCmd = &cobra.Command{
 }
 
 var listCollectionsCmd = &cobra.Command{
-	Use:   "collections {db}",
-	Short: "Lists database collections",
-	Args:  cobra.MinimumNArgs(1),
+	Use:   "collections",
+	Short: "Lists project collections",
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().UseDatabase(args[0]).ListCollections(ctx)
+			resp, err := client.Get().UseDatabase(getProjectName()).ListCollections(ctx)
 			if err != nil {
 				return util.Error(err, "list collections")
 			}
@@ -103,12 +101,12 @@ var listCollectionsCmd = &cobra.Command{
 }
 
 var createCollectionCmd = &cobra.Command{
-	Use:   "collection {db} {schema}...|-",
+	Use:   "collection {schema}...|-",
 	Short: "Creates collection(s)",
 	Long:  "Creates collections with provided schema.",
 	Example: fmt.Sprintf(`
   # Pass the schema as a string
-  %[1]s create collection testdb '{
+  %[1]s create collection --project=testdb '{
 	"title": "users",
 	"description": "Collection of documents with details of users",
 	"properties": {
@@ -147,17 +145,16 @@ var createCollectionCmd = &cobra.Command{
   #    "id"
   #  ]
   # }
-  %[1]s create collection testdb </home/alice/users.json
+  %[1]s create collection --project=testdb </home/alice/users.json
 
   # Create collection with schema passed through stdin
   cat /home/alice/users.json | %[1]s create collection testdb -
-  %[1]s describe collection sampledb users | jq .schema | %[1]s create collection testdb -
+  %[1]s describe collection --project=testdb users | jq .schema | %[1]s create collection testdb -
 `, rootCmd.Root().Name()),
-	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return client.Transact(ctx, args[0], func(ctx context.Context, tx driver.Tx) error {
-				return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
+			return client.Transact(ctx, getProjectName(), func(ctx context.Context, tx driver.Tx) error {
+				return iterateInput(ctx, cmd, 0, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 					for _, v := range docs {
 						if err := createCollection(ctx, tx, driver.Schema(v)); err != nil {
 							return err
@@ -172,13 +169,13 @@ var createCollectionCmd = &cobra.Command{
 }
 
 var dropCollectionCmd = &cobra.Command{
-	Use:   "collection {db}",
+	Use:   "collection",
 	Short: "Drops collection",
-	Args:  cobra.MinimumNArgs(2),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return client.Transact(ctx, args[0], func(ctx context.Context, tx driver.Tx) error {
-				return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
+			return client.Transact(ctx, getProjectName(), func(ctx context.Context, tx driver.Tx) error {
+				return iterateInput(ctx, cmd, 0, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 					for _, v := range docs {
 						if err := tx.DropCollection(ctx, string(v)); err != nil {
 							return util.Error(err, "drop collection")
@@ -193,12 +190,12 @@ var dropCollectionCmd = &cobra.Command{
 }
 
 var alterCollectionCmd = &cobra.Command{
-	Use:   "collection {db} {schema}",
+	Use:   "collection {schema}",
 	Short: "Updates collection schema",
 	Long:  "Updates collection schema.",
 	Example: fmt.Sprintf(`
   # Pass the schema as a string
-  %[1]s alter collection testdb '{
+  %[1]s alter collection --project=testdb '{
 	"title": "users",
 	"description": "Collection of documents with details of users",
 	"properties": {
@@ -220,7 +217,7 @@ var alterCollectionCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return client.Transact(ctx, args[0], func(ctx context.Context, tx driver.Tx) error {
+			return client.Transact(ctx, getProjectName(), func(ctx context.Context, tx driver.Tx) error {
 				return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 					for _, v := range docs {
 						if err := createCollection(ctx, tx, driver.Schema(v)); err != nil {

@@ -27,37 +27,37 @@ import (
 )
 
 var replaceCmd = &cobra.Command{
-	Use:     "replace {db} {collection} {document}...|-",
+	Use:     "replace {collection} {document}...|-",
 	Aliases: []string{"insert_or_replace"},
 	Short:   "Inserts or replaces document(s)",
 	Long:    "Inserts new documents or replaces existing documents.",
 	Example: fmt.Sprintf(`
   # Insert new documents
-  %[1]s replace testdb users '{"id": 1, "name": "John Wong"}'
+  %[1]s replace --project=testdb users '{"id": 1, "name": "John Wong"}'
 
   # Replace existing document
   # Existing document with the following data will get replaced
   #  {"id": 20, "name": "Jania McGrory"}
-  %[1]s replace testdb users '{"id": 20, "name": "Alice Alan"}'
+  %[1]s replace --project=testdb users '{"id": 20, "name": "Alice Alan"}'
 
   # Insert or replace multiple documents
   # Existing document with the following data will get replaced
   #  {"id": 20, "name": "Alice Alan"}
   #  {"id": 21, "name": "Bunny Instone"}
   # While the new document {"id": 19, "name": "New User"} will get inserted
-  %[1]s replace testdb users \
+  %[1]s replace --project=testdb users \
   '[
     {"id": 19, "name": "New User"},
     {"id": 20, "name": "Replaced Alice Alan"},
     {"id": 21, "name": "Replaced Bunny Instone"}
   ]'
 `, rootCmd.Root().Name()),
-	Args: cobra.MinimumNArgs(2),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return iterateInput(ctx, cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
+			return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 				ptr := unsafe.Pointer(&docs)
-				_, err := client.Get().UseDatabase(args[0]).Replace(ctx, args[1], *(*[]driver.Document)(ptr))
+				_, err := client.Get().UseDatabase(getProjectName()).Replace(ctx, args[0], *(*[]driver.Document)(ptr))
 
 				return util.Error(err, "replace documents failed")
 			})
@@ -67,6 +67,6 @@ var replaceCmd = &cobra.Command{
 
 func init() {
 	replaceCmd.Flags().Int32VarP(&BatchSize, "batch_size", "b", BatchSize, "set batch size")
-
+	addProjectFlag(replaceCmd)
 	dbCmd.AddCommand(replaceCmd)
 }

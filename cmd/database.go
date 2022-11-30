@@ -54,13 +54,12 @@ type DescribeDatabaseResponse struct {
 }
 
 var describeDatabaseCmd = &cobra.Command{
-	Use:   "database {db}",
+	Use:   "database",
 	Short: "Describes database",
 	Long:  "Returns schema and metadata for all the collections in the database",
-	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().DescribeDatabase(ctx, args[0])
+			resp, err := client.Get().DescribeDatabase(ctx, getProjectName())
 			if err != nil {
 				return util.Error(err, "describe collection failed")
 			}
@@ -95,26 +94,24 @@ var describeDatabaseCmd = &cobra.Command{
 }
 
 var createProjectCmd = &cobra.Command{
-	Use:   "project {project}",
+	Use:   "project",
 	Short: "Creates project",
 	Long:  "This command will create a project.",
-	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			err := client.Get().CreateDatabase(ctx, args[0])
+			err := client.Get().CreateDatabase(ctx, getProjectName())
 			return util.Error(err, "create project")
 		})
 	},
 }
 
 var dropProjectCmd = &cobra.Command{
-	Use:   "project {project}",
+	Use:   "project",
 	Short: "Drops project",
 	Long:  "This command will drop a project.",
-	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			err := client.Get().DropDatabase(ctx, args[0])
+			err := client.Get().DropDatabase(ctx, getProjectName())
 			return util.Error(err, "drop project")
 		})
 	},

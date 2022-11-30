@@ -30,18 +30,18 @@ var scaffoldCmd = &cobra.Command{
 }
 
 var goCmd = &cobra.Command{
-	Use:     "go {db}",
+	Use:     "go",
 	Aliases: []string{"golang"},
-	Short:   "Scaffold a new Go project from database",
-	Args:    cobra.MinimumNArgs(1),
+	Short:   "Scaffold a new Go project from Tigris project",
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().DescribeDatabase(ctx, args[0], &driver.DescribeDatabaseOptions{SchemaFormat: "go"})
+			resp, err := client.Get().DescribeDatabase(ctx, getProjectName(),
+				&driver.DescribeDatabaseOptions{SchemaFormat: "go"})
 			if err != nil {
 				return util.Error(err, "describe collection failed")
 			}
 
-			err = schema.ScaffoldFromDB(args[0], resp.Collections, "go")
+			err = schema.ScaffoldFromDB(getProjectName(), resp.Collections, "go")
 			util.Fatal(err, "scaffold from database")
 
 			return nil
@@ -50,18 +50,18 @@ var goCmd = &cobra.Command{
 }
 
 var typeScriptCmd = &cobra.Command{
-	Use:     "typescript {db}",
+	Use:     "typescript",
 	Aliases: []string{"ts"},
-	Short:   "Scaffold a new TypeScript project from database",
-	Args:    cobra.MinimumNArgs(1),
+	Short:   "Scaffold a new TypeScript project from Tigris project",
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().DescribeDatabase(ctx, args[0], &driver.DescribeDatabaseOptions{SchemaFormat: "typescript"})
+			resp, err := client.Get().DescribeDatabase(ctx, getProjectName(),
+				&driver.DescribeDatabaseOptions{SchemaFormat: "typescript"})
 			if err != nil {
 				return util.Error(err, "describe collection failed")
 			}
 
-			err = schema.ScaffoldFromDB(args[0], resp.Collections, "typescript")
+			err = schema.ScaffoldFromDB(getProjectName(), resp.Collections, "typescript")
 			util.Fatal(err, "scaffold from database")
 
 			return nil
@@ -70,17 +70,17 @@ var typeScriptCmd = &cobra.Command{
 }
 
 var javaCmd = &cobra.Command{
-	Use:   "java {db}",
-	Short: "Scaffold a new Java project from database",
-	Args:  cobra.MinimumNArgs(1),
+	Use:   "java",
+	Short: "Scaffold a new Java project from Tigris project",
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().DescribeDatabase(ctx, args[0], &driver.DescribeDatabaseOptions{SchemaFormat: "java"})
+			resp, err := client.Get().DescribeDatabase(ctx, getProjectName(),
+				&driver.DescribeDatabaseOptions{SchemaFormat: "java"})
 			if err != nil {
 				return util.Error(err, "describe collection failed")
 			}
 
-			err = schema.ScaffoldFromDB(args[0], resp.Collections, "java")
+			err = schema.ScaffoldFromDB(getProjectName(), resp.Collections, "java")
 			util.Fatal(err, "scaffold from database")
 
 			return nil
@@ -89,6 +89,7 @@ var javaCmd = &cobra.Command{
 }
 
 func init() {
+	addProjectFlag(scaffoldCmd)
 	scaffoldCmd.AddCommand(goCmd)
 	scaffoldCmd.AddCommand(typeScriptCmd)
 	scaffoldCmd.AddCommand(javaCmd)

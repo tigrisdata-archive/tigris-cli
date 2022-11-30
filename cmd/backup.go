@@ -34,21 +34,21 @@ var (
 	backupTimeout    int
 )
 
-func listDatabases(ctx context.Context) ([]string, error) {
-	databases := []string{}
+func listProjects(ctx context.Context) ([]string, error) {
+	var projects []string
 
 	resp, err := client.Get().ListDatabases(ctx)
 	if err != nil {
-		return nil, util.Error(err, "list databases")
+		return nil, util.Error(err, "list projects")
 	}
 
 	for _, v := range resp {
 		if len(dbFilter) == 0 || util.Contains(dbFilter, v) {
-			databases = append(databases, v)
+			projects = append(projects, v)
 		}
 	}
 
-	return databases, nil
+	return projects, nil
 }
 
 func listCollections(ctx context.Context, dbName string) ([]string, error) {
@@ -141,23 +141,22 @@ var backupCmd = &cobra.Command{
 
 	If a database filter is provided it only dumps the schemas of the databases specified.
 	Likewise, collection filters will limit the output to matching collection names.`,
-	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(_ context.Context) error {
 			util.Stdoutf(" [i] using timeout %d\n", backupTimeout)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(backupTimeout)*time.Second)
 			defer cancel()
 
-			databases, err := listDatabases(ctx)
+			projects, err := listProjects(ctx)
 			if err != nil {
-				return util.Error(err, "failed to list databases")
+				return util.Error(err, "failed to list projects")
 			}
 
 			if err := createBackupDir(destDir); err != nil {
 				return util.Error(err, "failed to create backup dir")
 			}
 
-			for _, db := range databases {
+			for _, db := range projects {
 				if err := writeSchema(ctx, db); err != nil {
 					return util.Error(err, "failed to write schema")
 				}
@@ -181,8 +180,8 @@ var backupCmd = &cobra.Command{
 func init() {
 	backupCmd.Flags().StringVarP(&destDir, "directory", "d", "./tigris-backup",
 		"destination directory for backups")
-	backupCmd.Flags().StringSliceVarP(&dbFilter, "databases", "D", []string{},
-		"limit data dump to specified databases")
+	backupCmd.Flags().StringSliceVarP(&dbFilter, "projects", "P", []string{},
+		"limit data dump to specified projects")
 	backupCmd.Flags().StringSliceVarP(&collectionFilter, "collections", "C", []string{},
 		"limit data dump to specified collections")
 	backupCmd.Flags().IntVarP(&backupTimeout, "timeout", "t", 3600,

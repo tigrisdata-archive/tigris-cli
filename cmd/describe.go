@@ -25,5 +25,6 @@ var describeCmd = &cobra.Command{
 }
 
 func init() {
+	addProjectFlag(describeCmd)
 	dbCmd.AddCommand(describeCmd)
 }

@@ -13,11 +13,11 @@ test_backup() {
   DATAFILE="${TESTDIR}/${TESTDB}.${TESTCOLL}.json"
 
   # Initialize test database
-  $cli drop project "${TESTDB}" || true
-  $cli create project "${TESTDB}"
+  $cli drop project "--project=${TESTDB}" || true
+  $cli create project "--project=${TESTDB}"
 
   # Add test data
-  cat <<EOF | TIGRIS_LOG_LEVEL=debug $cli import "${TESTDB}" "${TESTCOLL}" --create-collection --primary-key=uuid_field --autogenerate=uuid_field
+  cat <<EOF | TIGRIS_LOG_LEVEL=debug $cli import "--project=${TESTDB}" "${TESTCOLL}" --create-collection --primary-key=uuid_field --autogenerate=uuid_field
 {
 	"str_field" : "str_value",
 	"int_field" : 1,
@@ -48,7 +48,7 @@ test_backup() {
 }
 EOF
 
-  $cli backup -d "${TESTDIR}" -D "${TESTDB}"
+  $cli backup -d "${TESTDIR}" "--projects=${TESTDB}"
   
   schema_out=$(cat $SCHEMAFILE)
   data_out=$(cat $DATAFILE)

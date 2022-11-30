@@ -25,22 +25,25 @@ import (
 )
 
 var updateCmd = &cobra.Command{
-	Use:   "update {db} {collection} {filter} {fields}",
+	Use:   "update {collection} {filter} {fields}",
 	Short: "Updates document(s)",
 	Long:  "Updates the field values in documents according to provided filter.",
 	Example: fmt.Sprintf(`
   # Update the field "name" of user where the value of the id field is 2
-  %[1]s update testdb users '{"id": 19}' '{"$set": {"name": "Updated New User"}}'
+  %[1]s update --project=testdb users '{"id": 19}' '{"$set": {"name": "Updated New User"}}'
 `, rootCmd.Root().Name()),
-	Args: cobra.MinimumNArgs(4),
+	Args: cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			_, err := client.Get().UseDatabase(args[0]).Update(ctx, args[1], driver.Filter(args[2]), driver.Update(args[3]))
+			_, err := client.Get().UseDatabase(getProjectName()).
+				Update(ctx, args[0], driver.Filter(args[1]), driver.Update(args[2]))
+
 			return util.Error(err, "update documents failed")
 		})
 	},
 }
 
 func init() {
+	addProjectFlag(updateCmd)
 	dbCmd.AddCommand(updateCmd)
 }
