@@ -94,12 +94,13 @@ var describeDatabaseCmd = &cobra.Command{
 }
 
 var createProjectCmd = &cobra.Command{
-	Use:   "project",
+	Use:   "project {name}",
 	Short: "Creates project",
 	Long:  "This command will create a project.",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			err := client.Get().CreateDatabase(ctx, getProjectName())
+			err := client.Get().CreateDatabase(ctx, args[0])
 			return util.Error(err, "create project")
 		})
 	},

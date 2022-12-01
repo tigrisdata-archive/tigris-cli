@@ -68,8 +68,6 @@ func Init(inCfg *config.Config) error {
 	M = nil
 	O = nil
 
-	log.Debug().Interface("config", cfg).Msg("config")
-
 	return nil
 }
 

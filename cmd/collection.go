@@ -233,6 +233,12 @@ var alterCollectionCmd = &cobra.Command{
 }
 
 func init() {
+	addProjectFlag(dropCollectionCmd)
+	addProjectFlag(createCollectionCmd)
+	addProjectFlag(listCollectionsCmd)
+	addProjectFlag(alterCollectionCmd)
+	addProjectFlag(describeCollectionCmd)
+
 	dropCmd.AddCommand(dropCollectionCmd)
 	createCmd.AddCommand(createCollectionCmd)
 	listCmd.AddCommand(listCollectionsCmd)

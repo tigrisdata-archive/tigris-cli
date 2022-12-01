@@ -78,17 +78,17 @@ db_tests() {
 	echo "============"
 	$cli ping
 
-	$cli delete-project -f --project=db1 || true
+	$cli delete-project -f db1 || true
 
-	$cli create project --project=db1
+	$cli create project db1
 
 	coll1='{"title":"coll1","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"},"Field2":{"type":"integer"}},"primary_key":["Key1"],"collection_type":"documents"}'
 	coll111='{"title":"coll111","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"}},"primary_key":["Key1"],"collection_type":"documents"}'
 
 	#reading schemas from command line parameters
-	$cli create --project=db1 collection "$coll1" "$coll111"
+	$cli create collection "$coll1" "$coll111" --project=db1
 
-	out=$($cli describe --project=db1 collection coll1|tr -d '\n')
+	out=$($cli describe collection coll1 --project=db1 |tr -d '\n')
 	diff -w -u <(echo '{"collection":"coll1","schema":'"$coll1"'}') <(echo "$out")
 
 	out=$($cli describe database --project=db1 |tr -d '\n')
@@ -244,7 +244,7 @@ EOF
 	db_generate_schema_test
 
 	$cli drop collection --project=db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7 coll111
-	$cli delete-project -f --project=db1
+	$cli delete-project -f db1
 }
 
 db_negative_tests() {
@@ -280,7 +280,7 @@ error() {
 db_errors_tests() {
 	$cli list projects
 
-	error "database doesn't exist 'db2'" $cli delete-project -f --project=db2
+	error "database doesn't exist 'db2'" $cli delete-project -f db2
 
 	error "database doesn't exist 'db2'" $cli drop collection --project=db2 coll1
 
@@ -298,7 +298,7 @@ db_errors_tests() {
 
 	error "database doesn't exist 'db2'" $cli delete --project=db2 coll1 '{}'
 
-	$cli create project --project=db2
+	$cli create project db2
 	error "collection doesn't exist 'coll1'" $cli insert --project=db2 coll1 '{}'
 
 	error "collection doesn't exist 'coll1'" $cli read --project=db2 coll1 '{}' ||
@@ -311,19 +311,19 @@ db_errors_tests() {
 	error "schema name is missing" $cli create collection --project=db1 \
 		'{ "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" }, "Field2": { "type": "integer" } }, "primary_key": ["Key1"] }'
 
-	$cli delete-project -f --project=db2
+	$cli delete-project -f db2
 }
 
 db_generate_schema_test() {
   error "sampledb created with the collections" $cli generate sample-schema --create
-  $cli delete-project -f --project=sampledb
+  $cli delete-project -f sampledb
 }
 
 test_scaffold() {
 	coll_msg='{"title":"names","properties":{"Key1":{"type":"string"},"Field1":{"type":"integer"}},"collection_type":"messages"}'
 
-	$cli delete-project -f --project=gen1 || true
-	$cli create project --project=gen1
+	$cli delete-project -f gen1 || true
+	$cli create project gen1
 	$cli create collection --project=gen1 "$coll_msg"
 
 	exp_out='package main
@@ -389,7 +389,7 @@ func main() {
 	out=$($cli scaffold go --project=gen1)
 	diff -w -u <(echo "$exp_out") <(echo "$out") ||
 
-	$cli delete-project -f --project=gen1
+	$cli delete-project -f gen1
 }
 
 BASEDIR=$(dirname "$0")

@@ -218,6 +218,11 @@ var createNamespaceCmd = &cobra.Command{
 func init() {
 	alterApplicationCmd.Flags().BoolVarP(&rotate, "rotate", "r", false, "Rotate application secret")
 
+	addProjectFlag(dropApplicationCmd)
+	addProjectFlag(createApplicationCmd)
+	addProjectFlag(listApplicationsCmd)
+	addProjectFlag(alterApplicationCmd)
+
 	dropCmd.AddCommand(dropApplicationCmd)
 	createCmd.AddCommand(createApplicationCmd)
 	listCmd.AddCommand(listApplicationsCmd)

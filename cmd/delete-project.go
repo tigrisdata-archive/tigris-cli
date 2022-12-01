@@ -24,15 +24,16 @@ import (
 )
 
 var deleteProjectCmd = &cobra.Command{
-	Use:   "delete-project",
+	Use:   "delete-project {name}",
 	Short: "Deletes project",
 	Long:  "Deletes project and all resources inside project.",
+	Args:  cobra.ExactArgs(1),
 	Example: fmt.Sprintf(`
   # Delete project named 'test-project'
-  %[1]s delete-project --project=test-project'
+  %[1]s delete-project test-project'
 
   # Delete project named 'test-project' (without user prompt)
-  %[1]s delete-project --project=test-project' --force
+  %[1]s delete-project test-project' --force
 #
 `, rootCmd.Root().Name()),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -41,11 +42,10 @@ var deleteProjectCmd = &cobra.Command{
 			if !forceDelete {
 				util.Stdoutf("Are you sure you want to delete the project? (y/n)")
 				_, err := fmt.Scanln(&userInput)
-
-				return util.Error(err, "delete-project")
+				util.Fatal(err, "delete-project")
 			}
 			if forceDelete || userInput == "y" || userInput == "Y" {
-				err := client.Get().DropDatabase(ctx, getProjectName())
+				err := client.Get().DropDatabase(ctx, args[0])
 
 				return util.Error(err, "delete-project")
 			}
@@ -60,6 +60,5 @@ var forceDelete bool
 func init() {
 	deleteProjectCmd.PersistentFlags().BoolVarP(&forceDelete, "force", "f", false,
 		"Skips user prompt and deletes the project")
-	addProjectFlag(deleteProjectCmd)
 	dbCmd.AddCommand(deleteProjectCmd)
 }

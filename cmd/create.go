@@ -25,6 +25,5 @@ var createCmd = &cobra.Command{
 }
 
 func init() {
-	addProjectFlag(createCmd)
 	dbCmd.AddCommand(createCmd)
 }
