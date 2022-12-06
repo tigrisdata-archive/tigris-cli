@@ -43,7 +43,7 @@ func Schema(ctx context.Context, db string, format string, create bool, stdout b
 	}
 
 	if create {
-		if err := client.Get().CreateDatabase(ctx, db); err != nil {
+		if _, err := client.Get().CreateProject(ctx, db); err != nil {
 			return util.Error(err, "create database")
 		}
 	}

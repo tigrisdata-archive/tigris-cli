@@ -73,7 +73,7 @@ Check the docs for more information: https://docs.tigrisdata.com/overview/authen
 			if len(args) > 1 {
 				description = args[1]
 			}
-			app, err := client.ManagementGet().CreateApplication(ctx, args[0], description)
+			app, err := client.ManagementGet().CreateApplication(ctx, getProjectName(), args[0], description)
 			if err != nil {
 				return util.Error(err, "create application failed")
 			}
@@ -155,7 +155,7 @@ Output:
 }
 
 func getApplication(ctx context.Context, filter string) (*driver.Application, error) {
-	resp, err := client.ManagementGet().ListApplications(ctx)
+	resp, err := client.ManagementGet().ListApplications(ctx, getProjectName())
 	if err != nil {
 		return nil, util.Error(err, "list applications failed")
 	}
@@ -184,7 +184,7 @@ var listApplicationsCmd = &cobra.Command{
 				err = util.PrettyJSON(app)
 				util.Fatal(err, "list applications")
 			} else {
-				resp, err := client.ManagementGet().ListApplications(ctx)
+				resp, err := client.ManagementGet().ListApplications(ctx, getProjectName())
 				if err != nil {
 					return util.Error(err, "list applications failed")
 				}

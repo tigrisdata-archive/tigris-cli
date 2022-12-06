@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -exv
+PS4='${LINENO}: '
 
 if [ -z "$cli" ]; then
 	cli="./tigris"
@@ -93,11 +94,20 @@ db_tests() {
 
 	out=$($cli describe database --project=db1 |tr -d '\n')
 	# The output order is not-deterministic, try both combinations:
-	# BUG: Http doesn't fill database name
-	diff -w -u <(echo '{"db":"db1","collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out") ||
-	diff -w -u <(echo '{"db":"db1","collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
-	diff -w -u <(echo '{"collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
-	diff -w -u <(echo '{"collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out")
+	# BUG: Http doesn't fill metadata due to omitempty json tag on protobuf generated structs
+
+	if { [ "$TIGRIS_PROTOCOL" == "http" ]  || [[ "$TIGRIS_URL" == "http"* ]]; } && [[ "$TIGRIS_URL" != "grpc"* ]] ;
+	then
+			diff -w -u <(echo '{"db":"db1","collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out") ||
+			diff -w -u <(echo '{"db":"db1","collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
+			diff -w -u <(echo '{"collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
+			diff -w -u <(echo '{"collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out")
+	else
+		diff -w -u <(echo '{"metadata":{},"db":"db1","collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out") ||
+		diff -w -u <(echo '{"metadata":{},"db":"db1","collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
+		diff -w -u <(echo '{"metadata":{},"collections":[{"collection":"coll111","schema":'"$coll111"'},{"collection":"coll1","schema":'"$coll1"'}]}') <(echo "$out") ||
+		diff -w -u <(echo '{"metadata":{},"collections":[{"collection":"coll1","schema":'"$coll1"'},{"collection":"coll111","schema":'"$coll111"'}]}') <(echo "$out")
+	fi
 
 	out=$($cli describe database --project=db1 --schema-only|tr -d '\n')
 	diff -w -u <(echo -e "$coll1$coll111") <(echo "$out") ||

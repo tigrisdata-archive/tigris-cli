@@ -38,7 +38,7 @@ var listProjectsCmd = &cobra.Command{
 	Long:  "This command will list all projects.",
 	Run: func(cmd *cobra.Command, _ []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().ListDatabases(ctx)
+			resp, err := client.Get().ListProjects(ctx)
 			if err != nil {
 				return util.Error(err, "list projects")
 			}
@@ -66,7 +66,7 @@ var describeDatabaseCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			resp, err := client.Get().DescribeDatabase(ctx, getProjectName(),
-				&driver.DescribeDatabaseOptions{SchemaFormat: format})
+				&driver.DescribeProjectOptions{SchemaFormat: format})
 			if err != nil {
 				return util.Error(err, "describe collection failed")
 			}
@@ -77,8 +77,7 @@ var describeDatabaseCmd = &cobra.Command{
 				}
 			} else {
 				tr := DescribeDatabaseResponse{
-					DB: resp.Db,
-					// Metadata: resp.Metadata,
+					Metadata: resp.Metadata,
 				}
 
 				for _, v := range resp.Collections {
@@ -103,6 +102,7 @@ var describeDatabaseCmd = &cobra.Command{
 var createProjectCmd = &cobra.Command{
 	Use:   "project {name}",
 	Short: "Creates project",
+	Args:  cobra.MinimumNArgs(1),
 	Long:  "This command will create a project. Optionally allows to bootstrap database and application code",
 	Example: fmt.Sprintf(`
 	# Create Tigris project with no collections
@@ -124,7 +124,7 @@ var createProjectCmd = &cobra.Command{
 					return util.Error(err, "bootstrapping schema: %s", template)
 				}
 			} else {
-				err := client.Get().CreateDatabase(ctx, args[0])
+				_, err := client.Get().CreateProject(ctx, args[0])
 				if err != nil {
 					return util.Error(err, "create project")
 				}

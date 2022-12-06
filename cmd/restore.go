@@ -132,8 +132,8 @@ func findCollections(db string) ([]string, error) {
 }
 
 func createDatabase(ctx context.Context, db string) error {
-	err := client.Get().CreateDatabase(ctx, db)
-	return util.Error(err, "create database")
+	_, err := client.Get().CreateProject(ctx, db)
+	return util.Error(err, "create project")
 }
 
 func restoreDatabase(ctx context.Context, db, path string) error {
