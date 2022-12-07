@@ -171,7 +171,7 @@ func restoreDatabase(ctx context.Context, db, path string) error {
 }
 
 func restoreCollection(ctx context.Context, db, collection, path string) error {
-	docs := make([]json.RawMessage, 0)
+	restoreDB := amendDatabaseName(db)
 
 	f, err := os.Open(path)
 	if err != nil {
@@ -180,29 +180,33 @@ func restoreCollection(ctx context.Context, db, collection, path string) error {
 	defer f.Close()
 
 	dec := json.NewDecoder(f)
-	for dec.More() {
-		var v json.RawMessage
-		err := dec.Decode(&v)
-		util.Fatal(err, "reading documents from stream of documents")
 
-		docs = append(docs, v)
-	}
+	for {
+		docs := make([]json.RawMessage, 0)
+		i := int32(0)
 
-	if len(docs) == 0 {
-		return nil
-	}
+		for ; i < BatchSize && dec.More(); i++ {
+			var v json.RawMessage
 
-	restoreDB := amendDatabaseName(db)
+			err := dec.Decode(&v)
+			util.Fatal(err, "reading documents from stream of documents")
 
-	return client.Transact(ctx, restoreDB, func(ctx context.Context, tx driver.Tx) error {
-		ptr := unsafe.Pointer(&docs)
-		_, err := client.Get().UseDatabase(restoreDB).Insert(ctx, collection, *(*[]driver.Document)(ptr))
-		if err != nil {
-			return util.Error(err, "failed to insert doc")
+			docs = append(docs, v)
 		}
 
-		return nil
-	})
+		if i > 0 {
+			ptr := unsafe.Pointer(&docs)
+
+			_, err := client.Get().UseDatabase(restoreDB).Insert(ctx, collection, *(*[]driver.Document)(ptr))
+			if err != nil {
+				return util.Error(err, "insert document")
+			}
+		} else {
+			break
+		}
+	}
+
+	return nil
 }
 
 var restoreCmd = &cobra.Command{
