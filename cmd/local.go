@@ -195,7 +195,7 @@ L:
 				inited = true
 			}
 		} else {
-			_, err = tclient.Get().ListDatabases(ctx)
+			_, err = tclient.Get().ListProjects(ctx)
 			if err == nil {
 				break
 			}

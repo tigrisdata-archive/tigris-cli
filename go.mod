@@ -6,6 +6,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.4.0
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/docker/go-connections v0.4.0
+	github.com/docker/go-units v0.5.0
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/uuid v1.3.0
@@ -16,7 +17,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.1
-	github.com/tigrisdata/tigris-client-go v1.0.0-beta.13
+	github.com/tigrisdata/tigris-client-go v1.0.0-beta.15
 	golang.org/x/net v0.2.0
 	golang.org/x/oauth2 v0.2.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -34,7 +35,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deepmap/oapi-codegen v1.12.2 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/getkin/kin-openapi v0.108.0 // indirect

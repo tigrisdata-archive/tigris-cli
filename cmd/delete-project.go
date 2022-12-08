@@ -45,7 +45,7 @@ var deleteProjectCmd = &cobra.Command{
 				util.Fatal(err, "delete-project")
 			}
 			if forceDelete || userInput == "y" || userInput == "Y" {
-				err := client.Get().DropDatabase(ctx, args[0])
+				_, err := client.Get().DeleteProject(ctx, args[0])
 
 				return util.Error(err, "delete-project")
 			}

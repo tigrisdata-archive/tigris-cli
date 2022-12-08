@@ -43,7 +43,7 @@ var (
 func listProjects(ctx context.Context) ([]string, error) {
 	projects := make([]string, 0)
 
-	resp, err := client.Get().ListDatabases(ctx)
+	resp, err := client.Get().ListProjects(ctx)
 	if err != nil {
 		return nil, util.Error(err, "list projects")
 	}
