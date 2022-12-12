@@ -182,6 +182,7 @@ var dropCollectionCmd = &cobra.Command{
 						if err := tx.DropCollection(ctx, string(v)); err != nil {
 							return util.Error(err, "drop collection")
 						}
+						util.Infof("dropped collection: %s", string(v))
 					}
 
 					return nil
