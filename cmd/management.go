@@ -73,7 +73,7 @@ Check the docs for more information: https://docs.tigrisdata.com/overview/authen
 			if len(args) > 1 {
 				description = args[1]
 			}
-			app, err := client.ManagementGet().CreateApplication(ctx, getProjectName(), args[0], description)
+			app, err := client.Get().CreateAppKey(ctx, getProjectName(), args[0], description)
 			if err != nil {
 				return util.Error(err, "create application failed")
 			}
@@ -92,7 +92,7 @@ var dropApplicationCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			if err := client.ManagementGet().DeleteApplication(ctx, args[0]); err != nil {
+			if err := client.Get().DeleteAppKey(ctx, getProjectName(), args[0]); err != nil {
 				return util.Error(err, "drop application failed")
 			}
 
@@ -132,7 +132,7 @@ Output:
 				if len(args) > 2 {
 					desc = args[2]
 				}
-				_, err := client.ManagementGet().UpdateApplication(ctx, args[0], args[1], desc)
+				_, err := client.Get().UpdateAppKey(ctx, getProjectName(), args[0], args[1], desc)
 				if err != nil {
 					return util.Error(err, "alter application failed")
 				}
@@ -140,7 +140,7 @@ Output:
 
 			// rotate only when explicitly requested
 			if rotate {
-				sec, err := client.ManagementGet().RotateClientSecret(ctx, args[0])
+				sec, err := client.Get().RotateAppKeySecret(ctx, getProjectName(), args[0])
 				if err != nil {
 					return util.Error(err, "alter application failed")
 				}
@@ -154,8 +154,8 @@ Output:
 	},
 }
 
-func getApplication(ctx context.Context, filter string) (*driver.Application, error) {
-	resp, err := client.ManagementGet().ListApplications(ctx, getProjectName())
+func getApplication(ctx context.Context, filter string) (*driver.AppKey, error) {
+	resp, err := client.Get().ListAppKeys(ctx, getProjectName())
 	if err != nil {
 		return nil, util.Error(err, "list applications failed")
 	}
@@ -184,7 +184,7 @@ var listApplicationsCmd = &cobra.Command{
 				err = util.PrettyJSON(app)
 				util.Fatal(err, "list applications")
 			} else {
-				resp, err := client.ManagementGet().ListApplications(ctx, getProjectName())
+				resp, err := client.Get().ListAppKeys(ctx, getProjectName())
 				if err != nil {
 					return util.Error(err, "list applications failed")
 				}
