@@ -28,20 +28,20 @@ var (
 	rotate bool
 
 	ErrWrongArgs   = fmt.Errorf("please provide name and description to update or use --rotate to rotate the secret")
-	ErrAppNotFound = fmt.Errorf("application not found")
+	ErrAppNotFound = fmt.Errorf("app key not found")
 )
 
-var createApplicationCmd = &cobra.Command{
-	Use:   "application {name} {description}",
-	Short: "Create application credentials",
-	Long: `Creates new application credentials.
+var createAppKeyCmd = &cobra.Command{
+	Use:   "app_key {name} {description}",
+	Short: "Create app_key credentials",
+	Long: `Creates new app_key credentials.
 The output contains client_id and client_secret,
 which can be used to authenticate using our official client SDKs.
 Set the client_id and client_secret in the configuration of the corresponding SDK
 Check the docs for more information: https://docs.tigrisdata.com/overview/authentication
 `,
 	Example: `
-  tigris create application service1 "main api service"
+  tigris create app_key service1 "main api service"
 
   Output:
 
@@ -54,7 +54,7 @@ Check the docs for more information: https://docs.tigrisdata.com/overview/authen
     "created_by": "github|3436058"
   }
 
-  tigris create application service2
+  tigris create app_key service2
 
   Output:
 
@@ -75,39 +75,39 @@ Check the docs for more information: https://docs.tigrisdata.com/overview/authen
 			}
 			app, err := client.Get().CreateAppKey(ctx, getProjectName(), args[0], description)
 			if err != nil {
-				return util.Error(err, "create application failed")
+				return util.Error(err, "create app_key failed")
 			}
 
 			err = util.PrettyJSON(app)
-			util.Fatal(err, "create application")
+			util.Fatal(err, "create app_key")
 
 			return nil
 		})
 	},
 }
 
-var dropApplicationCmd = &cobra.Command{
-	Use:   "application {id}",
-	Short: "Drop application credentials",
+var dropAppKeyCmd = &cobra.Command{
+	Use:   "app_key {id}",
+	Short: "Drop app_key credentials",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			if err := client.Get().DeleteAppKey(ctx, getProjectName(), args[0]); err != nil {
-				return util.Error(err, "drop application failed")
+				return util.Error(err, "drop app_key failed")
 			}
 
-			util.Stdoutf("successfully dropped application credentials\n")
+			util.Stdoutf("successfully dropped app_key credentials\n")
 
 			return nil
 		})
 	},
 }
 
-var alterApplicationCmd = &cobra.Command{
-	Use:   "application {id} {name} {description}",
-	Short: "Alter application credentials",
+var alterAppKeyCmd = &cobra.Command{
+	Use:   "app_key {id} {name} {description}",
+	Short: "Alter app_key credentials",
 	Example: `
-tigris alter application <client id> new_name1 "new descr1"
+tigris alter app_key <client id> new_name1 "new descr1"
 
 Output:
 {
@@ -124,7 +124,7 @@ Output:
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			// no name/descr and no explicit --rotate
 			if len(args) < 2 && !rotate {
-				util.Fatal(ErrWrongArgs, "alter application failed")
+				util.Fatal(ErrWrongArgs, "alter app_key failed")
 			}
 
 			if len(args) >= 1 {
@@ -134,7 +134,7 @@ Output:
 				}
 				_, err := client.Get().UpdateAppKey(ctx, getProjectName(), args[0], args[1], desc)
 				if err != nil {
-					return util.Error(err, "alter application failed")
+					return util.Error(err, "alter app_key failed")
 				}
 			}
 
@@ -142,11 +142,11 @@ Output:
 			if rotate {
 				sec, err := client.Get().RotateAppKeySecret(ctx, getProjectName(), args[0])
 				if err != nil {
-					return util.Error(err, "alter application failed")
+					return util.Error(err, "alter app_key failed")
 				}
 
 				err = util.PrettyJSON(sec)
-				util.Fatal(err, "alter application failed")
+				util.Fatal(err, "alter app_key failed")
 			}
 
 			return nil
@@ -154,10 +154,10 @@ Output:
 	},
 }
 
-func getApplication(ctx context.Context, filter string) (*driver.AppKey, error) {
+func getAppKey(ctx context.Context, filter string) (*driver.AppKey, error) {
 	resp, err := client.Get().ListAppKeys(ctx, getProjectName())
 	if err != nil {
-		return nil, util.Error(err, "list applications failed")
+		return nil, util.Error(err, "list app_key failed")
 	}
 
 	for _, v := range resp {
@@ -169,28 +169,28 @@ func getApplication(ctx context.Context, filter string) (*driver.AppKey, error) 
 	return nil, ErrAppNotFound
 }
 
-var listApplicationsCmd = &cobra.Command{
-	Use:   "applications [name]",
-	Short: "Lists applications",
-	Long:  "Lists available applications. Optional parameter allows to return only the application with the given name.",
+var listAppKeysCmd = &cobra.Command{
+	Use:   "app_keys [name]",
+	Short: "Lists app keys",
+	Long:  "Lists available app keys. Optional parameter allows to return only the app key with the given name.",
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
 			if len(args) > 0 {
-				app, err := getApplication(ctx, args[0])
+				app, err := getAppKey(ctx, args[0])
 				if err != nil {
 					return err
 				}
 
 				err = util.PrettyJSON(app)
-				util.Fatal(err, "list applications")
+				util.Fatal(err, "list app_keys")
 			} else {
 				resp, err := client.Get().ListAppKeys(ctx, getProjectName())
 				if err != nil {
-					return util.Error(err, "list applications failed")
+					return util.Error(err, "list app_keys failed")
 				}
 
 				err = util.PrettyJSON(resp)
-				util.Fatal(err, "list applications")
+				util.Fatal(err, "list app_keys")
 			}
 
 			return nil
@@ -234,17 +234,17 @@ var createNamespaceCmd = &cobra.Command{
 }
 
 func init() {
-	alterApplicationCmd.Flags().BoolVarP(&rotate, "rotate", "r", false, "Rotate application secret")
+	alterAppKeyCmd.Flags().BoolVarP(&rotate, "rotate", "r", false, "Rotate app key secret")
 
-	addProjectFlag(dropApplicationCmd)
-	addProjectFlag(createApplicationCmd)
-	addProjectFlag(listApplicationsCmd)
-	addProjectFlag(alterApplicationCmd)
+	addProjectFlag(dropAppKeyCmd)
+	addProjectFlag(createAppKeyCmd)
+	addProjectFlag(listAppKeysCmd)
+	addProjectFlag(alterAppKeyCmd)
 
-	dropCmd.AddCommand(dropApplicationCmd)
-	createCmd.AddCommand(createApplicationCmd)
-	listCmd.AddCommand(listApplicationsCmd)
-	alterCmd.AddCommand(alterApplicationCmd)
+	dropCmd.AddCommand(dropAppKeyCmd)
+	createCmd.AddCommand(createAppKeyCmd)
+	listCmd.AddCommand(listAppKeysCmd)
+	alterCmd.AddCommand(alterAppKeyCmd)
 
 	listCmd.AddCommand(listNamespacesCmd)
 	createCmd.AddCommand(createNamespaceCmd)

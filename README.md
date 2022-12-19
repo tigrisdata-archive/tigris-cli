@@ -30,7 +30,6 @@ curl -sSL https://tigris.dev/cli-linux | sudo tar -xz -C /usr/local/bin
 # Usage
 
 ```shell
-$ tigris
 tigris is a command line interface of Tigris data platform
 
 Usage:
@@ -38,10 +37,10 @@ Usage:
 
 Available Commands:
   alter          Alters collection
-  backup         Dumps documents and schemas to JSON files on a quiesced database
+  backup         Dumps documents and schemas to JSON files
   completion     Generates completion script for shell
   config         Configuration commands
-  create         Creates project, collection, namespace or application
+  create         Creates project, collection, namespace or app_key
   delete         Deletes document(s)
   delete-project Deletes project
   describe       Describes database or collection
@@ -59,7 +58,8 @@ Available Commands:
   quota          Quota related commands
   read           Reads and outputs documents
   replace        Inserts or replaces document(s)
-  scaffold       Scaffold a project for specified language
+  restore        restores documents and schemas from JSON files
+  scaffold       Scaffold new application for project
   search         Searches a collection for documents matching the query
   server         Tigris server related commands
   transact       Executes a set of operations in a transaction
@@ -67,7 +67,8 @@ Available Commands:
   version        Shows tigris cli version
 
 Flags:
-  -h, --help   help for tigris
+  -h, --help    help for tigris
+  -q, --quiet   Suppress informational messages
 
 Use "tigris [command] --help" for more information about a command.
 ```
