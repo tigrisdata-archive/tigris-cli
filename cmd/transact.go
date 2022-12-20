@@ -140,7 +140,7 @@ func execTxOp(ctx context.Context, tx driver.Tx, tp string, op *Op) error {
 }
 
 var transactCmd = &cobra.Command{
-	Use:     "transact {db} {operation}...|-",
+	Use:     "transact {operation}...|-",
 	Aliases: []string{"tx"},
 	Short:   "Executes a set of operations in a transaction",
 	Long: `Executes a set of operations in a transaction.
@@ -169,10 +169,9 @@ All the read, write and schema operations are supported.`,
     }
   ]'
 `, rootCmd.Root().Name()),
-	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return client.Transact(ctx, args[0], func(ctx context.Context, tx driver.Tx) error {
+			return client.Transact(ctx, getProjectName(), func(ctx context.Context, tx driver.Tx) error {
 				return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, ops []json.RawMessage) error {
 					for _, iop := range ops {
 						var op TxOp
@@ -231,5 +230,6 @@ All the read, write and schema operations are supported.`,
 }
 
 func init() {
+	addProjectFlag(transactCmd)
 	dbCmd.AddCommand(transactCmd)
 }

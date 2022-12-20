@@ -27,15 +27,15 @@ import (
 )
 
 var insertCmd = &cobra.Command{
-	Use:   "insert {db} {collection} {document}...|-",
+	Use:   "insert {collection} {document}...|-",
 	Short: "Inserts document(s)",
 	Long:  "Inserts one or more documents into a collection.",
 	Example: fmt.Sprintf(`
   # Insert a single document into the users collection
-  %[1]s insert testdb users '{"id": 1, "name": "Alice Alan"}'
+  %[1]s insert --project=testdb users '{"id": 1, "name": "Alice Alan"}'
 
   # Insert multiple documents into the users collection
-  %[1]s insert testdb users \
+  %[1]s insert --project=testdb users \
   '[
     {"id": 20, "name": "Jania McGrory"},
     {"id": 21, "name": "Bunny Instone"}
@@ -47,14 +47,14 @@ var insertCmd = &cobra.Command{
   #  {"id": 20, "name": "Jania McGrory"},
   #  {"id": 21, "name": "Bunny Instone"}
   # ]
-  cat /home/alice/user_records.json | %[1]s insert testdb users -
+  cat /home/alice/user_records.json | %[1]s insert --project=testdb users -
 `, rootCmd.Root().Name()),
-	Args: cobra.MinimumNArgs(2),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return iterateInput(ctx, cmd, 2, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
+			return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 				ptr := unsafe.Pointer(&docs)
-				_, err := client.Get().UseDatabase(args[0]).Insert(ctx, args[1], *(*[]driver.Document)(ptr))
+				_, err := client.Get().UseDatabase(getProjectName()).Insert(ctx, args[0], *(*[]driver.Document)(ptr))
 
 				return util.Error(err, "insert documents")
 			})
@@ -64,6 +64,6 @@ var insertCmd = &cobra.Command{
 
 func init() {
 	insertCmd.Flags().Int32VarP(&BatchSize, "batch_size", "b", BatchSize, "set batch size")
-
+	addProjectFlag(insertCmd)
 	dbCmd.AddCommand(insertCmd)
 }

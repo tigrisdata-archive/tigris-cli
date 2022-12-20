@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/tigrisdata/tigris-client-go/schema"
 )
 
@@ -122,6 +123,23 @@ func translateType(v interface{}) (string, string, error) {
 	}
 }
 
+func extendedStringType(oldType string, oldFormat string, newType string, newFormat string) (string, string, error) {
+	if newFormat == "" {
+		switch {
+		case oldFormat == formatByte:
+			return newType, newFormat, nil
+		case oldFormat == formatUUID:
+			return newType, newFormat, nil
+		case oldFormat == formatDateTime:
+			return newType, newFormat, nil
+		}
+	} else if newFormat == formatByte && oldFormat == "" {
+		return oldType, oldFormat, nil
+	}
+
+	return "", "", ErrIncompatibleSchema
+}
+
 // this is only matter for initial schema inference, where we have luxury to extend the type
 // if not detected properly from the earlier data records
 // we extend:
@@ -135,21 +153,17 @@ func extendedType(oldType string, oldFormat string, newType string, newFormat st
 	}
 
 	if oldType == typeString && newType == typeString {
-		if newFormat == "" {
-			switch {
-			case oldFormat == formatByte:
-				return newType, newFormat, nil
-			case oldFormat == formatUUID:
-				return newType, newFormat, nil
-			case oldFormat == formatDateTime:
-				return newType, newFormat, nil
-			}
+		if t, f, err := extendedStringType(oldType, oldFormat, newType, newFormat); err == nil {
+			return t, f, nil
 		}
 	}
 
 	if newType == oldType && newFormat == oldFormat {
 		return newType, newFormat, nil
 	}
+
+	log.Debug().Str("oldType", oldType).Str("newType", newType).Msg("incompatible schema")
+	log.Debug().Str("oldFormat", oldFormat).Str("newFormat", newFormat).Msg("incompatible schema")
 
 	return "", "", ErrIncompatibleSchema
 }
@@ -292,7 +306,18 @@ func docToSchema(sch *schema.Schema, name string, data []byte, pk []string, auto
 		sch.Fields = make(map[string]*schema.Field)
 	}
 
-	return traverseFields(sch.Fields, m, autoGen)
+	if err := traverseFields(sch.Fields, m, autoGen); err != nil {
+		return err
+	}
+
+	// Implicit "id" primary key
+	f := sch.Fields["id"]
+	if sch.PrimaryKey == nil && f != nil && f.Format == formatUUID {
+		f.AutoGenerate = true
+		sch.PrimaryKey = []string{"id"}
+	}
+
+	return nil
 }
 
 func Infer(sch *schema.Schema, name string, docs []json.RawMessage, primaryKey []string, autoGenerate []string,

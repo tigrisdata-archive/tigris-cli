@@ -20,10 +20,11 @@ import (
 
 var dropCmd = &cobra.Command{
 	Use:   "drop",
-	Short: "Drops database, collection or application",
+	Short: "Drops collection or application",
 	Args:  cobra.MinimumNArgs(1),
 }
 
 func init() {
+	addProjectFlag(dropCmd)
 	dbCmd.AddCommand(dropCmd)
 }

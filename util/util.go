@@ -32,6 +32,8 @@ import (
 var (
 	Version        string
 	DefaultTimeout = 5 * time.Second
+
+	Quiet bool
 )
 
 func IsTTY(f *os.File) bool {
@@ -102,12 +104,18 @@ func PrintError(err error) {
 	_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 }
 
+func Infof(format string, args ...interface{}) {
+	if !Quiet {
+		Stdoutf(format+"\n", args...)
+	}
+}
+
 func Error(err error, msg string, args ...interface{}) error {
+	log.Err(err).CallerSkipFrame(3).Msgf(msg, args...)
+
 	if err == nil {
 		return nil
 	}
-
-	log.Debug().Err(err).Msgf(msg, args...)
 
 	return err
 }
@@ -125,14 +133,13 @@ func Fatal(err error, msg string, args ...interface{}) {
 }
 
 func ExecTemplate(w io.Writer, tmpl string, vars interface{}) {
-	t, err := template.New("exec_template").Parse(tmpl)
-	if err != nil {
-		_ = Error(err, "error parsing template")
-	}
+	t, err := template.New("exec_template").Funcs(template.FuncMap{
+		"add": func(a, b int) int { return a + b },
+	}).Parse(tmpl)
+	Fatal(err, "error parsing template")
 
-	if err := t.Execute(w, vars); err != nil {
-		_ = Error(err, "execute template failed")
-	}
+	err = t.Execute(w, vars)
+	Fatal(err, "execute template failed")
 }
 
 func Contains(l []string, s string) bool {

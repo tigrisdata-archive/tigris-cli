@@ -48,6 +48,7 @@ type Config struct {
 	Timeout      time.Duration `json:"timeout" yaml:"timeout,omitempty"`
 	Protocol     string        `json:"protocol" yaml:"protocol,omitempty"`
 	Log          Log           `json:"log" yaml:"log,omitempty"`
+	Project      string        `json:"project" yaml:"project,omitempty"`
 }
 
 var DefaultName = "tigris-cli"

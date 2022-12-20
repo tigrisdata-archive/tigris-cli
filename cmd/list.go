@@ -20,10 +20,11 @@ import (
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Lists databases/projects, collections or namespaces",
+	Short: "Lists projects, collections or namespaces",
 	Args:  cobra.MinimumNArgs(1),
 }
 
 func init() {
+	addProjectFlag(listCmd)
 	dbCmd.AddCommand(listCmd)
 }

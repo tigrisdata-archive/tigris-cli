@@ -60,6 +60,11 @@ var (
 			authHost: "https://tigrisdata-dev.us.auth0.com/",
 			audience: "https://tigris-api-dev",
 		},
+		"api.perf.tigrisdata.cloud": {
+			clientID: "zXKltgV3JhGwUqOCUWNmtU7aX5TytKGx",
+			authHost: "https://tigrisdata-dev.us.auth0.com/",
+			audience: "https://tigris-api-perf",
+		},
 		"api.preview.tigrisdata.cloud": {
 			clientID: "GS8PrHA1aYblUR73yitqomc40ZYZ81jF",
 			authHost: "https://tigrisdata.us.auth0.com/",
@@ -193,7 +198,7 @@ func withLogin(cctx context.Context, fn func(ctx context.Context) error) {
 	var ep *driver.Error
 	if !errors.As(err, &ep) || ep.Code != ecode.Unauthenticated ||
 		os.Getenv(driver.EnvClientID) != "" || os.Getenv(driver.EnvClientSecret) != "" ||
-		config.DefaultConfig.ClientID != "" || config.DefaultConfig.ClientSecret != "" {
+		config.DefaultConfig.ClientID != "" || config.DefaultConfig.ClientSecret != "" || !util.IsTTY(os.Stdin) {
 		util.PrintError(err)
 		os.Exit(1)
 	}

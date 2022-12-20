@@ -7,9 +7,6 @@
 tigris
 pkg/npm/node_modules
 
-# JSON files
-*.json
-
 # Test binary, built with `go test -c`
 *.test
 

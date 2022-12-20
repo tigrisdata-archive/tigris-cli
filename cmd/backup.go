@@ -21,6 +21,7 @@ import (
 	"os"
 	"time"
 
+	units "github.com/docker/go-units"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/util"
@@ -28,31 +29,38 @@ import (
 )
 
 var (
-	dbFilter         []string
-	collectionFilter []string
-	destDir          string
-	backupTimeout    int
+	projectFilter       []string
+	collectionFilter    []string
+	destDir             string
+	backupTimeout       int
+	verboseBackup       bool
+	backupFileExtension = "backup"
+	schemaFileExtension = "schema"
 )
 
-func listDatabases(ctx context.Context) ([]string, error) {
-	databases := []string{}
+// listProjects returns the projects/databases available in Tigris as a string array
+// but filters the output using the filters specified via the command line.
+func listProjects(ctx context.Context) ([]string, error) {
+	projects := make([]string, 0)
 
-	resp, err := client.Get().ListDatabases(ctx)
+	resp, err := client.Get().ListProjects(ctx)
 	if err != nil {
-		return nil, util.Error(err, "list databases")
+		return nil, util.Error(err, "list projects")
 	}
 
 	for _, v := range resp {
-		if len(dbFilter) == 0 || util.Contains(dbFilter, v) {
-			databases = append(databases, v)
+		if len(projectFilter) == 0 || util.Contains(projectFilter, v) {
+			projects = append(projects, v)
 		}
 	}
 
-	return databases, nil
+	return projects, nil
 }
 
+// listCollections enumerates the collections available in Tigris as a string array
+// but filters the output using the filters specified via the command line.
 func listCollections(ctx context.Context, dbName string) ([]string, error) {
-	collections := []string{}
+	collections := make([]string, 0)
 
 	resp, err := client.Get().UseDatabase(dbName).ListCollections(ctx)
 	if err != nil {
@@ -68,108 +76,136 @@ func listCollections(ctx context.Context, dbName string) ([]string, error) {
 	return collections, nil
 }
 
-func writeCollection(ctx context.Context, db, collection string) error {
-	var doc driver.Document
+// writeCollection downloads the data of a collection from Tigris and stores it
+// in a file post-fixed with backupFileExtension. The function returns the bytes
+// written and an error, if applicable.
+func writeCollection(ctx context.Context, db, collection, file string) (int, error) {
+	var (
+		doc   driver.Document
+		bytes int
+	)
 
 	it, err := client.Get().UseDatabase(db).Read(ctx, collection,
 		driver.Filter(`{}`),
 		driver.Projection(`{}`),
 	)
 	if err != nil {
-		return util.Error(err, "read failed")
+		return bytes, util.Error(err, "read failed")
 	}
 	defer it.Close()
 
-	filename := fmt.Sprintf("%s/%s.%s.json", destDir, db, collection)
-
-	f, err := os.Create(filename)
+	f, err := os.Create(file)
 	if err != nil {
-		return util.Error(err, "failed writing file")
+		return bytes, util.Error(err, "failed writing file")
 	}
 
 	writer := bufio.NewWriter(f)
 	for it.Next(&doc) {
-		_, err := writer.WriteString(string(doc) + "\n")
-		util.Fatal(err, "error writing file %s", filename)
+		b, err := writer.WriteString(string(doc) + "\n")
+		bytes += b
+
+		util.Fatal(err, "error writing file %s", file)
 	}
 
 	if err = writer.Flush(); err != nil {
-		return util.Error(err, "failed to flush file")
+		return bytes, util.Error(err, "failed to flush file")
 	}
 
 	if err = f.Close(); err != nil {
-		return util.Error(err, "failed to close file")
+		return bytes, util.Error(err, "failed to close file")
 	}
 
-	util.Stdoutf(" [*] %s\n", filename)
-
-	return nil
+	return bytes, nil
 }
 
-func writeSchema(ctx context.Context, db string) error {
+// writeSchema downloads the schema of all collections related to the database
+// specified and stores in the file specified.
+func writeSchema(ctx context.Context, db, file string) (int, error) {
+	var bytes int
+
 	resp, err := client.Get().DescribeDatabase(ctx, db)
 	if err != nil {
-		return util.Error(err, "describe collection failed")
+		return bytes, util.Error(err, "describe collection failed")
 	}
 
-	filename := fmt.Sprintf("%s/%s.schema", destDir, db)
+	f, err := os.Create(file)
+	if err != nil {
+		return bytes, util.Error(err, "failed writing file")
+	}
+
+	writer := bufio.NewWriter(f)
 	for _, v := range resp.Collections {
-		err := os.WriteFile(filename, []byte(string(v.Schema)), 0o600)
-		return util.Error(err, "error writing schema file")
+		b, err := writer.WriteString(string(v.Schema) + "\n")
+		bytes += b
+
+		if err != nil {
+			return bytes, util.Error(err, "error writing schema file")
+		}
 	}
 
-	util.Stdoutf(" [.] %s\n", filename)
+	if err = writer.Flush(); err != nil {
+		return bytes, util.Error(err, "failed to flush file")
+	}
 
-	return nil
+	if err = f.Close(); err != nil {
+		return bytes, util.Error(err, "failed to close file")
+	}
+
+	return bytes, nil
 }
 
-func createBackupDir(dirname string) error {
-	util.Stdoutf(" [i] ensuring backup dir exists %s\n", destDir)
-
-	if err := os.Mkdir(dirname, 0o700); err != nil {
-		return util.Error(err, "error creating directory %s", dirname)
+func printStats(start time.Time, bytes float64) {
+	if verboseBackup {
+		stop := time.Since(start).Seconds()
+		util.Stdoutf(" [>] %s (%s/s in %.1fs)\n", units.HumanSize(bytes), units.HumanSize(bytes/stop), stop)
 	}
-
-	return nil
 }
 
 var backupCmd = &cobra.Command{
 	Use:   "backup [filters]",
-	Short: "Dumps documents and schemas to JSON files on a quiesced database",
-	Long: `Dumps documents and schemas to JSON files on a quiesced database
-	into the directory specified in the argument.
+	Short: "Dumps documents and schemas to JSON files",
+	Long: `Dumps documents and schemas to JSON files into the directory specified in the argument.
 
-	If a database filter is provided it only dumps the schemas of the databases specified.
+	If a project name filter is provided it only dumps the schemas of the projects specified.
 	Likewise, collection filters will limit the output to matching collection names.`,
-	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(_ context.Context) error {
 			util.Stdoutf(" [i] using timeout %d\n", backupTimeout)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(backupTimeout)*time.Second)
 			defer cancel()
 
-			databases, err := listDatabases(ctx)
+			projects, err := listProjects(ctx)
 			if err != nil {
-				return util.Error(err, "failed to list databases")
+				return util.Error(err, "failed to list projects")
 			}
 
-			if err := createBackupDir(destDir); err != nil {
+			if err := os.Mkdir(destDir, 0o700); err != nil {
 				return util.Error(err, "failed to create backup dir")
 			}
 
-			for _, db := range databases {
-				if err := writeSchema(ctx, db); err != nil {
+			for _, db := range projects {
+				path := fmt.Sprintf("%s/%s.%s", destDir, db, schemaFileExtension)
+				util.Stdoutf(" [.] %s\n", path)
+				start := time.Now()
+				bytes, err := writeSchema(ctx, db, path)
+				if err != nil {
 					return util.Error(err, "failed to write schema")
 				}
+				printStats(start, float64(bytes))
 
 				collections, err := listCollections(ctx, db)
 				if err != nil {
 					return util.Error(err, "error listing collections")
 				}
 				for _, collection := range collections {
-					if err := writeCollection(ctx, db, collection); err != nil {
+					start := time.Now()
+					path := fmt.Sprintf("%s/%s.%s.%s", destDir, db, collection, backupFileExtension)
+					util.Stdoutf(" [*] %s\n", path)
+					bytes, err := writeCollection(ctx, db, collection, path)
+					if err != nil {
 						return util.Error(err, "failed to write collection")
 					}
+					printStats(start, float64(bytes))
 				}
 			}
 
@@ -181,11 +217,13 @@ var backupCmd = &cobra.Command{
 func init() {
 	backupCmd.Flags().StringVarP(&destDir, "directory", "d", "./tigris-backup",
 		"destination directory for backups")
-	backupCmd.Flags().StringSliceVarP(&dbFilter, "databases", "D", []string{},
-		"limit data dump to specified databases")
+	backupCmd.Flags().StringSliceVarP(&projectFilter, "projects", "P", []string{},
+		"limit data dump to specified projects")
 	backupCmd.Flags().StringSliceVarP(&collectionFilter, "collections", "C", []string{},
 		"limit data dump to specified collections")
 	backupCmd.Flags().IntVarP(&backupTimeout, "timeout", "t", 3600,
 		"timeout specification in seconds")
+	backupCmd.Flags().BoolVarP(&verboseBackup, "verbose", "v", false,
+		"verbose output")
 	rootCmd.AddCommand(backupCmd)
 }

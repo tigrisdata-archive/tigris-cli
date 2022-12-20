@@ -1,0 +1,109 @@
+{{- with .Collection }}
+package route
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/tigrisdata/tigris-client-go/filter"
+	"github.com/tigrisdata/tigris-client-go/search"
+	"github.com/tigrisdata/tigris-client-go/tigris"
+)
+
+func Setup{{.Name}}CRUD[T interface{}](r *gin.Engine, db *tigris.Database, name string) {
+	setup{{.Name}}ReadRoute[T](r, db, name)
+	setup{{.Name}}SearchRoute[T](r, db, name)
+
+	r.POST(fmt.Sprintf("/%s", name), func(c *gin.Context) {
+		coll := tigris.GetCollection[T](db)
+
+		var u T
+		if err := c.Bind(&u); err != nil {
+			return
+		}
+
+		if _, err := coll.Insert(c, &u); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusCreated, u)
+	})
+
+	r.DELETE(fmt.Sprintf("/%s{{range .PrimaryKey}}/:{{.}}{{end}}", name), func(c *gin.Context) {
+		coll := tigris.GetCollection[T](db)
+
+		if _, err := coll.Delete(c,
+        {{- if eq (len .PrimaryKey) 1 -}}
+        {{ range .PrimaryKey }}
+		    filter.Eq("{{.}}", c.Param("{{.}}")),
+        {{- end -}}
+        {{else}}
+			filter.And(
+        {{- range .PrimaryKey}}
+				filter.Eq("{{.}}", c.Param("{{.}}")),
+        {{- end}}
+			),
+        {{- end}}
+		); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"Status": "DELETED"})
+	})
+}
+
+// setupReadRoute sets route for reading documents by id.
+func setup{{.Name}}ReadRoute[T interface{}](r *gin.Engine, db *tigris.Database, name string) {
+	r.GET(fmt.Sprintf("/%s/{{range .PrimaryKey}}/:{{.}}{{end}}", name), func(c *gin.Context) {
+		coll := tigris.GetCollection[T](db)
+
+		u, err := coll.ReadOne(c,
+        {{- if eq (len .PrimaryKey) 1 -}}
+        {{ range .PrimaryKey }}
+		    filter.Eq("{{.}}", c.Param("{{.}}")),
+        {{- end -}}
+        {{else}}
+			filter.And(
+        {{- range .PrimaryKey}}
+				filter.Eq("{{.}}", c.Param("{{.}}")),
+        {{- end}}
+			),
+        {{- end}}
+        )
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, u)
+	})
+}
+
+// Create routes for searching data in a collection.
+func setup{{.Name}}SearchRoute[T interface{}](r *gin.Engine, db *tigris.Database, name string) {
+	r.POST(fmt.Sprintf("/%s/search", name), func(c *gin.Context) {
+		coll := tigris.GetCollection[T](db)
+
+		var u search.Request
+		if err := c.Bind(&u); err != nil {
+			_ = c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		it, err := coll.Search(c, &u)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		r := &search.Result[T]{}
+		for it.Next(r) {
+			c.JSON(http.StatusOK, r)
+		}
+		if err := it.Err(); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+	})
+}
+{{end}}

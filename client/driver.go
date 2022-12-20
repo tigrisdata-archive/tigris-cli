@@ -68,8 +68,6 @@ func Init(inCfg *config.Config) error {
 	M = nil
 	O = nil
 
-	log.Debug().Interface("config", cfg).Msg("config")
-
 	return nil
 }
 
@@ -130,7 +128,7 @@ func Transact(bctx context.Context, db string, fn func(ctx context.Context, tx d
 	ctx, cancel := util.GetContext(bctx)
 	defer cancel()
 
-	tx, err := Get().BeginTx(ctx, db)
+	tx, err := Get().UseDatabase(db).BeginTx(ctx)
 	if err != nil {
 		return util.Error(err, "begin transaction")
 	}

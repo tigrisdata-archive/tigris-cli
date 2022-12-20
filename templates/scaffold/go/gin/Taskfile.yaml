@@ -1,0 +1,41 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task -l
+    silent: true
+
+  run:
+    desc: Run {{.DBName}} in the development environment
+    deps: [deps]
+    cmds:
+      - task: clean
+      - bin/tigris dev start
+      - go run main.go
+
+  run:docker:
+    desc: Run {{.DBName}} in the Docker development environment
+    deps: [deps]
+    cmds:
+      - task: clean
+      - docker compose up -d tigris
+      - TIGRIS_URL=localhost:8081 bin/tigris ping --timeout=20s
+      - docker compose up --build -d service
+      - echo "The {{.DBName}} service is up and running at http://localhost:8080"
+
+  deps:
+    desc: Install dependencies
+    status:
+      - test -x bin/tigris
+    cmds:
+      - mkdir -p bin
+      - curl -sSL https://tigris.dev/cli-{{`{{if eq OS "darwin"}}macos{{else}}{{OS}}{{end}}{{if eq ARCH "arm"}}-arm64{{end}}`}} | tar -xz -C ./bin
+
+  clean:
+    desc: Cleanup the resources
+    cmds:
+      - docker compose down
+      - bin/tigris dev stop

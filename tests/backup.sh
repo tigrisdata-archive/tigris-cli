@@ -10,14 +10,14 @@ test_backup() {
   TESTDB=backup_test
   TESTCOLL=backup_test
   SCHEMAFILE="${TESTDIR}/${TESTDB}.schema"
-  DATAFILE="${TESTDIR}/${TESTDB}.${TESTCOLL}.json"
+  DATAFILE="${TESTDIR}/${TESTDB}.${TESTCOLL}.backup"
 
   # Initialize test database
-  $cli drop database "${TESTDB}" || true
-  $cli create database "${TESTDB}"
+  $cli delete-project -f "${TESTDB}" || true
+  $cli create project "${TESTDB}"
 
   # Add test data
-  cat <<EOF | TIGRIS_LOG_LEVEL=debug $cli import "${TESTDB}" "${TESTCOLL}" --create-collection --primary-key=uuid_field --autogenerate=uuid_field
+  cat <<EOF | TIGRIS_LOG_LEVEL=debug $cli import "--project=${TESTDB}" "${TESTCOLL}" --create-collection --primary-key=uuid_field --autogenerate=uuid_field
 {
 	"str_field" : "str_value",
 	"int_field" : 1,
@@ -48,8 +48,9 @@ test_backup() {
 }
 EOF
 
-  $cli backup -d "${TESTDIR}" -D "${TESTDB}"
-  
+  # Run backup
+  $cli backup -d "${TESTDIR}" "--projects=${TESTDB}"
+
   schema_out=$(cat $SCHEMAFILE)
   data_out=$(cat $DATAFILE)
 
@@ -82,6 +83,19 @@ EOF
     } ],
       "prim_array" : [ "str" ]
   }'
+
+  # Check results
+  diff -w -u <(echo "${schema_out}") <(echo "${schema_expected}")
+  diff -w -u <(echo "${data_out}") <(echo "${data_expected}")
+
+  # Test restore
+  RESTDB="${TESTDB}_restored"
+  $cli delete-project -f "${RESTDB}" || true
+  $cli restore -d "${TESTDIR}" --projects="${TESTDB}" --postfix=restored
+
+  # Obtain schema and data from restored database
+  schema_out=$($cli describe database --schema-only --project="${RESTDB}")
+  data_out=$($cli read "--project=${RESTDB}" "${TESTCOLL}")
 
   diff -w -u <(echo "${schema_out}") <(echo "${schema_expected}")
   diff -w -u <(echo "${data_out}") <(echo "${data_expected}")

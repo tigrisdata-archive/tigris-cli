@@ -1,0 +1,41 @@
+{
+    "name": "{{.PackageName}}",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "clean": "rimraf ./dist",
+        "prebuild": "npm run clean && npm install",
+        "build": "npx tsc",
+        "prestart": "npm run build",
+        "start": "node dist/index.js",
+        "predev": "npx tigris dev start",
+        "dev": "npx nodemon",
+        "lint": "npx eslint --fix src/**/*.ts",
+        "prettify": "npx prettier --write ."
+    },
+    "dependencies": {
+        "@tigrisdata/core": "^1.0.0-beta.21",
+        "express": "^4.18.2",
+        "ts-node": "^10.9.1"
+    },
+    "devDependencies": {
+        "@tigrisdata/tigris-cli": "^1.0.0-beta.13",
+        "@typescript-eslint/eslint-plugin": "^5.43.0",
+        "@typescript-eslint/parser": "^5.43.0",
+        "eslint": "^8.27.0",
+        "eslint-config-prettier": "^8.5.0",
+        "eslint-plugin-functional": "^4.4.1",
+        "eslint-plugin-unicorn": "^44.0.2",
+        "nodemon": "^2.0.20",
+        "prettier": "2.7.1",
+        "rimraf": "^3.0.2",
+        "typescript": "4.8.3"
+    },
+    "nodemonConfig": {
+        "watch": ["src"],
+        "ext": ".ts",
+        "ignore": ["**/test/**", "**/docs/**"],
+        "delay": 2500,
+        "exec": "TIGRIS_URL=localhost:8081 npx ts-node ./src/index.ts"
+    }
+}
