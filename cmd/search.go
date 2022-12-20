@@ -121,7 +121,7 @@ func init() {
 		"comma separated value of document fields to include in results")
 	searchCmd.Flags().StringSliceVarP(&excludeFields, "excludeFields", "x", []string{},
 		"comma separated value of document fields to exclude in results")
-	searchCmd.Flags().Int32VarP(&page, "page", "p", 1, "page of results to retrieve")
+	searchCmd.Flags().Int32VarP(&page, "page", "g", 1, "page of results to retrieve")
 	searchCmd.Flags().Int32VarP(&pageSize, "pageSize", "c", 20, "count of results to be returned per page")
 
 	addProjectFlag(searchCmd)
