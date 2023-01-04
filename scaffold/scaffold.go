@@ -352,7 +352,14 @@ func execComponents(rootPath string, outDir string, components []string, vars *t
 			l[0] = l[1]
 		}
 
+		// If no explicitly specified component, include all by default.
 		include := len(components) == 0
+
+		// not_default_ prefix allows to exclude component from default processing
+		if strings.HasPrefix(l[0], "not_default_") {
+			l[0] = strings.ReplaceAll(l[0], "not_default_", "")
+			include = false
+		}
 
 		for _, c := range components {
 			if c == l[0] {
@@ -360,9 +367,9 @@ func execComponents(rootPath string, outDir string, components []string, vars *t
 			}
 		}
 
-		if include {
-			log.Debug().Str("component", l[0]).Msg("processing component")
+		log.Debug().Str("component", l[0]).Bool("included", include).Msg("processing component")
 
+		if include {
 			componentPath := filepath.Join(rootPath, v)
 			ffs := os.DirFS(componentPath)
 

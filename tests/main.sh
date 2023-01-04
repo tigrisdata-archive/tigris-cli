@@ -13,12 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -exv
+set -ex
 PS4='${LINENO}: '
 
 if [ -z "$cli" ]; then
 	cli="$(pwd)/tigris"
 fi
+
+unset TIGRIS_URL
+unset TIGRIS_TOKEN
+unset TIGRIS_CLIENT_SECRET
+unset TIGRIS_CLIENT_ID
 
 # Just to check if any config is set
 env|grep TIGRIS || true
@@ -344,7 +349,11 @@ main() {
 	unset TIGRIS_PROTOCOL
 	export TIGRIS_URL=localhost:8081
 	db_tests
-	test_scaffold
+	# Scaffold tests require local instance to start/stop
+	# so skip these tests in Tigris server repo integration tests
+  if [ -z "$noup" ]; then
+	  test_scaffold
+	fi
 	test_import
 	test_backup
 
@@ -354,7 +363,6 @@ main() {
 	$cli config show | grep "protocol: grpc"
 	$cli config show | grep "url: localhost:8081"
 	db_tests
-	test_scaffold
 	test_import
 	test_backup
 
