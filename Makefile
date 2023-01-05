@@ -17,6 +17,7 @@ lint:
 	golangci-lint run --timeout=3m --fix
 	shellcheck tests/*.sh
 	cd pkg/npm && TIGRIS_SKIP_VERIFY=1 npm i; npx eslint install.js
+	git checkout pkg/npm/bin/tigris # lints above overwrites placeholder with real binary
 
 go.sum: go.mod
 	go mod download

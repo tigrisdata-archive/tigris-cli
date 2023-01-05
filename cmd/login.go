@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -269,8 +270,6 @@ func waitCallbackServerUp() {
 func loginCmdLow(_ context.Context, host string) error {
 	var err error
 
-	host = getHost(host)
-
 	state, err := genRandomState()
 	if err != nil {
 		return err
@@ -341,6 +340,18 @@ func loginCmdLow(_ context.Context, host string) error {
 	return util.Error(callbackErr, "callback error")
 }
 
+func localLogin(host string) {
+	config.DefaultConfig.ClientSecret = ""
+	config.DefaultConfig.ClientID = ""
+	config.DefaultConfig.Token = ""
+	config.DefaultConfig.URL = host
+
+	err := config.Save(config.DefaultName, config.DefaultConfig)
+	util.Fatal(err, "saving config for localhost")
+
+	util.Stderrf("Successfully logged in to %s\n", host)
+}
+
 var loginCmd = &cobra.Command{
 	Use:   "login {url}",
 	Short: "Authenticate on the Tigris instance",
@@ -354,12 +365,31 @@ var loginCmd = &cobra.Command{
   if are not already signed in to the account
 * You'll see "Successfully authenticated" on success
 * You can now return to the terminal and start using the CLI`,
-	Example: `tigris login api.preview.tigrisdata.cloud`,
+	Example: `
+# Login to the hosted platform
+tigris login api.preview.tigrisdata.cloud
+
+# Point all subsequent commands to locally running instance
+tigris login dev
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var host string
 
 		if len(args) > 0 {
 			host = args[0]
+		}
+
+		host = getHost(host)
+
+		if host == "local" || host == "dev" || strings.HasPrefix(host, "localhost") {
+			// handle the cases without a port
+			if host == "local" || host == "dev" || host == "localhost" {
+				host = "localhost:8081"
+			}
+
+			localLogin(host)
+
+			return
 		}
 
 		if err := loginCmdLow(cmd.Context(), host); err != nil {
