@@ -53,9 +53,16 @@ if [ -z "$noup" ]; then
 	$cli local logs >/dev/null 2>&1
 fi
 
+
+OS=$(uname -s)
+
 export TIGRIS_URL=localhost:8081
 $cli server info
 $cli server version
+
+if [ "$OS" == 'Darwin' ]; then
+  export TIGRIS_TIMEOUT=15s
+fi
 
 test_config() {
   export TIGRIS_CLIENT_ID=test_id_1
