@@ -9,7 +9,7 @@ fi
 #Delete v prefix from v1.0.0-beta.X
 VERSION=${VERSION/#v}
 
-tigris version && exit 1
+tigris version && exit 1 # expected to fail
 sudo snap install tigris
 which tigris
 tigris version | grep -e "$VERSION"
@@ -21,7 +21,7 @@ curl -fsSL -o install.sh https://raw.githubusercontent.com/Homebrew/install/HEAD
 CI=1 /bin/bash install.sh
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
-tigris version && exit 1
+tigris version && exit 1 # expected to fail
 /home/linuxbrew/.linuxbrew/bin/brew install tigrisdata/tigris/tigris-cli
 which tigris
 tigris version
@@ -31,22 +31,22 @@ tigris version | grep -e "$VERSION"
 hash -r
 
 # Test local NPM install
-npx tigris version && exit 1
+npx tigris version && exit 1 # expected to fail
 npm install @tigrisdata/tigris-cli
 npx tigris version
 npx tigris version | grep -e "$VERSION"
 npm uninstall @tigrisdata/tigris-cli
 
 # Test global NPM install
-npx tigris version && exit 1
-tigris version && exit 1
-npm install -g @tigrisdata/tigris-cli
+npx tigris version && exit 1 # expected to fail
+tigris version && exit 1 # expected to fail
+sudo npm install -g @tigrisdata/tigris-cli
 tigris version
 tigris version | grep -e "$VERSION"
-npm uninstall -g @tigrisdata/tigris-cli
+sudo npm uninstall -g @tigrisdata/tigris-cli
 
 hash -r
 
-npx tigris version && exit 1
-tigris version && exit 1
+npx tigris version && exit 1 # expected to fail
+tigris version && exit 1 # expected to fail
 
