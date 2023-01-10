@@ -50,3 +50,4 @@ hash -r
 npx tigris version && exit 1 # expected to fail
 tigris version && exit 1 # expected to fail
 
+exit 0
