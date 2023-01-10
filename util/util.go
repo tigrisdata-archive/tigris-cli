@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,11 +15,14 @@
 package util
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"text/template"
 	"time"
 
@@ -122,6 +125,7 @@ func Error(err error, msg string, args ...interface{}) error {
 
 func Fatal(err error, msg string, args ...interface{}) {
 	if err == nil {
+		_ = Error(err, msg, args...)
 		return
 	}
 
@@ -136,10 +140,25 @@ func ExecTemplate(w io.Writer, tmpl string, vars interface{}) {
 	t, err := template.New("exec_template").Funcs(template.FuncMap{
 		"add": func(a, b int) int { return a + b },
 	}).Parse(tmpl)
-	Fatal(err, "error parsing template")
+	Fatal(err, "parsing template")
 
 	err = t.Execute(w, vars)
-	Fatal(err, "execute template failed")
+	Fatal(err, "execute template")
+}
+
+func ExecFileTemplate(fn string, tmpl string, vars any) {
+	log.Debug().Str("out_file", fn).Msg("exec file template")
+
+	buf := bytes.Buffer{}
+	w := bufio.NewWriter(&buf)
+
+	ExecTemplate(w, tmpl, vars)
+
+	err := w.Flush()
+	Fatal(err, "flushing template writer")
+
+	err = os.WriteFile(fn, buf.Bytes(), 0o600)
+	Fatal(err, "write file")
 }
 
 func Contains(l []string, s string) bool {
@@ -150,4 +169,19 @@ func Contains(l []string, s string) bool {
 	}
 
 	return false
+}
+
+func ListDir(root string) map[string]bool {
+	e, err := os.ReadDir(root)
+	Fatal(err, "read directory: %s", root)
+
+	list := make(map[string]bool)
+
+	for _, v := range e {
+		if v.IsDir() && !strings.HasPrefix(v.Name(), ".") {
+			list[v.Name()] = true
+		}
+	}
+
+	return list
 }

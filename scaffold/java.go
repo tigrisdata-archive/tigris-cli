@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,12 +15,7 @@
 package scaffold
 
 import (
-	"embed"
 	"strings"
-
-	"github.com/pkg/errors"
-	"github.com/tigrisdata/tigris-cli/templates"
-	"github.com/tigrisdata/tigris-cli/util"
 )
 
 type JSONToJava struct{}
@@ -31,15 +26,4 @@ func (*JSONToJava) HasTime(schema string) bool {
 
 func (*JSONToJava) HasUUID(schema string) bool {
 	return strings.Contains(schema, "private UUID")
-}
-
-func (*JSONToJava) GetFS(dir string) embed.FS {
-	switch dir {
-	case "spring":
-		return templates.ScaffoldJavaSpring
-	default:
-		util.Fatal(errors.Wrapf(ErrUnknownScaffoldType, "type: %s", dir), "get fs")
-	}
-
-	return embed.FS{} // this should never happen
 }

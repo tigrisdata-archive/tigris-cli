@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/scaffold"
 	"github.com/tigrisdata/tigris-cli/util"
 )
@@ -46,7 +47,16 @@ var sampleSchemaCmd = &cobra.Command{
 `, rootCmd.Root().Name()),
 	Run: func(cmd *cobra.Command, args []string) {
 		withLogin(cmd.Context(), func(ctx context.Context) error {
-			err := scaffold.Schema(cmd.Context(), sampleDBName, "ecommerce", create, stdout)
+			templatesPath := scaffold.EnsureLocalTemplates()
+
+			if create {
+				if _, err := client.Get().CreateProject(ctx, getProjectName()); err != nil {
+					return util.Error(err, "create database")
+				}
+			}
+
+			err := scaffold.Schema(cmd.Context(), sampleDBName, templatesPath, "ecommerce", create, stdout)
+
 			return util.Error(err, "generating sample schema")
 		})
 	},
@@ -60,6 +70,8 @@ var generateCmd = &cobra.Command{
 func init() {
 	sampleSchemaCmd.Flags().BoolVarP(&create, "create", "c", false, "create the sample database and collections")
 	sampleSchemaCmd.Flags().BoolVarP(&stdout, "stdout", "s", false, "dump sample schemas to stdout")
+	addProjectFlag(sampleSchemaCmd)
+
 	generateCmd.AddCommand(sampleSchemaCmd)
 	dbCmd.AddCommand(generateCmd)
 }

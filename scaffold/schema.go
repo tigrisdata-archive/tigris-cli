@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/tigrisdata/tigris-cli/client"
-	"github.com/tigrisdata/tigris-cli/templates"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"github.com/tigrisdata/tigris-client-go/schema"
@@ -32,30 +32,33 @@ import (
 
 var ErrUnsupportedSchemaTemplate = fmt.Errorf("unknown bootstrap schema template")
 
-func Schema(ctx context.Context, db string, format string, create bool, stdout bool) error {
-	ffs := templates.Schema
-	rootPath := filepath.Join("schema", format)
+func Schema(ctx context.Context, db string, templatesPath string, name string, create bool, stdout bool) error {
+	rootPath := filepath.Join(templatesPath, "schema", name)
+	ffs := os.DirFS(rootPath)
 
 	log.Debug().Str("rootPath", rootPath).Msg("schema bootstrap")
 
-	if _, err := ffs.ReadDir(rootPath); err != nil {
-		util.Fatal(ErrUnsupportedSchemaTemplate, "unknown schema %s", format)
-	}
+	if _, err := fs.ReadDir(ffs, "."); err != nil {
+		list := util.ListDir(filepath.Join(templatesPath, "schema"))
+		util.Infof("Available schema templates:")
 
-	if create {
-		if _, err := client.Get().CreateProject(ctx, db); err != nil {
-			return util.Error(err, "create database")
+		for k := range list {
+			util.Infof("\t* %s", k)
 		}
+
+		util.Infof("")
+
+		util.Fatal(ErrUnsupportedSchemaTemplate, "unknown schema '%s': %s", name, err.Error())
 	}
 
 	err := client.Transact(ctx, db, func(ctx context.Context, tx driver.Tx) error {
-		return fs.WalkDir(ffs, rootPath, func(path string, d fs.DirEntry, err error) error {
+		return fs.WalkDir(ffs, ".", func(path string, d fs.DirEntry, err error) error {
 			util.Fatal(err, "walk embedded template directory")
 
 			log.Debug().Str("path", path).Msg("walk-dir")
 
-			if !d.IsDir() {
-				b, err := ffs.ReadFile(path)
+			if !d.IsDir() && !strings.HasPrefix(d.Name(), ".") {
+				b, err := fs.ReadFile(ffs, path)
 				util.Fatal(err, "read template file")
 
 				var sch schema.Schema
@@ -67,7 +70,7 @@ func Schema(ctx context.Context, db string, format string, create bool, stdout b
 					util.Stdoutf("%s\n", string(b))
 				} else if !create {
 					err := os.WriteFile(fmt.Sprintf("%v.json", sch.Name), b, 0o600)
-					util.Fatal(err, "error generating sample schema file")
+					util.Fatal(err, "writing schema file")
 				} else if err = client.Get().UseDatabase(db).CreateOrUpdateCollection(ctx, sch.Name, b); err != nil {
 					return err
 				}

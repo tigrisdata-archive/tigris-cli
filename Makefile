@@ -14,7 +14,7 @@ ${BIN}: ${GO_SRC} go.sum
 	CGO_ENABLED=0 go build ${BUILD_PARAM} .
 
 lint:
-	golangci-lint run --fix
+	golangci-lint run --timeout=3m --fix
 	shellcheck tests/*.sh
 	cd pkg/npm && TIGRIS_SKIP_VERIFY=1 npm i; npx eslint install.js
 
@@ -23,7 +23,7 @@ go.sum: go.mod
 
 test: ${BIN} go.sum
 	go test $(TEST_PARAM) ./...
-	/bin/bash tests/db.sh
+	/bin/bash tests/main.sh
 
 install: ${BIN}
 	install -d $(DESTDIR)$(PREFIX)/bin

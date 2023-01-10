@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -26,50 +27,57 @@ import (
 
 var pingTimeout time.Duration
 
+func pingLow(cmdCtx context.Context, timeout time.Duration, initSleep time.Duration, linear bool) error {
+	ctx, cancel := util.GetContext(cmdCtx)
+
+	err := client.InitLow()
+	if err == nil {
+		_, err = client.D.Health(ctx)
+	}
+
+	_ = util.Error(err, "ping")
+
+	cancel()
+
+	end := time.Now().Add(timeout)
+	sleep := initSleep
+
+	for err != nil && timeout > 0 && time.Now().Add(sleep).Before(end) {
+		_ = util.Error(err, "ping sleep %v", sleep)
+		time.Sleep(sleep)
+
+		if client.D != nil {
+			_ = util.Error(client.D.Close(), "client close")
+		}
+
+		client.D = nil
+
+		ctx, cancel = util.GetContext(cmdCtx)
+
+		if err = client.InitLow(); err == nil {
+			_, err = client.D.Health(ctx)
+		}
+
+		cancel()
+
+		if !linear {
+			sleep *= 2
+		}
+
+		if rem := time.Until(end); sleep > rem && rem > 0 {
+			sleep = rem
+			_ = util.Error(err, "ping sleep1 %v", sleep)
+		}
+	}
+
+	return err
+}
+
 var pingCmd = &cobra.Command{
 	Use:   "ping",
 	Short: "Checks connection to Tigris",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-
-		err := client.InitLow()
-		if err == nil {
-			_, err = client.D.Health(ctx)
-		}
-		_ = util.Error(err, "ping")
-
-		cancel()
-
-		end := time.Now().Add(pingTimeout)
-		sleep := 32 * time.Millisecond
-
-		for err != nil && pingTimeout > 0 && time.Now().Add(sleep).Before(end) {
-			_ = util.Error(err, "ping sleep %v", sleep)
-			time.Sleep(sleep)
-
-			if client.D != nil {
-				_ = util.Error(client.D.Close(), "client close")
-			}
-
-			client.D = nil
-
-			ctx, cancel = util.GetContext(cmd.Context())
-
-			if err = client.InitLow(); err == nil {
-				_, err = client.D.Health(ctx)
-			}
-
-			cancel()
-
-			sleep *= 2
-
-			if rem := time.Until(end); sleep > rem && rem > 0 {
-				sleep = rem
-				_ = util.Error(err, "ping sleep1 %v", sleep)
-			}
-		}
-
-		if err != nil {
+		if err := pingLow(cmd.Context(), pingTimeout, 32*time.Millisecond, false); err != nil {
 			fmt.Fprintf(os.Stderr, "FAILED\n")
 			os.Exit(1)
 		} else {

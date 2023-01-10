@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -48,7 +47,7 @@ var (
 
 func getClient(ctx context.Context) *client.Client {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	util.Fatal(err, "error creating docker client")
+	util.Fatal(err, "creating docker client")
 
 	ctx, cancel := util.GetContext(ctx)
 	defer cancel()
@@ -60,7 +59,7 @@ func getClient(ctx context.Context) *client.Client {
 
 		cli, err = client.NewClientWithOpts(client.FromEnv,
 			client.WithHost("unix://"+home+"/.colima/default/docker.sock"), client.WithAPIVersionNegotiation())
-		util.Fatal(err, "error creating docker client")
+		util.Fatal(err, "retrying creating docker client")
 
 		p, err = cli.Ping(ctx)
 		util.Fatal(err, "pinging docker daemon")
@@ -169,12 +168,7 @@ func startContainer(cli *client.Client, cname string, image string, port string,
 }
 
 func waitServerUp(port string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
 	log.Debug().Msg("waiting local instance to start")
-
-	inited := false
 
 	cfg := config.DefaultConfig
 	cfg.URL = fmt.Sprintf("localhost:%s", port)
@@ -182,41 +176,10 @@ func waitServerUp(port string) {
 	cfg.ClientSecret = ""
 	cfg.ClientID = ""
 
-	if err := tclient.Init(&cfg); err != nil {
-		util.Fatal(err, "client init failed")
-	}
+	err := tclient.Init(&cfg)
+	util.Fatal(err, "init tigris client")
 
-	var err error
-
-L:
-	for {
-		if !inited {
-			if err = tclient.InitLow(); err == nil {
-				inited = true
-			}
-		} else {
-			_, err = tclient.Get().ListProjects(ctx)
-			if err == nil {
-				break
-			}
-		}
-
-		if errors.Is(err, context.DeadlineExceeded) {
-			break
-		}
-
-		time.Sleep(10 * time.Millisecond)
-
-		select {
-		case <-ctx.Done():
-			err = ErrServerStartTimeout
-
-			break L
-		default:
-		}
-	}
-
-	if err != nil {
+	if err := pingLow(context.Background(), 30*time.Second, 10*time.Millisecond, true); err != nil {
 		util.Fatal(err, "tigris initialization failed")
 	}
 

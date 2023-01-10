@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,8 @@
 package scaffold
 
 import (
-	"embed"
 	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
-	"github.com/tigrisdata/tigris-cli/templates"
-	"github.com/tigrisdata/tigris-cli/util"
 )
 
 var ErrUnknownScaffoldType = fmt.Errorf("unknown scaffold template")
@@ -34,17 +29,4 @@ func (*JSONToGo) HasTime(schema string) bool {
 
 func (*JSONToGo) HasUUID(schema string) bool {
 	return strings.Contains(schema, "uuid.UUID")
-}
-
-func (*JSONToGo) GetFS(dir string) embed.FS {
-	switch dir {
-	case "base":
-		return templates.ScaffoldGoBase
-	case "gin", "":
-		return templates.ScaffoldGoGin
-	default:
-		util.Fatal(errors.Wrapf(ErrUnknownScaffoldType, "type: %s", dir), "get fs")
-	}
-
-	return embed.FS{} // this should never happen
 }

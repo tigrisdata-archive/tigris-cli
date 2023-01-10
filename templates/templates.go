@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,41 +14,11 @@
 
 package templates
 
-import (
-	"embed"
-)
+import _ "embed"
 
 var (
 	//go:embed login/success.gohtml
 	LoginSuccessful string
 	//go:embed login/error.gohtml
 	LoginError string
-
-	//go:embed scaffold/go/base
-	//go:embed scaffold/go/base/**/*
-	//go:embed scaffold/go/base/.*
-	ScaffoldGoBase embed.FS
-
-	//go:embed scaffold/go/gin
-	//go:embed scaffold/go/gin/**/*
-	ScaffoldGoGin embed.FS
-
-	//go:embed scaffold/typescript/base
-	//go:embed scaffold/typescript/base/src/**/*
-	ScaffoldTypeScriptBase embed.FS
-
-	//go:embed scaffold/typescript/express
-	//go:embed scaffold/typescript/express/src/**/*
-	//go:embed scaffold/typescript/express/.*
-	ScaffoldTypeScriptExpress embed.FS
-
-	//go:embed scaffold/java/spring
-	//go:embed scaffold/java/spring/src/main/java/_java_pkg_
-	//go:embed scaffold/java/spring/src/main/java/_java_pkg_/_*
-	//go:embed scaffold/java/spring/src/main/java/_java_pkg_/**/*
-	//go:embed scaffold/java/spring/.gitignore
-	ScaffoldJavaSpring embed.FS
-
-	//go:embed schema
-	Schema embed.FS
 )
