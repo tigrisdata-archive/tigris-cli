@@ -45,6 +45,7 @@ func Init(inCfg *config.Config) error {
 		ClientSecret: inCfg.ClientSecret,
 		Token:        inCfg.Token,
 		Protocol:     inCfg.Protocol,
+		Branch:       inCfg.Branch,
 	}
 
 	if inCfg.UseTLS || (cfg.URL == "" && cfg.Protocol == "") ||

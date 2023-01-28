@@ -411,8 +411,8 @@ github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKs
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/subosito/gotenv v1.4.1 h1:jyEFiXpy21Wm81FBN71l9VoMMV8H8jG+qIK3GCpY6Qs=
 github.com/subosito/gotenv v1.4.1/go.mod h1:ayKnFf/c6rvx/2iiLrJUk1e6plDbT3edrFNGqEflhK0=
-github.com/tigrisdata/tigris-client-go v1.0.0-beta.18 h1:Nv0R2fsncW0C1a79yqR72Idu3JB+z8/uXb3cF31R89s=
-github.com/tigrisdata/tigris-client-go v1.0.0-beta.18/go.mod h1:E1wI4sV0uNvDLPyq0l5YZhVLWUod1Vi1FhKf5bRhDeI=
+github.com/tigrisdata/tigris-client-go v1.0.0-beta.19 h1:eJG3RntcneKNZXH5hXDamQcStGhMe3cBkBnSIAc/oPM=
+github.com/tigrisdata/tigris-client-go v1.0.0-beta.19/go.mod h1:E1wI4sV0uNvDLPyq0l5YZhVLWUod1Vi1FhKf5bRhDeI=
 github.com/xanzy/ssh-agent v0.3.0/go.mod h1:3s9xbODqPuuhK9JV1R321M/FlMZSBvE5aY6eAcqrDh0=
 github.com/xanzy/ssh-agent v0.3.2 h1:eKj4SX2Fe7mui28ZgnFW5fmTz1EIr7ugo5s6wDxdHBM=
 github.com/xanzy/ssh-agent v0.3.2/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=

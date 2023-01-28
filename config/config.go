@@ -49,6 +49,7 @@ type Config struct {
 	Protocol     string        `json:"protocol" yaml:"protocol,omitempty"`
 	Log          Log           `json:"log" yaml:"log,omitempty"`
 	Project      string        `json:"project" yaml:"project,omitempty"`
+	Branch       string        `json:"branch" yaml:"branch,omitempty"`
 }
 
 var DefaultName = "tigris-cli"

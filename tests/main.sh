@@ -261,12 +261,70 @@ EOF
 {"Key1": "vK300", "Field1": 30}'
 	diff -w -u <(echo "$exp_out") <(echo "$out")
 
+  db_branch_tests
+
 	db_negative_tests
 	db_errors_tests
 	db_generate_schema_test
 
 	$cli drop collection --project=db1 coll1 coll2 coll3 coll4 coll5 coll6 coll7 coll111
 	$cli delete-project -f db1
+}
+
+db_branch_tests() {
+  $cli drop collection --project=db1 coll_br1 || true
+
+	echo '[{ "title" : "coll_br1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]' | $cli create collection --project=db1 -
+
+	$cli insert --project=db1 coll_br1 '{"Key1": "vK1", "Field1": 1}' \
+		'{"Key1": "vK2", "Field1": 10}'
+
+	$cli branch list --project=db1 | grep br1 && exit 1
+
+  $cli branch --project=db1 create br1
+
+	$cli branch list --project=db1 | grep br1
+
+  # data exists outside of the branch
+	out=$($cli read --project=db1 coll_br1)
+	exp_out='{"Key1": "vK1", "Field1": 1}
+{"Key1": "vK2", "Field1": 10}'
+	diff -w -u <(echo "$exp_out") <(echo "$out")
+
+  (
+    export TIGRIS_BRANCH=br1
+    $cli config show|grep "branch: br1"
+
+    # no data in the branch
+    out=$($cli read --project=db1 coll_br1)
+	  exp_out=''
+    diff -w -u <(echo "$exp_out") <(echo "$out")
+
+	  $cli insert --project=db1 coll_br1 '{"Key1": "vK1br1", "Field1": 1000}' \
+'{"Key1": "vK2br1", "Field1": 10000}'
+
+    # branch sees it's own data
+    out=$($cli read --project=db1 coll_br1)
+	  exp_out='{"Key1": "vK1br1", "Field1": 1000}
+{"Key1": "vK2br1", "Field1": 10000}'
+	  diff -w -u <(echo "$exp_out") <(echo "$out")
+  )
+
+  # branch changes do not affect main branch
+	out=$($cli read --project=db1 coll_br1)
+	exp_out='{"Key1": "vK1", "Field1": 1}
+{"Key1": "vK2", "Field1": 10}'
+	diff -w -u <(echo "$exp_out") <(echo "$out")
+
+  $cli branch --project=db1 delete br1
+
+  # main branch data is intact after deleting the branch
+  out=$($cli read --project=db1 coll_br1)
+	exp_out='{"Key1": "vK1", "Field1": 1}
+{"Key1": "vK2", "Field1": 10}'
+	diff -w -u <(echo "$exp_out") <(echo "$out")
+
+  $cli drop collection --project=db1 coll_br1
 }
 
 db_negative_tests() {
