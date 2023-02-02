@@ -63,6 +63,6 @@ func addProjectFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&project, "project", "p", "", "Specifies project: --project=my_proj1")
 
 	if cmd != branchCmd {
-		cmd.PersistentFlags().StringVarP(&config.DefaultConfig.Branch, "branch", "r", "", "Specifies branch: --branch=my_br1")
+		cmd.PersistentFlags().StringVar(&config.DefaultConfig.Branch, "branch", "", "Specifies branch: --branch=my_br1")
 	}
 }

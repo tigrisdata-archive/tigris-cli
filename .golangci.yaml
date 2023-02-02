@@ -1,6 +1,7 @@
 linters:
   enable-all: true
   disable:
+    - musttag # It lints dependencies too. Enable when go client is fixed
     - godox # TODO and FIXME in the code
     - paralleltest
     # zerolog config fails

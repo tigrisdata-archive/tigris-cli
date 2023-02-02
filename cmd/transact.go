@@ -39,25 +39,25 @@ const (
 )
 
 type Op struct {
-	Operation  string
-	Collection string
-	Documents  []json.RawMessage
-	Filter     json.RawMessage
-	Fields     json.RawMessage
-	Schema     json.RawMessage
+	Operation  string            `json:"operation"`
+	Collection string            `json:"collection"`
+	Documents  []json.RawMessage `json:"documents"`
+	Filter     json.RawMessage   `json:"filter"`
+	Fields     json.RawMessage   `json:"fields"`
+	Schema     json.RawMessage   `json:"schema"`
 }
 
 type TxOp struct {
 	Op                       `json:",inline"`
-	Insert                   *Op
-	Replace                  *Op
+	Insert                   *Op `json:"insert"`
+	Replace                  *Op `json:"replace"`
 	InsertOrReplace          *Op `json:"insert_or_replace"`
-	Delete                   *Op
-	Update                   *Op
-	Read                     *Op
+	Delete                   *Op `json:"delete"`
+	Update                   *Op `json:"update"`
+	Read                     *Op `json:"read"`
 	CreateOrUpdateCollection *Op `json:"create_or_update_collection"`
-	DropCollection           *Op
-	ListCollections          *Op
+	DropCollection           *Op `json:"drop_collection"`
+	ListCollections          *Op `json:"list_collections"`
 }
 
 var ErrUnknownOperationType = fmt.Errorf("unknown operation type")
