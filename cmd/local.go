@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"time"
 
@@ -43,6 +44,9 @@ var (
 	ImageTag = "latest"
 
 	ErrServerStartTimeout = fmt.Errorf("timeout waiting server to start")
+
+	follow bool
+	login  bool
 )
 
 func getClient(ctx context.Context) *client.Client {
@@ -213,8 +217,11 @@ var serverUpCmd = &cobra.Command{
 		waitServerUp(port)
 
 		util.Stdoutf("Tigris is running at localhost:%s\n", port)
-		if port != "8081" {
-			util.Stdoutf("run 'export TIGRIS_URL=localhost:%s' for tigris cli to automatically connect\n", port)
+
+		if login {
+			localLogin(net.JoinHostPort("localhost", port))
+		} else if port != "8081" {
+			util.Stdoutf("run 'export TIGRIS_URL=localhost:%s' for tigris cli to connect to the local instance\n", port)
 		}
 	},
 }
@@ -238,11 +245,6 @@ var serverLogsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cli := getClient(cmd.Context())
 
-		follow, err := cmd.Flags().GetBool("follow")
-		if err != nil {
-			util.Fatal(err, "error reading 'follow' option")
-		}
-
 		logs, err := cli.ContainerLogs(cmd.Context(), ContainerName, types.ContainerLogsOptions{
 			ShowStdout: true,
 			ShowStderr: true,
@@ -263,8 +265,9 @@ var localCmd = &cobra.Command{
 }
 
 func init() {
-	serverLogsCmd.Flags().BoolP("follow", "f", false, "follow logs output")
+	serverLogsCmd.Flags().BoolVarP(&follow, "follow", "f", false, "follow logs output")
 	localCmd.AddCommand(serverLogsCmd)
+	serverUpCmd.Flags().BoolVarP(&login, "login", "l", false, "login to the local instance after starting it")
 	localCmd.AddCommand(serverUpCmd)
 	localCmd.AddCommand(serverDownCmd)
 	dbCmd.AddCommand(localCmd)

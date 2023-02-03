@@ -38,30 +38,35 @@ var (
 	O driver.Observability
 )
 
-func Init(inCfg *config.Config) error {
+func initConfig(inCfg *config.Config) {
 	cfg = &cconfig.Driver{
 		URL:          inCfg.URL,
 		ClientID:     inCfg.ClientID,
 		ClientSecret: inCfg.ClientSecret,
 		Token:        inCfg.Token,
 		Protocol:     inCfg.Protocol,
+		Branch:       inCfg.Branch,
 	}
 
 	if inCfg.UseTLS || (cfg.URL == "" && cfg.Protocol == "") ||
 		strings.HasSuffix(cfg.URL, config.Domain) {
 		cfg.TLS = &tls.Config{MinVersion: tls.VersionTLS12}
 	}
+}
+
+func Init(inCfg *config.Config) error {
+	initConfig(inCfg)
 
 	if D != nil {
-		log.Err(D.Close()).Msg("close failed")
+		log.Err(D.Close()).Msg("driver close")
 	}
 
 	if O != nil {
-		log.Err(O.Close()).Msg("close failed")
+		log.Err(O.Close()).Msg("observability close")
 	}
 
 	if M != nil {
-		log.Err(M.Close()).Msg("close failed")
+		log.Err(M.Close()).Msg("management close")
 	}
 
 	D = nil
@@ -89,8 +94,10 @@ func InitLow() error {
 
 // Get returns an instance of client.
 func Get() driver.Driver {
+	initConfig(&config.DefaultConfig)
+
 	err := InitLow()
-	util.Fatal(err, "tigris client initialization")
+	util.Fatal(err, "tigris client initialization low")
 
 	return D
 }
@@ -102,7 +109,7 @@ func ManagementGet() driver.Management {
 		defer cancel()
 
 		drv, err := driver.NewManagement(ctx, cfg)
-		util.Fatal(err, "tigris client initialization")
+		util.Fatal(err, "tigris management client initialization")
 
 		M = drv
 	}
@@ -116,7 +123,7 @@ func ObservabilityGet() driver.Observability {
 		defer cancel()
 
 		drv, err := driver.NewObservability(ctx, cfg)
-		util.Fatal(err, "tigris client initialization")
+		util.Fatal(err, "tigris observability client initialization")
 
 		O = drv
 	}

@@ -69,7 +69,7 @@ func Schema(ctx context.Context, db string, templatesPath string, name string, c
 				if stdout {
 					util.Stdoutf("%s\n", string(b))
 				} else if !create {
-					err := os.WriteFile(fmt.Sprintf("%v.json", sch.Name), b, 0o600)
+					err = os.WriteFile(fmt.Sprintf("%v.json", sch.Name), b, 0o600)
 					util.Fatal(err, "writing schema file")
 				} else if err = client.Get().UseDatabase(db).CreateOrUpdateCollection(ctx, sch.Name, b); err != nil {
 					return err
