@@ -237,8 +237,51 @@ func setAutoGenerate(autoGen []string, name string, field *schema.Field) {
 	}
 }
 
-func traverseFields(sch map[string]*schema.Field, fields map[string]interface{}, autoGen []string) error {
+func traverseFieldsLow(t string, format string, k string, f *schema.Field, v any, sch map[string]*schema.Field,
+) (bool, error) {
+	switch {
+	case t == typeObject:
+		vm, _ := v.(map[string]any)
+		if err := traverseObject(sch[k], f, vm); err != nil {
+			return false, err
+		}
+
+		if len(f.Fields) == 0 {
+			return true, nil
+		}
+	case t == typeArray:
+		// FIXME: Support multidimensional arrays
+		if reflect.ValueOf(v).Len() == 0 {
+			return true, nil // empty array does not reflect in the schema
+		}
+
+		if err := traverseArray(sch[k], f, v); err != nil {
+			return false, err
+		}
+
+		if f.Items == nil {
+			return true, nil // empty object
+		}
+	case sch[k] != nil:
+		nt, nf, err := extendedType(sch[k].Type, sch[k].Format, t, format)
+		if err != nil {
+			return false, ErrIncompatibleSchema
+		}
+
+		f.Type = nt
+		f.Format = nf
+	}
+
+	return false, nil
+}
+
+func traverseFields(sch map[string]*schema.Field, fields map[string]any, autoGen []string) error {
 	for k, v := range fields {
+		// handle `null` JSON value
+		if v == nil {
+			continue
+		}
+
 		t, format, err := translateType(v)
 		if err != nil {
 			return err
@@ -246,37 +289,13 @@ func traverseFields(sch map[string]*schema.Field, fields map[string]interface{},
 
 		f := &schema.Field{Type: t, Format: format}
 
-		switch {
-		case t == typeObject:
-			vm, _ := v.(map[string]any)
-			if err := traverseObject(sch[k], f, vm); err != nil {
-				return err
-			}
+		skip, err := traverseFieldsLow(t, format, k, f, v, sch)
+		if err != nil {
+			return err
+		}
 
-			if len(f.Fields) == 0 {
-				continue
-			}
-		case t == typeArray:
-			// FIXME: Support multidimensional arrays
-			if reflect.ValueOf(v).Len() == 0 {
-				continue // empty array does not reflect in the schema
-			}
-
-			if err = traverseArray(sch[k], f, v); err != nil {
-				return err
-			}
-
-			if f.Items == nil {
-				continue // empty object
-			}
-		case sch[k] != nil:
-			nt, nf, err := extendedType(sch[k].Type, sch[k].Format, t, format)
-			if err != nil {
-				return ErrIncompatibleSchema
-			}
-
-			f.Type = nt
-			f.Format = nf
+		if skip {
+			continue
 		}
 
 		setAutoGenerate(autoGen, k, f)

@@ -50,7 +50,7 @@ func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMe
 	util.Fatal(err, "infer schema")
 
 	b, err := json.Marshal(sch)
-	util.Fatal(err, "marshal schema")
+	util.Fatal(err, "marshal schema: %s", string(b))
 
 	err = client.Get().UseDatabase(db).CreateOrUpdateCollection(ctx, coll, b)
 

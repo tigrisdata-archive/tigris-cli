@@ -4,10 +4,29 @@ if [ -z "$cli" ]; then
 	cli="./tigris"
 fi
 
-test_import() {
-  $cli delete-project -f db_import_test || true
-  $cli create project db_import_test
+test_import_null() {
+  $cli import --project=db_import_test import_null --create-collection --primary-key=str_field '{ "str_field" : null}' '{"str_field": "str12"}'
 
+  exp_out='{
+  "collection": "import_null",
+  "schema": {
+    "primary_key": [
+      "str_field"
+    ],
+    "properties": {
+      "str_field": {
+        "type": "string"
+      }
+    },
+    "title": "import_null"
+  }
+}'
+
+  out=$($cli describe collection --project=db_import_test import_null|jq -S .)
+  diff -w -u <(echo "$exp_out") <(echo "$out")
+}
+
+test_import_all_types() {
   cat <<EOF | TIGRIS_LOG_LEVEL=debug $cli import --project=db_import_test import_test --create-collection --primary-key=uuid_field --autogenerate=uuid_field
 {
 	"str_field" : "str_value",
@@ -145,9 +164,9 @@ EOF
 
   out=$($cli describe collection --project=db_import_test import_test)
   diff -w -u <(echo "$exp_out") <(echo "$out")
+}
 
-  error "collection doesn't exist 'import_test_no_create'"  $cli import --project=db_import_test import_test_no_create '{ "str_field" : "str_value" }'
-
+test_evolve_schema() {
   # evolve schema in a batch
   $cli import --project=db_import_test import_test1 --create-collection --primary-key=id '{ "id" : 1, "str_field" : "str_value" }' '{ "id" : 2, "int_field": 1 }'
 
@@ -205,7 +224,9 @@ EOF
 
   out=$($cli describe collection --project=db_import_test import_test1|jq -S .)
   diff -w -u <(echo "$exp_out") <(echo "$out")
+}
 
+test_multi_pk() {
   $cli import --project=db_import_test import_test_multi_pk --create-collection --primary-key=str_field,str_field1 '{ "str_field" : "str_value", "str_field1" : "stf_value1" }'
 
   exp_out='{
@@ -231,4 +252,17 @@ EOF
   diff -w -u <(echo "$exp_out") <(echo "$out")
 
 	$cli delete-project -f db_import_test
+}
+
+test_import() {
+  $cli delete-project -f db_import_test || true
+  $cli create project db_import_test
+
+  test_import_null
+  test_import_all_types
+
+  error "collection doesn't exist 'import_test_no_create'"  $cli import --project=db_import_test import_test_no_create '{ "str_field" : "str_value" }'
+
+  test_evolve_schema
+  test_multi_pk
 }
