@@ -63,7 +63,7 @@ var insertCmd = &cobra.Command{
 }
 
 func init() {
-	insertCmd.Flags().Int32VarP(&BatchSize, "batch_size", "b", BatchSize, "set batch size")
+	insertCmd.Flags().Int32VarP(&BatchSize, "batch-size", "b", BatchSize, "set batch size")
 	addProjectFlag(insertCmd)
 	dbCmd.AddCommand(insertCmd)
 }
