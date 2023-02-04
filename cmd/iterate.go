@@ -129,7 +129,21 @@ func iterateInput(ctx context.Context, cmd *cobra.Command, docsPosition int, arg
 		buf, err := io.ReadAll(r)
 		util.Fatal(err, "error reading documents")
 
-		return fn(ctx, args, iterateArray(buf))
+		allDocs := iterateArray(buf)
+
+		for j := 0; j < len(allDocs); {
+			docs := make([]json.RawMessage, 0, BatchSize)
+
+			var i int32
+			for ; i < BatchSize && j < len(allDocs); i++ {
+				docs = append(docs, allDocs[j])
+				j++
+			}
+
+			if err = fn(ctx, args, docs); err != nil {
+				return err
+			}
+		}
 	}
 
 	return iterateStream(ctx, args, r, fn)
