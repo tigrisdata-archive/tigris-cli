@@ -66,7 +66,7 @@ var replaceCmd = &cobra.Command{
 }
 
 func init() {
-	replaceCmd.Flags().Int32VarP(&BatchSize, "batch_size", "b", BatchSize, "set batch size")
+	replaceCmd.Flags().Int32VarP(&BatchSize, "batch-size", "b", BatchSize, "set batch size")
 	addProjectFlag(replaceCmd)
 	dbCmd.AddCommand(replaceCmd)
 }

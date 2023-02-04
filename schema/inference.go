@@ -152,6 +152,10 @@ func extendedType(oldType string, oldFormat string, newType string, newFormat st
 		return newType, newFormat, nil
 	}
 
+	if oldType == typeNumber && newType == typeInteger {
+		return oldType, oldFormat, nil
+	}
+
 	if oldType == typeString && newType == typeString {
 		if t, f, err := extendedStringType(oldType, oldFormat, newType, newFormat); err == nil {
 			return t, f, nil
@@ -179,6 +183,9 @@ func traverseObject(existingField *schema.Field, newField *schema.Field, values 
 			newField.Fields = existingField.Fields
 		}
 	default:
+		log.Debug().Str("oldType", existingField.Type).Str("newType", newField.Type).Interface("values", values).
+			Msg("object converted to primitive")
+
 		return ErrIncompatibleSchema
 	}
 
@@ -199,6 +206,9 @@ func traverseArray(existingField *schema.Field, newField *schema.Field, v any) e
 			case existingField.Type == typeArray:
 				newField.Items = existingField.Items
 			default:
+				log.Debug().Str("oldType", existingField.Type).Str("newType", newField.Type).Interface("values", v).
+					Msg("object converted to primitive")
+
 				return ErrIncompatibleSchema
 			}
 		}
@@ -213,7 +223,7 @@ func traverseArray(existingField *schema.Field, newField *schema.Field, v any) e
 
 		if t == typeObject {
 			values, _ := reflect.ValueOf(v).Index(i).Interface().(map[string]any)
-			if err := traverseObject(newField.Items, newField.Items, values); err != nil {
+			if err = traverseObject(newField.Items, newField.Items, values); err != nil {
 				return err
 			}
 
@@ -265,7 +275,7 @@ func traverseFieldsLow(t string, format string, k string, f *schema.Field, v any
 	case sch[k] != nil:
 		nt, nf, err := extendedType(sch[k].Type, sch[k].Format, t, format)
 		if err != nil {
-			return false, ErrIncompatibleSchema
+			return false, err
 		}
 
 		f.Type = nt

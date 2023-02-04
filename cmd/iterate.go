@@ -25,6 +25,7 @@ import (
 	"os"
 	"unicode"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/util"
 )
@@ -60,7 +61,7 @@ func detectArray(r io.RuneScanner) bool {
 	return c == '['
 }
 
-func iterateArray(r []byte) []json.RawMessage {
+func readArray(r []byte) []json.RawMessage {
 	arr := make([]json.RawMessage, 0)
 	if err := json.Unmarshal(r, &arr); err != nil {
 		util.Fatal(err, "reading parsing array of documents")
@@ -72,6 +73,12 @@ func iterateArray(r []byte) []json.RawMessage {
 func iterateStream(ctx context.Context, args []string, r io.Reader, fn func(ctx2 context.Context, args []string,
 	docs []json.RawMessage) error,
 ) error {
+	var bar *progressbar.ProgressBar
+
+	if util.IsTTY(os.Stdout) {
+		bar = progressbar.Default(-1)
+	}
+
 	dec := json.NewDecoder(r)
 
 	for {
@@ -95,6 +102,45 @@ func iterateStream(ctx context.Context, args []string, r io.Reader, fn func(ctx2
 		} else {
 			break
 		}
+
+		if util.IsTTY(os.Stdout) {
+			_ = bar.Add(int(i))
+		}
+	}
+
+	return nil
+}
+
+func iterateArray(ctx context.Context, args []string, r io.Reader, fn func(ctx2 context.Context, args []string,
+	docs []json.RawMessage) error,
+) error {
+	buf, err := io.ReadAll(r)
+	util.Fatal(err, "error reading documents")
+
+	allDocs := readArray(buf)
+
+	var bar *progressbar.ProgressBar
+
+	if util.IsTTY(os.Stdout) {
+		bar = progressbar.Default(int64(len(allDocs)))
+	}
+
+	for j := 0; j < len(allDocs); {
+		docs := make([]json.RawMessage, 0, BatchSize)
+
+		var i int32
+		for ; i < BatchSize && j < len(allDocs); i++ {
+			docs = append(docs, allDocs[j])
+			j++
+		}
+
+		if err = fn(ctx, args, docs); err != nil {
+			return err
+		}
+
+		if util.IsTTY(os.Stdout) {
+			_ = bar.Add(int(i))
+		}
 	}
 
 	return nil
@@ -110,7 +156,7 @@ func iterateInput(ctx context.Context, cmd *cobra.Command, docsPosition int, arg
 
 		for _, v := range args[docsPosition:] {
 			if detectArray(bufio.NewReader(bytes.NewReader([]byte(v)))) {
-				docs = append(docs, iterateArray([]byte(v))...)
+				docs = append(docs, readArray([]byte(v))...)
 			} else {
 				docs = append(docs, json.RawMessage(v))
 			}
@@ -126,24 +172,7 @@ func iterateInput(ctx context.Context, cmd *cobra.Command, docsPosition int, arg
 	// stdin not a TTY or "-" is specified
 	r := bufio.NewReader(os.Stdin)
 	if detectArray(r) {
-		buf, err := io.ReadAll(r)
-		util.Fatal(err, "error reading documents")
-
-		allDocs := iterateArray(buf)
-
-		for j := 0; j < len(allDocs); {
-			docs := make([]json.RawMessage, 0, BatchSize)
-
-			var i int32
-			for ; i < BatchSize && j < len(allDocs); i++ {
-				docs = append(docs, allDocs[j])
-				j++
-			}
-
-			if err = fn(ctx, args, docs); err != nil {
-				return err
-			}
-		}
+		return iterateArray(ctx, args, r, fn)
 	}
 
 	return iterateStream(ctx, args, r, fn)
