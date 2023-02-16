@@ -75,6 +75,7 @@ start_service() {
 }
 
 db=eshop
+outdir=/tmp/cli-test
 
 clean() {
   $cli delete-project -f $db || true
@@ -95,7 +96,7 @@ scaffold() {
     --language "$1" \
     --package-name="$3" \
     --components="$4" \
-    --output-directory=/tmp/cli-test
+    --output-directory="$outdir"
 
   if [ -z "$noup" ]; then
     $cli local down
@@ -161,6 +162,11 @@ test_nextjs_typescript() {
 
   export PORT=3000
   export APP_ENV=development
+
+  # scaffold put current URL to the code, but we start service in the docker
+  # so we need to substitute with docker internal network URL for Tigris instance.
+  sed -i'' -e 's/localhost:8090/tigris-local-server:8081/g' \
+  "$outdir/$db/.env.development.local" "$outdir/$db/.env.development" "$outdir/$db/lib/tigris.ts"
 
   start_service
   npm run predev
