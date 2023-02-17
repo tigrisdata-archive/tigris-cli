@@ -131,7 +131,7 @@ func ensureLocalTemplates(base string, lang string, envVar string, repoURL strin
 
 func EnsureLocalExamples(lang string) string {
 	log.Debug().Msg("ensureLocalExamples")
-	return ensureLocalTemplates("examples", lang, "TIGRIS_EXAMPLES_PATH", examplesRepoURL)
+	return ensureLocalTemplates("examples", lang, "TIGRIS_EXAMPLES_PATH", fmt.Sprintf(examplesRepoURL, lang))
 }
 
 func EnsureLocalTemplates() string {
