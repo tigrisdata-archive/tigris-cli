@@ -79,7 +79,7 @@ func stopContainer(client *client.Client, cname string) {
 
 	log.Debug().Msg("stopping local instance")
 
-	if err := client.ContainerStop(ctx, cname, nil); err != nil {
+	if err := client.ContainerStop(ctx, cname, container.StopOptions{}); err != nil {
 		if !errdefs.IsNotFound(err) {
 			util.Fatal(err, "error stopping container: %s", cname)
 		}

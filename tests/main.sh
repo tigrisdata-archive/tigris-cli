@@ -324,6 +324,7 @@ db_branch_tests() {
     # shellcheck disable=SC2030,SC2031
     export TIGRIS_BRANCH=br1
     $cli config show|grep "branch: br1"
+    [ "$($cli branch show)" == "br1" ]
 
     # branch data intact after data insert in the main
     out=$($cli read --project=db1 coll_br1)
@@ -430,10 +431,12 @@ main() {
 	unset TIGRIS_PROTOCOL
 	export TIGRIS_URL="localhost:$TIGRIS_TEST_PORT"
 	db_tests
-
-	test_scaffold
 	test_import
 	test_backup
+
+  if [ -z "$TIGRIS_CLI_TEST_FAST" ]; then
+    test_scaffold
+  fi
 
 	# Exercise tests via GRPC
 	export TIGRIS_URL="localhost:$TIGRIS_TEST_PORT"

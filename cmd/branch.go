@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
@@ -89,6 +90,28 @@ var listBranchesCmd = &cobra.Command{
 	},
 }
 
+var showBranchCmd = &cobra.Command{
+	Use:   "show",
+	Short: "Show current Tigris branch",
+	Run: func(cmd *cobra.Command, args []string) {
+		withLogin(cmd.Context(), func(ctx context.Context) error {
+			branch := config.DefaultConfig.Branch
+
+			if branch == "" {
+				branch = "main"
+			}
+
+			util.Stdoutf("%s", branch)
+
+			if util.IsTTY(os.Stdout) {
+				util.Stdoutf("\n")
+			}
+
+			return nil
+		})
+	},
+}
+
 func checkoutBranch(name string) {
 	config.DefaultConfig.Branch = name
 
@@ -118,4 +141,5 @@ func init() {
 	branchCmd.AddCommand(deleteBranchCmd)
 	branchCmd.AddCommand(checkoutBranchCmd)
 	branchCmd.AddCommand(listBranchesCmd)
+	branchCmd.AddCommand(showBranchCmd)
 }
