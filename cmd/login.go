@@ -101,9 +101,7 @@ func getToken(auth *Authenticator, code string) *oauth2.Token {
 	defer cancel()
 
 	token, err := auth.Exchange(ctx, code)
-	if err != nil {
-		_ = util.Error(err, "error retrieving token")
-	}
+	util.Fatal(err, "retrieving token")
 
 	return token
 }

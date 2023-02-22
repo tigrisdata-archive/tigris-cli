@@ -136,6 +136,10 @@ func Fatal(err error, msg string, args ...interface{}) {
 	os.Exit(1)
 }
 
+func InternalError(err error, msg string, args ...interface{}) {
+	Fatal(fmt.Errorf("%w please report a bug here: https://github.com/tigrisdata/tigris-cli/issues", err), msg, args...)
+}
+
 func ExecTemplate(w io.Writer, tmpl string, vars interface{}) {
 	t, err := template.New("exec_template").Funcs(template.FuncMap{
 		"add": func(a, b int) int { return a + b },

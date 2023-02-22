@@ -250,14 +250,45 @@ test_multi_pk() {
 
   out=$($cli describe collection --project=db_import_test import_test_multi_pk|jq -S .)
   diff -w -u <(echo "$exp_out") <(echo "$out")
+}
 
-	$cli delete-project -f db_import_test
+test_dynamic_batch_size() {
+  data=$(head -c 1000 /dev/zero|base64)
+
+  docs=""
+
+  set +x
+
+  # Create batch with 6 exponentially increasing in size documents.
+  # Approx. sizes:
+  # 1353
+  # 2706
+  # 5412
+  # 10824
+  # 21648
+  # 43296
+
+  # TODO: Use 7 when CDC is disabled in local container
+  # 86592
+
+  for i in $(seq 1 6); do
+    # shellcheck disable=SC2089
+    docs="$docs{\"string_field\":\"$data $i\"}\n"
+    data="$data$data"
+  done
+
+  set -x
+
+  # import should succeed by dynamically reducing the batch size
+  # shellcheck disable=SC2086,SC2090
+  echo -e $docs | $cli import --batch-size=100 --project=db_import_test import_test_dynamic_batch --create-collection
 }
 
 test_import() {
   $cli delete-project -f db_import_test || true
   $cli create project db_import_test
 
+  test_dynamic_batch_size
   test_import_null
   test_import_all_types
 
@@ -265,4 +296,6 @@ test_import() {
 
   test_evolve_schema
   test_multi_pk
+
+  $cli delete-project -f db_import_test
 }
