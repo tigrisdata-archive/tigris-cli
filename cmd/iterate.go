@@ -25,12 +25,17 @@ import (
 	"os"
 	"unicode"
 
+	"github.com/rs/zerolog/log"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/util"
 )
 
-var BatchSize int32 = 100
+var (
+	ErrNotAllDocsProcessed = fmt.Errorf("not all documents processed")
+
+	BatchSize int32 = 100
+)
 
 func detectArray(r io.RuneScanner) bool {
 	var c rune
@@ -95,17 +100,59 @@ func iterateStream(ctx context.Context, args []string, r io.Reader, fn func(ctx2
 			docs = append(docs, v)
 		}
 
-		if i > 0 {
-			if err := fn(ctx, args, docs); err != nil {
-				return err
-			}
-		} else {
+		if i == 0 {
 			break
+		} else if err := varyBatch(ctx, args, docs, fn); err != nil {
+			return err
 		}
 
 		if util.IsTTY(os.Stdout) {
 			_ = bar.Add(int(i))
 		}
+	}
+
+	return nil
+}
+
+// varyBatch dynamically reduces the batch on document-exceeded-limit error and retries.
+func varyBatch(ctx context.Context, args []string, docs []json.RawMessage,
+	process func(ctx2 context.Context, args []string, docs []json.RawMessage) error,
+) error {
+	first := 0
+	last := len(docs)
+	total := 0
+
+	for first < len(docs) {
+		if err := process(ctx, args, docs[first:last]); err != nil {
+			if (err.Error() == "document exceeds limit" || err.Error() == "transaction exceeds limit") &&
+				last-first > 1 {
+				last = first + (last-first)/2 // exponentially reduce the batch size
+
+				log.Debug().Msgf("reducing batch size. first=%d, last=%d, len=%d", first, last, len(docs))
+
+				continue
+			} else if last-first == 1 {
+				log.Debug().RawJSON("doc", docs[first]).Msgf("failed to process")
+			}
+
+			return err
+		}
+
+		log.Debug().Msgf("succeeded batch. first=%d, last=%d, len=%d", first, last, len(docs))
+
+		sz := last - first // retain and reuse the batch-size which succeeded
+		total += sz
+
+		first = last
+
+		last = first + sz
+		if last > len(docs) {
+			last = len(docs)
+		}
+	}
+
+	if total != len(docs) {
+		util.InternalError(ErrNotAllDocsProcessed, "processed: %d, expected %d", total, len(docs))
 	}
 
 	return nil
@@ -134,7 +181,7 @@ func iterateArray(ctx context.Context, args []string, r io.Reader, fn func(ctx2 
 			j++
 		}
 
-		if err = fn(ctx, args, docs); err != nil {
+		if err = varyBatch(ctx, args, docs, fn); err != nil {
 			return err
 		}
 
