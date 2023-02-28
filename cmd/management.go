@@ -20,6 +20,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/config"
+	login "github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
@@ -68,12 +70,12 @@ Check the docs for more information: https://docs.tigrisdata.com/overview/authen
 `,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			description := ""
 			if len(args) > 1 {
 				description = args[1]
 			}
-			app, err := client.Get().CreateAppKey(ctx, getProjectName(), args[0], description)
+			app, err := client.Get().CreateAppKey(ctx, config.GetProjectName(), args[0], description)
 			if err != nil {
 				return util.Error(err, "create app_key failed")
 			}
@@ -91,8 +93,8 @@ var dropAppKeyCmd = &cobra.Command{
 	Short: "Drop app_key credentials",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			if err := client.Get().DeleteAppKey(ctx, getProjectName(), args[0]); err != nil {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			if err := client.Get().DeleteAppKey(ctx, config.GetProjectName(), args[0]); err != nil {
 				return util.Error(err, "drop app_key failed")
 			}
 
@@ -121,7 +123,7 @@ Output:
 `,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			// no name/descr and no explicit --rotate
 			if len(args) < 2 && !rotate {
 				util.Fatal(ErrWrongArgs, "alter app_key failed")
@@ -132,7 +134,7 @@ Output:
 				if len(args) > 2 {
 					desc = args[2]
 				}
-				_, err := client.Get().UpdateAppKey(ctx, getProjectName(), args[0], args[1], desc)
+				_, err := client.Get().UpdateAppKey(ctx, config.GetProjectName(), args[0], args[1], desc)
 				if err != nil {
 					return util.Error(err, "alter app_key failed")
 				}
@@ -140,7 +142,7 @@ Output:
 
 			// rotate only when explicitly requested
 			if rotate {
-				sec, err := client.Get().RotateAppKeySecret(ctx, getProjectName(), args[0])
+				sec, err := client.Get().RotateAppKeySecret(ctx, config.GetProjectName(), args[0])
 				if err != nil {
 					return util.Error(err, "alter app_key failed")
 				}
@@ -155,7 +157,7 @@ Output:
 }
 
 func getAppKey(ctx context.Context, filter string) (*driver.AppKey, error) {
-	resp, err := client.Get().ListAppKeys(ctx, getProjectName())
+	resp, err := client.Get().ListAppKeys(ctx, config.GetProjectName())
 	if err != nil {
 		return nil, util.Error(err, "list app_key failed")
 	}
@@ -174,7 +176,7 @@ var listAppKeysCmd = &cobra.Command{
 	Short: "Lists app keys",
 	Long:  "Lists available app keys. Optional parameter allows to return only the app key with the given name.",
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			if len(args) > 0 {
 				app, err := getAppKey(ctx, args[0])
 				if err != nil {
@@ -184,7 +186,7 @@ var listAppKeysCmd = &cobra.Command{
 				err = util.PrettyJSON(app)
 				util.Fatal(err, "list app_keys")
 			} else {
-				resp, err := client.Get().ListAppKeys(ctx, getProjectName())
+				resp, err := client.Get().ListAppKeys(ctx, config.GetProjectName())
 				if err != nil {
 					return util.Error(err, "list app_keys failed")
 				}
@@ -202,7 +204,7 @@ var listNamespacesCmd = &cobra.Command{
 	Use:   "namespaces",
 	Short: "Lists namespaces",
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			resp, err := client.ManagementGet().ListNamespaces(ctx)
 			if err != nil {
 				return util.Error(err, "list namespaces")
@@ -221,7 +223,7 @@ var createNamespaceCmd = &cobra.Command{
 	Short: "Create namespace",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			if err := client.ManagementGet().CreateNamespace(ctx, args[0]); err != nil {
 				return util.Error(err, "create namespace failed")
 			}

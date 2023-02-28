@@ -22,6 +22,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/iterate"
+	login "github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
@@ -170,9 +173,9 @@ All the read, write and schema operations are supported.`,
   ]'
 `, rootCmd.Root().Name()),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return client.Transact(ctx, getProjectName(), func(ctx context.Context, tx driver.Tx) error {
-				return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, ops []json.RawMessage) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			return client.Transact(ctx, config.GetProjectName(), func(ctx context.Context, tx driver.Tx) error {
+				return iterate.Input(ctx, cmd, 1, args, func(ctx context.Context, args []string, ops []json.RawMessage) error {
 					for _, iop := range ops {
 						var op TxOp
 

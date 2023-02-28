@@ -21,9 +21,10 @@ import (
 	"os"
 	"time"
 
-	units "github.com/docker/go-units"
+	"github.com/docker/go-units"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
@@ -169,7 +170,7 @@ var backupCmd = &cobra.Command{
 	If a project name filter is provided it only dumps the schemas of the projects specified.
 	Likewise, collection filters will limit the output to matching collection names.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(_ context.Context) error {
+		login.Ensure(cmd.Context(), func(_ context.Context) error {
 			util.Stdoutf(" [i] using timeout %d\n", backupTimeout)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(backupTimeout)*time.Second)
 			defer cancel()

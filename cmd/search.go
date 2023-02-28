@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	login "github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"github.com/tigrisdata/tigris-client-go/search"
@@ -38,8 +39,8 @@ var (
 	pageSize      int32
 )
 
-var searchCmd = &cobra.Command{
-	Use:   "search {collection}",
+var dbSearchCmd = &cobra.Command{
+	Use:   "dbsearch {collection}",
 	Short: "Searches a collection for documents matching the query",
 	Long:  "Executes a search query against collection and returns the search results.",
 	//nolint:golint,lll
@@ -73,7 +74,7 @@ var searchCmd = &cobra.Command{
 `, rootCmd.Root().Name(), "search --project=testdb users"),
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			request := &driver.SearchRequest{
 				Q:             query,
 				SearchFields:  searchFields,
@@ -86,7 +87,7 @@ var searchCmd = &cobra.Command{
 				PageSize:      pageSize,
 			}
 
-			it, err := client.Get().UseDatabase(getProjectName()).Search(ctx, args[0], request)
+			it, err := client.GetDB().Search(ctx, args[0], request)
 			if err != nil {
 				return util.Error(err, "search failed")
 			}
@@ -109,21 +110,21 @@ var searchCmd = &cobra.Command{
 }
 
 func init() {
-	searchCmd.Flags().SortFlags = false
+	dbSearchCmd.Flags().SortFlags = false
 
-	searchCmd.Flags().StringVarP(&query, "query", "q", "", "query string for searching across text fields")
-	searchCmd.Flags().StringSliceVarP(&searchFields, "searchFields", "f", []string{},
+	dbSearchCmd.Flags().StringVarP(&query, "query", "q", "", "query string for searching across text fields")
+	dbSearchCmd.Flags().StringSliceVarP(&searchFields, "searchFields", "f", []string{},
 		"comma separated value of fields to project search query against")
-	searchCmd.Flags().StringVar(&filter, "filter", "{}", "further refine the search results using filters")
-	searchCmd.Flags().StringVar(&facet, "facet", "{}", "retrieve aggregate ")
-	searchCmd.Flags().StringVar(&sort, "sort", "[]", "order to sort the results")
-	searchCmd.Flags().StringSliceVarP(&includeFields, "includeFields", "i", []string{},
+	dbSearchCmd.Flags().StringVar(&filter, "filter", "{}", "further refine the search results using filters")
+	dbSearchCmd.Flags().StringVar(&facet, "facet", "{}", "retrieve aggregate ")
+	dbSearchCmd.Flags().StringVar(&sort, "sort", "[]", "order to sort the results")
+	dbSearchCmd.Flags().StringSliceVarP(&includeFields, "includeFields", "i", []string{},
 		"comma separated value of document fields to include in results")
-	searchCmd.Flags().StringSliceVarP(&excludeFields, "excludeFields", "x", []string{},
+	dbSearchCmd.Flags().StringSliceVarP(&excludeFields, "excludeFields", "x", []string{},
 		"comma separated value of document fields to exclude in results")
-	searchCmd.Flags().Int32VarP(&page, "page", "g", 1, "page of results to retrieve")
-	searchCmd.Flags().Int32VarP(&pageSize, "pageSize", "c", 20, "count of results to be returned per page")
+	dbSearchCmd.Flags().Int32VarP(&page, "page", "g", 1, "page of results to retrieve")
+	dbSearchCmd.Flags().Int32VarP(&pageSize, "pageSize", "c", 20, "count of results to be returned per page")
 
-	addProjectFlag(searchCmd)
-	dbCmd.AddCommand(searchCmd)
+	addProjectFlag(dbSearchCmd)
+	dbCmd.AddCommand(dbSearchCmd)
 }

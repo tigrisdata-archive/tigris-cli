@@ -21,6 +21,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/iterate"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -61,8 +64,8 @@ var describeCollectionCmd = &cobra.Command{
 	Long:  "Returns collection schema including metadata",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().UseDatabase(getProjectName()).DescribeCollection(ctx, args[0],
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			resp, err := client.GetDB().DescribeCollection(ctx, args[0],
 				&driver.DescribeCollectionOptions{SchemaFormat: format})
 			if err != nil {
 				return util.Error(err, "describe collection")
@@ -86,8 +89,8 @@ var listCollectionsCmd = &cobra.Command{
 	Use:   "collections",
 	Short: "Lists project collections",
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().UseDatabase(getProjectName()).ListCollections(ctx)
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			resp, err := client.GetDB().ListCollections(ctx)
 			if err != nil {
 				return util.Error(err, "list collections")
 			}
@@ -154,9 +157,9 @@ var createCollectionCmd = &cobra.Command{
   %[1]s describe collection --project=testdb users | jq .schema | %[1]s create collection testdb -
 `, rootCmd.Root().Name()),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return client.Transact(ctx, getProjectName(), func(ctx context.Context, tx driver.Tx) error {
-				return iterateInput(ctx, cmd, 0, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			return client.Transact(ctx, config.GetProjectName(), func(ctx context.Context, tx driver.Tx) error {
+				return iterate.Input(ctx, cmd, 0, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 					for _, v := range docs {
 						if err := createCollection(ctx, tx, driver.Schema(v)); err != nil {
 							return util.Error(err, "create collection %v", string(v))
@@ -175,9 +178,9 @@ var dropCollectionCmd = &cobra.Command{
 	Short: "Drops collection",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return client.Transact(ctx, getProjectName(), func(ctx context.Context, tx driver.Tx) error {
-				return iterateInput(ctx, cmd, 0, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			return client.Transact(ctx, config.GetProjectName(), func(ctx context.Context, tx driver.Tx) error {
+				return iterate.Input(ctx, cmd, 0, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 					for _, v := range docs {
 						if err := tx.DropCollection(ctx, string(v)); err != nil {
 							return util.Error(err, "drop collection")
@@ -219,9 +222,9 @@ var alterCollectionCmd = &cobra.Command{
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return client.Transact(ctx, getProjectName(), func(ctx context.Context, tx driver.Tx) error {
-				return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			return client.Transact(ctx, config.GetProjectName(), func(ctx context.Context, tx driver.Tx) error {
+				return iterate.Input(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 					for _, v := range docs {
 						if err := createCollection(ctx, tx, driver.Schema(v)); err != nil {
 							return err

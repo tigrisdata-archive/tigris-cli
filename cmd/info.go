@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 )
 
@@ -27,7 +28,7 @@ var infoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "Returns server information",
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			resp, err := client.Get().Info(ctx)
 			if err != nil {
 				return util.Error(err, "get server info")

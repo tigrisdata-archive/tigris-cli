@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package iterate
 
 import (
 	"bufio"
@@ -193,9 +193,9 @@ func iterateArray(ctx context.Context, args []string, r io.Reader, fn func(ctx2 
 	return nil
 }
 
-// iterateInput reads repeated command parameters from standard input or args.
+// Input reads repeated command parameters from standard input or args.
 // Supports newline delimited stream of objects and arrays of objects.
-func iterateInput(ctx context.Context, cmd *cobra.Command, docsPosition int, args []string,
+func Input(ctx context.Context, cmd *cobra.Command, docsPosition int, args []string,
 	fn func(ctx2 context.Context, args []string, docs []json.RawMessage) error,
 ) error {
 	if len(args) > docsPosition && args[docsPosition] != "-" {

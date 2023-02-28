@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
@@ -60,7 +61,7 @@ all the fields of the documents are selected.`,
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			filter, fields := `{}`, `{}`
 
 			if len(args) > 1 {
@@ -71,7 +72,7 @@ all the fields of the documents are selected.`,
 				fields = args[2]
 			}
 
-			it, err := client.Get().UseDatabase(getProjectName()).Read(ctx, args[0],
+			it, err := client.GetDB().Read(ctx, args[0],
 				driver.Filter(filter),
 				driver.Projection(fields),
 				&driver.ReadOptions{Limit: limit, Skip: skip},

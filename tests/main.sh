@@ -423,6 +423,8 @@ source "$BASEDIR/import.sh"
 source "$BASEDIR/backup.sh"
 # shellcheck disable=SC1091,SC1090
 source "$BASEDIR/scaffold.sh"
+# shellcheck disable=SC1091,SC1090
+source "$BASEDIR/search/import.sh"
 
 main() { 
 	test_config
@@ -432,6 +434,7 @@ main() {
 	export TIGRIS_URL="localhost:$TIGRIS_TEST_PORT"
 	db_tests
 	test_import
+	test_search_import
 	test_backup
 
   if [ -z "$TIGRIS_CLI_TEST_FAST" ]; then

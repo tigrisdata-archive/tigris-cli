@@ -33,6 +33,10 @@ var (
 
 	DefaultURL = "api.preview.tigrisdata.cloud"
 	Domain     = "tigrisdata.cloud"
+
+	Project string
+
+	errUnableToReadProject = fmt.Errorf("please specify project name")
 )
 
 type Log struct {
@@ -153,4 +157,18 @@ func Load(name string, config interface{}) {
 func e(err error, _ string) {
 	fmt.Fprintf(os.Stderr, "%v\n", err)
 	os.Exit(1)
+}
+
+func GetProjectName() string {
+	// first user supplied flag
+	// second env variable
+	// third config file
+	if Project == "" {
+		Project = DefaultConfig.Project
+		if Project == "" {
+			e(errUnableToReadProject, "unable to read project")
+		}
+	}
+
+	return Project
 }
