@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
@@ -37,8 +38,8 @@ var deleteCmd = &cobra.Command{
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			_, err := client.Get().UseDatabase(getProjectName()).Delete(ctx, args[0], driver.Filter(args[1]))
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			_, err := client.GetDB().Delete(ctx, args[0], driver.Filter(args[1]))
 			return util.Error(err, "delete documents")
 		})
 	},
@@ -46,5 +47,5 @@ var deleteCmd = &cobra.Command{
 
 func init() {
 	addProjectFlag(deleteCmd)
-	dbCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(deleteCmd)
 }

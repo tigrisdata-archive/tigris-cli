@@ -21,6 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -36,7 +38,7 @@ var listProjectsCmd = &cobra.Command{
 	Short: "Lists projects",
 	Long:  "This command will list all projects.",
 	Run: func(cmd *cobra.Command, _ []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			resp, err := client.Get().ListProjects(ctx)
 			if err != nil {
 				return util.Error(err, "list projects")
@@ -63,8 +65,8 @@ var describeDatabaseCmd = &cobra.Command{
 	Short: "Describes database",
 	Long:  "Returns schema and metadata for all the collections in the database",
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.Get().DescribeDatabase(ctx, getProjectName(),
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			resp, err := client.Get().DescribeDatabase(ctx, config.GetProjectName(),
 				&driver.DescribeProjectOptions{SchemaFormat: format})
 			if err != nil {
 				return util.Error(err, "describe collection failed")
@@ -120,13 +122,13 @@ var createProjectCmd = &cobra.Command{
 	%[1]s %[2]s --schema-template todo --framework=express
 `, rootCmd.Root().Name(), "create project"),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			_, err := client.Get().CreateProject(ctx, args[0])
 			if err != nil {
 				return util.Error(err, "create project")
 			}
 
-			project = args[0]
+			config.DefaultConfig.Project = args[0]
 
 			if fromExample != "" || schemaTemplate != "" || framework != "" {
 				return scaffoldProject(ctx)

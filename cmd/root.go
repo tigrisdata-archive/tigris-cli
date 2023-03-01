@@ -15,10 +15,10 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/tigrisdata/tigris-cli/cmd/search"
 	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
 )
@@ -28,7 +28,11 @@ var rootCmd = &cobra.Command{
 	Short: "tigris is a command line interface of Tigris data platform",
 }
 
-var dbCmd = rootCmd
+var dbCmd = &cobra.Command{
+	Use:     "db",
+	Short:   "Database related commands",
+	Aliases: []string{"database"},
+}
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
@@ -39,30 +43,17 @@ func Execute() {
 func init() {
 	rootCmd.Flags().BoolVarP(&util.Quiet, "quiet", "q", false,
 		"Suppress informational messages")
+
+	rootCmd.AddCommand(search.RootCmd)
+	rootCmd.AddCommand(dbCmd)
 }
-
-var errUnableToReadProject = fmt.Errorf("please specify project name")
-
-func getProjectName() string {
-	// first user supplied flag
-	// second env variable
-	// third config file
-	if project == "" {
-		project = config.DefaultConfig.Project
-		if project == "" {
-			util.Fatal(errUnableToReadProject, "unable to read project")
-		}
-	}
-
-	return project
-}
-
-var project string
 
 func addProjectFlag(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVarP(&project, "project", "p", "", "Specifies project: --project=my_proj1")
+	cmd.PersistentFlags().StringVarP(&config.DefaultConfig.Project,
+		"project", "p", "", "Specifies project: --project=my_proj1")
 
 	if cmd != branchCmd {
-		cmd.PersistentFlags().StringVar(&config.DefaultConfig.Branch, "branch", "", "Specifies branch: --branch=my_br1")
+		cmd.PersistentFlags().StringVar(&config.DefaultConfig.Branch,
+			"branch", "", "Specifies branch: --branch=my_br1")
 	}
 }

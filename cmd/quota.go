@@ -19,6 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 )
 
@@ -26,7 +27,7 @@ var quotaLimitsCmd = &cobra.Command{
 	Use:   "limits",
 	Short: "Show quota limits for the namespace user logged in to",
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			l, err := client.ObservabilityGet().QuotaLimits(ctx)
 			if err != nil {
 				return util.Error(err, "quota limits")
@@ -44,7 +45,7 @@ var quotaUsageCmd = &cobra.Command{
 	Use:   "usage",
 	Short: "Show current quota usage for the namespace user logged in to",
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			u, err := client.ObservabilityGet().QuotaUsage(ctx)
 			if err != nil {
 				return util.Error(err, "quota usage")

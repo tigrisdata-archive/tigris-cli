@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package search
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -29,7 +30,6 @@ import (
 	"github.com/tigrisdata/tigris-cli/schema"
 	"github.com/tigrisdata/tigris-cli/util"
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
-	errcode "github.com/tigrisdata/tigris-client-go/code"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	cschema "github.com/tigrisdata/tigris-client-go/schema"
 )
@@ -39,13 +39,17 @@ var (
 	InferenceDepth int32
 	PrimaryKey     []string
 	AutoGenerate   []string
+	UpdateSchema   bool
+
+	BatchSize int32 = 100
 
 	CleanUpNULLs = true
 
-	sch cschema.Schema // Accumulate inferred schema across batches
+	sch        cschema.Schema // Accumulate inferred schema across batches
+	prevSchema []byte
 )
 
-func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMessage) error {
+func evolveIdxSchema(ctx context.Context, coll string, docs []json.RawMessage) error {
 	// Allow to reduce inference depth in the case of huge batches
 	id := len(docs)
 	if InferenceDepth > 0 {
@@ -58,63 +62,59 @@ func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMe
 	b, err := json.Marshal(sch)
 	util.Fatal(err, "marshal schema: %s", string(b))
 
-	err = client.Get().UseDatabase(db).CreateOrUpdateCollection(ctx, coll, b)
+	if bytes.Equal(b, prevSchema) {
+		return nil
+	}
 
-	return util.Error(err, "create or update collection")
+	err = client.GetSearch().CreateOrUpdateIndex(ctx, coll, b)
+
+	return util.Error(err, "create or update index")
 }
 
 var importCmd = &cobra.Command{
-	Use:   "import {collection} {document}...|-",
-	Short: "Import documents into collection",
-	Long: `Imports documents into the collection.
+	Use:   "import {index} {document}...|-",
+	Short: "Import documents into search index",
+	Long: `Imports documents into the search index.
 Input is a stream or array of JSON documents to import.
-
-Automatically:
-  * Detect the schema of the documents
-  * Create collection with inferred schema
-  * Evolve the schema as soon as it's backward compatible
 `,
 	Example: fmt.Sprintf(`
-  %[1]s import --project=testdb users --create-collection --primary-key=id \
+  %[1]s search import --project=testdb users --create-index \
   '[
     {"id": 20, "name": "Jania McGrory"},
     {"id": 21, "name": "Bunny Instone"}
   ]'
-`, rootCmd.Root().Name()),
+`, "tigris"),
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		name := args[0]
 		login.Ensure(cmd.Context(), func(ctx context.Context) error {
-			resp, err := client.GetDB().DescribeCollection(ctx, args[0])
+			resp, err := client.GetSearch().GetIndex(ctx, name)
+			found := false
 			if err == nil {
 				err := json.Unmarshal(resp.Schema, &sch)
 				util.Fatal(err, "unmarshal collection schema")
+				found = true
+			} else {
+				//nolint:golint,errorlint
+				ep, ok := err.(*driver.Error)
+				if !ok || ep.Code == api.Code_NOT_FOUND && !AutoCreate {
+					return util.Error(err, "import documents get index")
+				}
 			}
 
 			return iterate.Input(cmd.Context(), cmd, 1, args,
 				func(ctx context.Context, args []string, docs []json.RawMessage) error {
 					ptr := unsafe.Pointer(&docs)
 
-					_, err := client.GetDB().Insert(ctx, args[0], *(*[]driver.Document)(ptr))
+					if UpdateSchema || (!found && AutoCreate) {
+						if err := evolveIdxSchema(ctx, name, docs); err != nil {
+							return err
+						}
+					}
+
+					_, err = client.GetSearch().Create(ctx, name, *(*[]driver.Document)(ptr))
 					if err == nil {
 						return nil // successfully inserted batch
-					}
-
-					//FIXME: errors.As(err, &ep) doesn't work
-					//nolint:golint,errorlint
-					ep, ok := err.(*driver.Error)
-					if !ok || (ep.Code != api.Code_NOT_FOUND && ep.Code != errcode.InvalidArgument) ||
-						ep.Code == api.Code_NOT_FOUND && !AutoCreate {
-						return util.Error(err, "import documents (initial)")
-					}
-
-					if err := evolveSchema(ctx, config.GetProjectName(), args[0], docs); err != nil {
-						return err
-					}
-
-					// retry after schema update
-					_, err = client.GetDB().Insert(ctx, args[0], *(*[]driver.Document)(ptr))
-					if err == nil {
-						return nil
 					}
 
 					if CleanUpNULLs {
@@ -123,7 +123,7 @@ Automatically:
 						}
 					}
 
-					_, err = client.GetDB().Insert(ctx, args[0], *(*[]driver.Document)(ptr))
+					_, err = client.GetSearch().Create(ctx, name, *(*[]driver.Document)(ptr))
 
 					log.Debug().Interface("docs", docs).Msg("import")
 
@@ -133,18 +133,25 @@ Automatically:
 	},
 }
 
+func addProjectFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringVarP(&config.DefaultConfig.Project,
+		"project", "p", "", "Specifies project: --project=my_proj1")
+}
+
 func init() {
-	importCmd.Flags().Int32VarP(&iterate.BatchSize, "batch-size", "b", iterate.BatchSize, "set batch size")
-	importCmd.Flags().BoolVarP(&AutoCreate, "create-collection", "c", false,
-		"Automatically create collection if it doesn't exist")
+	importCmd.Flags().Int32VarP(&BatchSize, "batch-size", "b", BatchSize, "set batch size")
+	importCmd.Flags().BoolVarP(&AutoCreate, "create-index", "c", false,
+		"Automatically create search index if it doesn't exist")
 	importCmd.Flags().Int32VarP(&InferenceDepth, "inference-depth", "d", 0,
 		"Number of records in the beginning of the stream to detect field types. It's equal to batch size if not set")
-	importCmd.Flags().StringSliceVar(&PrimaryKey, "primary-key", []string{},
-		"Comma separated list of field names which constitutes collection's primary key (only top level keys supported)")
 	importCmd.Flags().StringSliceVarP(&AutoGenerate, "autogenerate", "a", []string{},
 		"Comma separated list of autogenerated fields (only top level keys supported)")
 	importCmd.Flags().BoolVar(&CleanUpNULLs, "cleanup-null-values", true,
 		"Remove NULL values and empty arrays from the documents before importing")
+	importCmd.Flags().BoolVar(&UpdateSchema, "update-schema", false,
+		"Do not update index schema from the new documents")
+
 	addProjectFlag(importCmd)
-	rootCmd.AddCommand(importCmd)
+
+	RootCmd.AddCommand(importCmd)
 }

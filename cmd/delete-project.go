@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 )
 
@@ -37,7 +38,7 @@ var deleteProjectCmd = &cobra.Command{
 #
 `, rootCmd.Root().Name()),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			var userInput string
 			if !forceDelete {
 				util.Stdoutf("Are you sure you want to delete the project? (y/n)")
@@ -60,5 +61,5 @@ var forceDelete bool
 func init() {
 	deleteProjectCmd.PersistentFlags().BoolVarP(&forceDelete, "force", "f", false,
 		"Skips user prompt and deletes the project")
-	dbCmd.AddCommand(deleteProjectCmd)
+	rootCmd.AddCommand(deleteProjectCmd)
 }

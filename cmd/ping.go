@@ -89,5 +89,5 @@ var pingCmd = &cobra.Command{
 func init() {
 	pingCmd.Flags().DurationVarP(&pingTimeout, "timeout", "t", 0, "wait for ping to succeed for the specified timeout")
 
-	dbCmd.AddCommand(pingCmd)
+	rootCmd.AddCommand(pingCmd)
 }

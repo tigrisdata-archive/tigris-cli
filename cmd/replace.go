@@ -22,6 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/iterate"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
@@ -54,10 +56,10 @@ var replaceCmd = &cobra.Command{
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			return iterateInput(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			return iterate.Input(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
 				ptr := unsafe.Pointer(&docs)
-				_, err := client.Get().UseDatabase(getProjectName()).Replace(ctx, args[0], *(*[]driver.Document)(ptr))
+				_, err := client.GetDB().Replace(ctx, args[0], *(*[]driver.Document)(ptr))
 
 				return util.Error(err, "replace documents failed")
 			})
@@ -66,7 +68,7 @@ var replaceCmd = &cobra.Command{
 }
 
 func init() {
-	replaceCmd.Flags().Int32VarP(&BatchSize, "batch-size", "b", BatchSize, "set batch size")
+	replaceCmd.Flags().Int32VarP(&iterate.BatchSize, "batch-size", "b", iterate.BatchSize, "set batch size")
 	addProjectFlag(replaceCmd)
-	dbCmd.AddCommand(replaceCmd)
+	rootCmd.AddCommand(replaceCmd)
 }

@@ -26,6 +26,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/iterate"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
@@ -148,8 +150,8 @@ func restoreDatabase(ctx context.Context, db, path string) error {
 	dec := json.NewDecoder(f)
 	for dec.More() {
 		var v json.RawMessage
-		err := dec.Decode(&v)
-		util.Fatal(err, "reading documents from stream of documents")
+		err = dec.Decode(&v)
+		util.Fatal(err, "reading schemas from file")
 
 		docs = append(docs, v)
 	}
@@ -185,7 +187,7 @@ func restoreCollection(ctx context.Context, db, collection, path string) error {
 		docs := make([]json.RawMessage, 0)
 		i := int32(0)
 
-		for ; i < BatchSize && dec.More(); i++ {
+		for ; i < iterate.BatchSize && dec.More(); i++ {
 			var v json.RawMessage
 
 			err := dec.Decode(&v)
@@ -234,7 +236,7 @@ var restoreCmd = &cobra.Command{
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(_ context.Context) error {
+		login.Ensure(cmd.Context(), func(_ context.Context) error {
 			util.Stdoutf(" [i] using timeout %d\n", restoreTimeout)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(restoreTimeout)*time.Second)
 			defer cancel()

@@ -12,18 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package search
 
 import (
 	"github.com/spf13/cobra"
 )
 
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Creates project, collection, namespace or app_key",
-	Args:  cobra.MinimumNArgs(1),
-}
-
-func init() {
-	rootCmd.AddCommand(createCmd)
+var RootCmd = &cobra.Command{
+	Use:   "search",
+	Short: "Search related commands",
 }

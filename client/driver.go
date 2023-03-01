@@ -102,6 +102,14 @@ func Get() driver.Driver {
 	return D
 }
 
+func GetDB() driver.Database {
+	return Get().UseDatabase(config.GetProjectName())
+}
+
+func GetSearch() driver.SearchClient {
+	return Get().UseSearch(config.GetProjectName())
+}
+
 // ManagementGet returns an instance of authentication API client.
 func ManagementGet() driver.Management {
 	if M == nil {

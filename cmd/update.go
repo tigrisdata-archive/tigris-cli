@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	login "github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
@@ -34,8 +35,8 @@ var updateCmd = &cobra.Command{
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
-			_, err := client.Get().UseDatabase(getProjectName()).
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			_, err := client.GetDB().
 				Update(ctx, args[0], driver.Filter(args[1]), driver.Update(args[2]))
 
 			return util.Error(err, "update documents failed")
@@ -45,5 +46,5 @@ var updateCmd = &cobra.Command{
 
 func init() {
 	addProjectFlag(updateCmd)
-	dbCmd.AddCommand(updateCmd)
+	rootCmd.AddCommand(updateCmd)
 }

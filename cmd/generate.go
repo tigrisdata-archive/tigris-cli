@@ -20,6 +20,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/scaffold"
 	"github.com/tigrisdata/tigris-cli/util"
 )
@@ -46,11 +48,11 @@ var sampleSchemaCmd = &cobra.Command{
   %[1]s generate sample-schema --stdout
 `, rootCmd.Root().Name()),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), func(ctx context.Context) error {
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			templatesPath := scaffold.EnsureLocalTemplates()
 
 			if create {
-				if _, err := client.Get().CreateProject(ctx, getProjectName()); err != nil {
+				if _, err := client.Get().CreateProject(ctx, config.GetProjectName()); err != nil {
 					return util.Error(err, "create database")
 				}
 			}
@@ -73,5 +75,5 @@ func init() {
 	addProjectFlag(sampleSchemaCmd)
 
 	generateCmd.AddCommand(sampleSchemaCmd)
-	dbCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(generateCmd)
 }

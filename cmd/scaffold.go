@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/config"
+	login "github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/scaffold"
 	"github.com/tigrisdata/tigris-cli/util"
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
@@ -187,7 +188,7 @@ func scaffoldProject(ctx context.Context) error {
 		templatesPath = scaffold.EnsureLocalTemplates()
 	}
 
-	pName := getProjectName()
+	pName := config.GetProjectName()
 
 	if pkgName == "" {
 		pkgName = pName
@@ -214,7 +215,7 @@ var scaffoldProjectCmd = &cobra.Command{
 	%[1]s %[2]s --schema-template todo --framework=express
 `, rootCmd.Root().Name(), "scaffold --project=proj_name"),
 	Run: func(cmd *cobra.Command, args []string) {
-		withLogin(cmd.Context(), scaffoldProject)
+		login.Ensure(cmd.Context(), scaffoldProject)
 	},
 }
 
