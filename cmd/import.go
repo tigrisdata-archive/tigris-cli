@@ -146,5 +146,5 @@ func init() {
 	importCmd.Flags().BoolVar(&CleanUpNULLs, "cleanup-null-values", true,
 		"Remove NULL values and empty arrays from the documents before importing")
 	addProjectFlag(importCmd)
-	dbCmd.AddCommand(importCmd)
+	rootCmd.AddCommand(importCmd)
 }

@@ -47,5 +47,5 @@ var deleteCmd = &cobra.Command{
 
 func init() {
 	addProjectFlag(deleteCmd)
-	dbCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(deleteCmd)
 }

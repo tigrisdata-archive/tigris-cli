@@ -234,5 +234,5 @@ All the read, write and schema operations are supported.`,
 
 func init() {
 	addProjectFlag(transactCmd)
-	dbCmd.AddCommand(transactCmd)
+	rootCmd.AddCommand(transactCmd)
 }

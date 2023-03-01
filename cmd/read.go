@@ -101,5 +101,5 @@ func init() {
 	addProjectFlag(readCmd)
 	readCmd.Flags().Int64VarP(&limit, "limit", "l", 0, "limit number of returned results")
 	readCmd.Flags().Int64VarP(&skip, "skip", "s", 0, "skip this many results in the beginning of the result set")
-	dbCmd.AddCommand(readCmd)
+	rootCmd.AddCommand(readCmd)
 }

@@ -28,7 +28,11 @@ var rootCmd = &cobra.Command{
 	Short: "tigris is a command line interface of Tigris data platform",
 }
 
-var dbCmd = rootCmd
+var dbCmd = &cobra.Command{
+	Use:     "db",
+	Short:   "Database related commands",
+	Aliases: []string{"database"},
+}
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
@@ -41,6 +45,7 @@ func init() {
 		"Suppress informational messages")
 
 	rootCmd.AddCommand(search.RootCmd)
+	rootCmd.AddCommand(dbCmd)
 }
 
 func addProjectFlag(cmd *cobra.Command) {

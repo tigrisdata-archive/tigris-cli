@@ -61,5 +61,5 @@ var forceDelete bool
 func init() {
 	deleteProjectCmd.PersistentFlags().BoolVarP(&forceDelete, "force", "f", false,
 		"Skips user prompt and deletes the project")
-	dbCmd.AddCommand(deleteProjectCmd)
+	rootCmd.AddCommand(deleteProjectCmd)
 }

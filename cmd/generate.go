@@ -75,5 +75,5 @@ func init() {
 	addProjectFlag(sampleSchemaCmd)
 
 	generateCmd.AddCommand(sampleSchemaCmd)
-	dbCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(generateCmd)
 }

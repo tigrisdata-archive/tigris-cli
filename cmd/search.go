@@ -40,7 +40,7 @@ var (
 )
 
 var dbSearchCmd = &cobra.Command{
-	Use:   "dbsearch {collection}",
+	Use:   "search {collection}",
 	Short: "Searches a collection for documents matching the query",
 	Long:  "Executes a search query against collection and returns the search results.",
 	//nolint:golint,lll

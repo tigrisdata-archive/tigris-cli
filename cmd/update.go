@@ -46,5 +46,5 @@ var updateCmd = &cobra.Command{
 
 func init() {
 	addProjectFlag(updateCmd)
-	dbCmd.AddCommand(updateCmd)
+	rootCmd.AddCommand(updateCmd)
 }

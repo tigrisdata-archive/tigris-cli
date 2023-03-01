@@ -26,5 +26,5 @@ var alterCmd = &cobra.Command{
 
 func init() {
 	addProjectFlag(alterCmd)
-	dbCmd.AddCommand(alterCmd)
+	rootCmd.AddCommand(alterCmd)
 }

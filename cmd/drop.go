@@ -26,5 +26,5 @@ var dropCmd = &cobra.Command{
 
 func init() {
 	addProjectFlag(dropCmd)
-	dbCmd.AddCommand(dropCmd)
+	rootCmd.AddCommand(dropCmd)
 }

@@ -269,5 +269,5 @@ func init() {
 	serverUpCmd.Flags().BoolVarP(&loginParam, "login", "l", false, "login to the local instance after starting it")
 	localCmd.AddCommand(serverUpCmd)
 	localCmd.AddCommand(serverDownCmd)
-	dbCmd.AddCommand(localCmd)
+	rootCmd.AddCommand(localCmd)
 }
