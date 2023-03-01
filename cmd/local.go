@@ -217,6 +217,21 @@ var serverUpCmd = &cobra.Command{
 
 		util.Stdoutf("Tigris is running at localhost:%s\n", port)
 
+		ctx, cancel := util.GetContext(cmd.Context())
+		defer cancel()
+
+		if config.DefaultConfig.Project != "" {
+			util.Infof("Creating project: %s", config.DefaultConfig.Project)
+			_, err := tclient.Get().CreateProject(ctx, config.DefaultConfig.Project)
+			util.Fatal(err, "creating project on start")
+
+			if config.DefaultConfig.Branch != "" && config.DefaultConfig.Branch != "main" {
+				util.Infof("Creating branch: %s", config.DefaultConfig.Branch)
+				_, err := tclient.Get().UseDatabase(config.DefaultConfig.Project).CreateBranch(ctx, config.DefaultConfig.Branch)
+				util.Fatal(err, "creating branch on start")
+			}
+		}
+
 		if loginParam {
 			login.LocalLogin(net.JoinHostPort("localhost", port))
 		} else if port != "8081" {
@@ -266,8 +281,14 @@ var localCmd = &cobra.Command{
 func init() {
 	serverLogsCmd.Flags().BoolVarP(&follow, "follow", "f", false, "follow logs output")
 	localCmd.AddCommand(serverLogsCmd)
+
 	serverUpCmd.Flags().BoolVarP(&loginParam, "login", "l", false, "login to the local instance after starting it")
+	serverUpCmd.Flags().StringVarP(&config.DefaultConfig.Project, "create-project", "p", config.DefaultConfig.Project,
+		"create project after start")
+	serverUpCmd.Flags().StringVarP(&config.DefaultConfig.Branch, "create-branch", "b", config.DefaultConfig.Branch,
+		"create database branch after start")
 	localCmd.AddCommand(serverUpCmd)
+
 	localCmd.AddCommand(serverDownCmd)
 	rootCmd.AddCommand(localCmd)
 }
