@@ -20,7 +20,9 @@ if [ -z "$cli" ]; then
 	cli="$(pwd)/tigris"
 fi
 
-TIGRIS_TEST_PORT=8090
+if [ -z "$TIGRIS_TEST_PORT" ]; then
+	TIGRIS_TEST_PORT=8090
+fi
 
 unset TIGRIS_URL
 unset TIGRIS_TOKEN
