@@ -33,4 +33,4 @@ jobs:
 
       - run: npm install -g @go-task/cli
 
-      - run: make test
+      - run: TIGRIS_CLI_TEST_FAST=1 make test
