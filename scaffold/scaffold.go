@@ -69,7 +69,7 @@ type Config struct {
 	ClientSecret    string
 }
 
-type tmplVars struct {
+type TmplVars struct {
 	URL              string
 	Collections      []Collection
 	Collection       Collection
@@ -179,7 +179,7 @@ func decodeSchemas(inSchema []byte, lang string) (string, *schema.Schema, string
 	return s, &js, schemas["json"]
 }
 
-func writeCollection(_ *tmplVars, w *bufio.Writer, collection *api.CollectionDescription,
+func writeCollection(_ *TmplVars, w *bufio.Writer, collection *api.CollectionDescription,
 	lang string, genType JSONToLangType,
 ) *Collection {
 	s, js, jss := decodeSchemas(collection.Schema, lang)
@@ -221,7 +221,7 @@ func substCollectionFn(fn string, c *Collection) string {
 	return name
 }
 
-func walkDir(ffs fs.FS, rootPath string, outDir string, vars *tmplVars) error {
+func walkDir(ffs fs.FS, rootPath string, outDir string, vars *TmplVars) error {
 	return fs.WalkDir(ffs, ".", func(path string, d fs.DirEntry, err error) error {
 		util.Fatal(err, "walk template directory. rootPath '%v'", rootPath)
 
@@ -279,7 +279,7 @@ func project(cfg *Config) {
 		cfg.PackageName = cfg.ProjectName
 	}
 
-	vars := tmplVars{
+	vars := TmplVars{
 		URL:              cfg.URL,
 		ProjectName:      cfg.ProjectName,
 		ProjectNameCamel: strcase.ToCamel(cfg.ProjectName),
@@ -335,7 +335,7 @@ func project(cfg *Config) {
 	util.Fatal(err, "processed components")
 }
 
-func execComponents(rootPath string, outDir string, components []string, vars *tmplVars) error {
+func execComponents(rootPath string, outDir string, components []string, vars *TmplVars) error {
 	list := util.ListDir(rootPath)
 
 	keys := make([]string, 0, len(list))

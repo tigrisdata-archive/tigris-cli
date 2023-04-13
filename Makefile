@@ -26,6 +26,9 @@ test: ${BIN} go.sum
 	go test $(TEST_PARAM) ./...
 	/bin/bash tests/main.sh
 
+test-fast:
+	TIGRIS_CLI_FAST_TEST=1 $(MAKE) test
+
 install: ${BIN}
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install -m 755 ${BIN} $(DESTDIR)$(PREFIX)/bin/

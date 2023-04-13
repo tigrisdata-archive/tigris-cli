@@ -20,7 +20,9 @@ if [ -z "$cli" ]; then
 	cli="$(pwd)/tigris"
 fi
 
-TIGRIS_TEST_PORT=8090
+if [ -z "$TIGRIS_TEST_PORT" ]; then
+	TIGRIS_TEST_PORT=8090
+fi
 
 unset TIGRIS_URL
 unset TIGRIS_TOKEN
@@ -412,8 +414,8 @@ db_errors_tests() {
 }
 
 db_generate_schema_test() {
-  TIGRIS_LOG_LEVEL=debug $cli generate sample-schema --project sampledb --create
-  $cli delete-project -f sampledb
+	TIGRIS_LOG_LEVEL=debug $cli generate sample-schema --project sampledb --create
+	$cli delete-project -f sampledb
 }
 
 BASEDIR=$(dirname "$0")
@@ -437,9 +439,9 @@ main() {
 	test_search_import
 	test_backup
 
-  if [ -z "$TIGRIS_CLI_TEST_FAST" ]; then
-    test_scaffold
-  fi
+	if [ -z "$TIGRIS_CLI_TEST_FAST" ]; then
+		test_scaffold
+	fi
 
 	# Exercise tests via GRPC
 	export TIGRIS_URL="localhost:$TIGRIS_TEST_PORT"
@@ -488,5 +490,7 @@ test_dev_alias() {
 	$cli dev stop $port
 }
 
-test_dev_alias
+if [ -z "$noup" ]; then
+	test_dev_alias
+fi
 

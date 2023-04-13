@@ -15,22 +15,27 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
 	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/login"
+	"github.com/tigrisdata/tigris-cli/scaffold"
+	"github.com/tigrisdata/tigris-cli/templates"
 	"github.com/tigrisdata/tigris-cli/util"
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
 var (
-	schemaOnly bool
-	format     string
+	schemaOnly    bool
+	format        string
+	createEnvFile bool
 )
 
 var listProjectsCmd = &cobra.Command{
@@ -100,6 +105,29 @@ var describeDatabaseCmd = &cobra.Command{
 	},
 }
 
+func writeEnvFile(ctx context.Context, proj string) {
+	clientID, clientSecret, err := getAppKeyForTemplate(ctx, proj)
+	util.Fatal(err, "get app key")
+
+	buf := bytes.Buffer{}
+	util.ExecTemplate(&buf, templates.DotEnv, &scaffold.TmplVars{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		URL:          config.DefaultConfig.URL,
+	})
+
+	f, err := os.Create(".env")
+	util.Fatal(err, "create .env file")
+
+	_, err = f.Write(buf.Bytes())
+	util.Fatal(err, "write .env file")
+
+	err = f.Close()
+	util.Fatal(err, "close .env file")
+
+	util.Infof("Written .env file")
+}
+
 var createProjectCmd = &cobra.Command{
 	Use:   "project {name}",
 	Short: "Creates project",
@@ -132,6 +160,8 @@ var createProjectCmd = &cobra.Command{
 
 			if fromExample != "" || schemaTemplate != "" || framework != "" {
 				return scaffoldProject(ctx)
+			} else if createEnvFile {
+				writeEnvFile(ctx, args[0])
 			}
 
 			return nil
@@ -145,6 +175,9 @@ func init() {
 
 	describeDatabaseCmd.Flags().StringVarP(&format, "format", "f", "",
 		"output schema in the requested format: go, typescript, java")
+
+	createProjectCmd.Flags().BoolVar(&createEnvFile, "create-env-file", false,
+		"Create .env file with Tigris connection credentials")
 
 	addScaffoldProjectFlags(createProjectCmd)
 

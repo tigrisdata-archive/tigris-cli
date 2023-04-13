@@ -5,15 +5,20 @@ if [ -z "$cli" ]; then
 fi
 
 test_import_null() {
-  $cli import --project=db_import_test import_null --create-collection --primary-key=str_field '{ "str_field" : null}' '{"str_field": "str12"}'
+  $cli import --project=db_import_test import_null --create-collection '{"str_field" : null}' '{"str_field": "str12"}'
 
   exp_out='{
   "collection": "import_null",
   "schema": {
     "primary_key": [
-      "str_field"
+      "id"
     ],
     "properties": {
+      "id": {
+        "autoGenerate": true,
+        "format": "uuid",
+        "type": "string"
+      },
       "str_field": {
         "type": "string"
       }

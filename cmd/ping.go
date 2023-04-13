@@ -80,9 +80,9 @@ var pingCmd = &cobra.Command{
 		if err := pingLow(cmd.Context(), pingTimeout, 32*time.Millisecond, false); err != nil {
 			fmt.Fprintf(os.Stderr, "FAILED\n")
 			os.Exit(1)
-		} else {
-			fmt.Fprintf(os.Stderr, "OK\n")
 		}
+
+		fmt.Fprintf(os.Stderr, "OK\n")
 	},
 }
 

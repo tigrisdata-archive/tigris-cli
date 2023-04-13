@@ -21,4 +21,7 @@ var (
 	LoginSuccessful string
 	//go:embed login/error.gohtml
 	LoginError string
+
+	//go:embed scaffold/typescript/.env
+	DotEnv string
 )

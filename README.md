@@ -20,11 +20,24 @@ The tigris CLI tool can be installed as follows:
 ```shell
 curl -sSL https://tigris.dev/cli-macos | sudo tar -xz -C /usr/local/bin
 ```
+or
+```shell
+brew install tigrisdata/tigris/tigris-cli
+```
 
 ## Linux
 
 ```shell
 curl -sSL https://tigris.dev/cli-linux | sudo tar -xz -C /usr/local/bin
+```
+or
+```shell
+sudo snap install tigris
+```
+
+## Cross-platform using NPM
+```shell
+sudo npm i -g @tigrisdata/tigris-cli
 ```
 
 # Usage
@@ -38,9 +51,11 @@ Usage:
 Available Commands:
   alter          Alters collection
   backup         Dumps documents and schemas to JSON files
+  branch         Working with Tigris branches
   completion     Generates completion script for shell
   config         Configuration commands
   create         Creates project, collection, namespace or app_key
+  db             Database related commands
   delete         Deletes document(s)
   delete-project Deletes project
   describe       Describes database or collection
@@ -60,7 +75,7 @@ Available Commands:
   replace        Inserts or replaces document(s)
   restore        restores documents and schemas from JSON files
   scaffold       Scaffold new application for project
-  search         Searches a collection for documents matching the query
+  search         Search related commands
   server         Tigris server related commands
   transact       Executes a set of operations in a transaction
   update         Updates document(s)

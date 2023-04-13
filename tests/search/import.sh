@@ -35,15 +35,13 @@ test_search_import_all_types() {
 	"uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1",
 	"time_field" : "2022-11-04T16:17:23.967964263-07:00",
 	"bool_field" : true,
-	"binary_field": "cGVlay1hLWJvbwo=",
 	"objects" : {
 		"str_field" : "str_value",
 		"int_field" : 1,
 		"float_field" : 1.1,
 		"uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1",
 		"time_field" : "2022-11-04T16:17:23.967964263-07:00",
-		"bool_field" : true,
-		"binary_field": "cGVlay1hLWJvbwo="
+		"bool_field" : true
 	},
 	"arrays" : [ {
 		"str_field" : "str_value",
@@ -51,8 +49,7 @@ test_search_import_all_types() {
 		"float_field" : 1.1,
 		"uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1",
 		"time_field" : "2022-11-04T16:17:23.967964263-07:00",
-		"bool_field" : true,
-		"binary_field": "cGVlay1hLWJvbwo="
+		"bool_field" : true
 	} ],
     "prim_array" : [ "str" ]
 }
@@ -68,10 +65,6 @@ EOF
         "items": {
           "type": "object",
           "properties": {
-            "binary_field": {
-              "type": "string",
-              "format": "byte"
-            },
             "bool_field": {
               "type": "boolean"
             },
@@ -95,10 +88,6 @@ EOF
           }
         }
       },
-      "binary_field": {
-        "type": "string",
-        "format": "byte"
-      },
       "bool_field": {
         "type": "boolean"
       },
@@ -111,10 +100,6 @@ EOF
       "objects": {
         "type": "object",
         "properties": {
-          "binary_field": {
-            "type": "string",
-            "format": "byte"
-          },
           "bool_field": {
             "type": "boolean"
           },

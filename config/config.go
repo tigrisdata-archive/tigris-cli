@@ -102,11 +102,7 @@ func Save(name string, config interface{}) error {
 		return err
 	}
 
-	if err := os.WriteFile(file, b, 0o600); err != nil {
-		return err
-	}
-
-	return nil
+	return os.WriteFile(file, b, 0o600)
 }
 
 func Load(name string, config interface{}) {
