@@ -35,14 +35,25 @@ import (
 )
 
 var (
-	AutoCreate     bool
+	Append         bool
+	NoCreate       bool
 	InferenceDepth int32
 	PrimaryKey     []string
 	AutoGenerate   []string
 
 	CleanUpNULLs = true
 
+	CSVDelimiter        string
+	CSVComment          string
+	CSVTrimLeadingSpace bool
+
+	CSVNoHeader bool
+
 	sch cschema.Schema // Accumulate inferred schema across batches
+
+	ErrCollectionShouldExist = fmt.Errorf("collection should exist to import CSV with no field names")
+	ErrNoAppend              = fmt.Errorf(
+		"collection exists. use --append if you need to add documents to existing collection")
 )
 
 func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMessage) error {
@@ -63,6 +74,45 @@ func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMe
 	return util.Error(err, "create or update collection")
 }
 
+func insertWithInference(ctx context.Context, coll string, docs []json.RawMessage) error {
+	ptr := unsafe.Pointer(&docs)
+
+	_, err := client.GetDB().Insert(ctx, coll, *(*[]driver.Document)(ptr))
+	if err == nil {
+		return nil // successfully inserted batch
+	}
+
+	//FIXME: errors.As(err, &ep) doesn't work
+	//nolint:golint,errorlint
+	ep, ok := err.(*driver.Error)
+	if !ok || (ep.Code != api.Code_NOT_FOUND && ep.Code != errcode.InvalidArgument) ||
+		ep.Code == api.Code_NOT_FOUND && NoCreate {
+		return util.Error(err, "import documents (initial)")
+	}
+
+	if err := evolveSchema(ctx, config.GetProjectName(), coll, docs); err != nil {
+		return err
+	}
+
+	// retry after schema update
+	_, err = client.GetDB().Insert(ctx, coll, *(*[]driver.Document)(ptr))
+	if err == nil {
+		return nil
+	}
+
+	if CleanUpNULLs {
+		for k := range docs {
+			docs[k] = util.CleanupNULLValues(docs[k])
+		}
+	}
+
+	_, err = client.GetDB().Insert(ctx, coll, *(*[]driver.Document)(ptr))
+
+	log.Debug().Interface("docs", docs).Msg("import")
+
+	return util.Error(err, "import documents (after schema update")
+}
+
 var importCmd = &cobra.Command{
 	Use:   "import {collection} {document}...|-",
 	Short: "Import documents into collection",
@@ -75,7 +125,7 @@ Automatically:
   * Evolve the schema as soon as it's backward compatible
 `,
 	Example: fmt.Sprintf(`
-  %[1]s import --project=testdb users --create-collection --primary-key=id \
+  %[1]s import --project=testdb users --primary-key=id \
   '[
     {"id": 20, "name": "Jania McGrory"},
     {"id": 21, "name": "Bunny Instone"}
@@ -86,48 +136,21 @@ Automatically:
 		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			resp, err := client.GetDB().DescribeCollection(ctx, args[0])
 			if err == nil {
+				if !Append {
+					util.Fatal(ErrNoAppend, "describe collection")
+				}
 				err := json.Unmarshal(resp.Schema, &sch)
 				util.Fatal(err, "unmarshal collection schema")
+			} else if CSVNoHeader {
+				util.Fatal(ErrCollectionShouldExist, "describe collection")
 			}
+
+			err = iterate.CSVConfigure(CSVDelimiter, CSVComment, CSVTrimLeadingSpace, CSVNoHeader)
+			util.Fatal(err, "csv configure")
 
 			return iterate.Input(cmd.Context(), cmd, 1, args,
 				func(ctx context.Context, args []string, docs []json.RawMessage) error {
-					ptr := unsafe.Pointer(&docs)
-
-					_, err := client.GetDB().Insert(ctx, args[0], *(*[]driver.Document)(ptr))
-					if err == nil {
-						return nil // successfully inserted batch
-					}
-
-					//FIXME: errors.As(err, &ep) doesn't work
-					//nolint:golint,errorlint
-					ep, ok := err.(*driver.Error)
-					if !ok || (ep.Code != api.Code_NOT_FOUND && ep.Code != errcode.InvalidArgument) ||
-						ep.Code == api.Code_NOT_FOUND && !AutoCreate {
-						return util.Error(err, "import documents (initial)")
-					}
-
-					if err := evolveSchema(ctx, config.GetProjectName(), args[0], docs); err != nil {
-						return err
-					}
-
-					// retry after schema update
-					_, err = client.GetDB().Insert(ctx, args[0], *(*[]driver.Document)(ptr))
-					if err == nil {
-						return nil
-					}
-
-					if CleanUpNULLs {
-						for k := range docs {
-							docs[k] = util.CleanupNULLValues(docs[k])
-						}
-					}
-
-					_, err = client.GetDB().Insert(ctx, args[0], *(*[]driver.Document)(ptr))
-
-					log.Debug().Interface("docs", docs).Msg("import")
-
-					return util.Error(err, "import documents (after schema update")
+					return insertWithInference(ctx, args[0], docs)
 				})
 		})
 	},
@@ -135,16 +158,26 @@ Automatically:
 
 func init() {
 	importCmd.Flags().Int32VarP(&iterate.BatchSize, "batch-size", "b", iterate.BatchSize, "set batch size")
-	importCmd.Flags().BoolVarP(&AutoCreate, "create-collection", "c", false,
-		"Automatically create collection if it doesn't exist")
+	importCmd.Flags().BoolVarP(&Append, "append", "a", false,
+		"Force append to existing collection")
+	importCmd.Flags().BoolVar(&NoCreate, "no-create-collection", false,
+		"Do not create collection automatically if it doesn't exist")
 	importCmd.Flags().Int32VarP(&InferenceDepth, "inference-depth", "d", 0,
 		"Number of records in the beginning of the stream to detect field types. It's equal to batch size if not set")
 	importCmd.Flags().StringSliceVar(&PrimaryKey, "primary-key", []string{},
 		"Comma separated list of field names which constitutes collection's primary key (only top level keys supported)")
-	importCmd.Flags().StringSliceVarP(&AutoGenerate, "autogenerate", "a", []string{},
+	importCmd.Flags().StringSliceVar(&AutoGenerate, "autogenerate", []string{},
 		"Comma separated list of autogenerated fields (only top level keys supported)")
 	importCmd.Flags().BoolVar(&CleanUpNULLs, "cleanup-null-values", true,
 		"Remove NULL values and empty arrays from the documents before importing")
+
+	importCmd.Flags().StringVar(&CSVDelimiter, "csv-delimiter", "",
+		"CSV delimiter")
+	importCmd.Flags().BoolVar(&CSVTrimLeadingSpace, "csv-trim-leading-space", true,
+		"Trim leading space in the fields")
+	importCmd.Flags().StringVar(&CSVComment, "csv-comment", "",
+		"CSV comment")
+
 	addProjectFlag(importCmd)
 	rootCmd.AddCommand(importCmd)
 }
