@@ -27,7 +27,7 @@ test: ${BIN} go.sum
 	/bin/bash tests/main.sh
 
 test-fast:
-	TIGRIS_CLI_FAST_TEST=1 $(MAKE) test
+	TIGRIS_CLI_TEST_FAST=1 $(MAKE) test
 
 install: ${BIN}
 	install -d $(DESTDIR)$(PREFIX)/bin

@@ -37,7 +37,7 @@ var (
 	BatchSize int32 = 100
 )
 
-func detectArray(r io.RuneScanner) bool {
+func readFirstRune(r io.RuneScanner) rune {
 	var c rune
 
 	for {
@@ -46,12 +46,12 @@ func detectArray(r io.RuneScanner) bool {
 		c, _, err = r.ReadRune()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				return false
+				return 0
 			}
 
 			util.Fatal(err, "reading input")
 
-			return false
+			return 0
 		}
 
 		if !unicode.IsSpace(c) {
@@ -63,7 +63,16 @@ func detectArray(r io.RuneScanner) bool {
 		util.Fatal(err, "reading input")
 	}
 
-	return c == '['
+	return c
+}
+
+func detectArray(r io.RuneScanner) bool {
+	return readFirstRune(r) == '['
+}
+
+func detectCSV(r io.RuneScanner) bool {
+	c := readFirstRune(r)
+	return c != 0 && c != '[' && c != '{'
 }
 
 func readArray(r []byte) []json.RawMessage {
@@ -218,7 +227,9 @@ func Input(ctx context.Context, cmd *cobra.Command, docsPosition int, args []str
 
 	// stdin not a TTY or "-" is specified
 	r := bufio.NewReader(os.Stdin)
-	if detectArray(r) {
+	if detectCSV(r) {
+		return iterateCSVStream(ctx, args, r, fn)
+	} else if detectArray(r) {
 		return iterateArray(ctx, args, r, fn)
 	}
 
