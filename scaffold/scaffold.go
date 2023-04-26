@@ -70,14 +70,15 @@ type Config struct {
 }
 
 type TmplVars struct {
-	URL              string
-	Collections      []Collection
-	Collection       Collection
-	ProjectName      string
-	ProjectNameCamel string
-	PackageName      string
-	ClientID         string
-	ClientSecret     string
+	URL              		string
+	Collections      		[]Collection
+	Collection       		Collection
+	ProjectName      		string
+	ProjectNameCamel 		string
+	PackageName      		string
+	ClientID         		string
+	ClientSecret     		string
+	DatabaseBranchName	string
 }
 
 type JSONToLangType interface {
