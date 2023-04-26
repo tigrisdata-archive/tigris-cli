@@ -111,10 +111,10 @@ func writeEnvFile(ctx context.Context, proj string) {
 
 	buf := bytes.Buffer{}
 	util.ExecTemplate(&buf, templates.DotEnv, &scaffold.TmplVars{
-		ClientID:     			clientID,
-		ClientSecret: 			clientSecret,
-		URL:          			config.DefaultConfig.URL,
-		ProjectName: 				proj,
+		ClientID:           clientID,
+		ClientSecret:       clientSecret,
+		URL:                config.DefaultConfig.URL,
+		ProjectName:        proj,
 		DatabaseBranchName: "main",
 	})
 
