@@ -116,7 +116,7 @@ func writeEnvFile(ctx context.Context, proj string) {
 		ClientSecret:       clientSecret,
 		URL:                config.DefaultConfig.URL,
 		ProjectName:        proj,
-		DatabaseBranchName: "main",
+		DatabaseBranchName: config.DefaultConfig.Branch,
 	})
 
 	envFilePath := filepath.Join(outDir, ".env")
