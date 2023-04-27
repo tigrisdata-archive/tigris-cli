@@ -164,10 +164,11 @@ tigris local down
 
 # Development
 
-For `make lint` will need the following installed:
-
+Run `make setup` it installs required test dependencies:
 - [golangci-lint](https://github.com/golangci/golangci-lint)
 - [shellcheck](https://github.com/koalaman/shellcheck)
+
+Use `make test-fast` and `make lint` for testing the changes.
 
 # License
 
