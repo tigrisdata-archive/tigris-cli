@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
@@ -111,21 +112,29 @@ func writeEnvFile(ctx context.Context, proj string) {
 
 	buf := bytes.Buffer{}
 	util.ExecTemplate(&buf, templates.DotEnv, &scaffold.TmplVars{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		URL:          config.DefaultConfig.URL,
+		ClientID:           clientID,
+		ClientSecret:       clientSecret,
+		URL:                config.DefaultConfig.URL,
+		ProjectName:        proj,
+		DatabaseBranchName: config.DefaultConfig.Branch,
 	})
 
-	f, err := os.Create(".env")
-	util.Fatal(err, "create .env file")
+	envFilePath := filepath.Join(outDir, ".env")
+	util.Infof("Writing .env to '%s'", envFilePath)
+
+	err = os.MkdirAll(outDir, 0o755)
+	util.Fatal(err, "MkdirAll: %s", outDir)
+
+	f, err := os.Create(envFilePath)
+	util.Fatal(err, "create "+envFilePath+" file")
 
 	_, err = f.Write(buf.Bytes())
-	util.Fatal(err, "write .env file")
+	util.Fatal(err, "write "+envFilePath+" file")
 
 	err = f.Close()
-	util.Fatal(err, "close .env file")
+	util.Fatal(err, "close "+envFilePath+" file")
 
-	util.Infof("Written .env file")
+	util.Infof("Written " + envFilePath + " file")
 }
 
 var createProjectCmd = &cobra.Command{
