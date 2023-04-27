@@ -302,10 +302,10 @@ test_import() {
   test_import_null
   test_import_all_types
 
-  error "collection doesn't exist 'import_test_no_create'"  $cli import --no-create-collection --project=db_import_test import_test_no_create '{ "str_field" : "str_value" }'
+  error "collection doesn't exist 'import_test_no_create'"  "$cli" import --no-create-collection --project=db_import_test import_test_no_create '{ "str_field" : "str_value" }'
 
   $cli import --project=db_import_test import_test_append '{ "str_field" : "str_value" }'
-  error "collection exists. use --append if you need to add documents to existing collection" $cli import --project=db_import_test import_test_append '{ "str_field" : "str_value" }'
+  error "collection exists. use --append if you need to add documents to existing collection" "$cli" import --project=db_import_test import_test_append '{ "str_field" : "str_value" }'
 
   test_evolve_schema
   test_multi_pk

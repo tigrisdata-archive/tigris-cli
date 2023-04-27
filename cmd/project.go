@@ -170,6 +170,9 @@ var createProjectCmd = &cobra.Command{
 			if fromExample != "" || schemaTemplate != "" || framework != "" {
 				return scaffoldProject(ctx)
 			} else if createEnvFile {
+				if config.DefaultConfig.Branch == "" {
+					config.DefaultConfig.Branch = DefaultBranch
+				}
 				writeEnvFile(ctx, args[0])
 			}
 
