@@ -35,3 +35,12 @@ install: ${BIN}
 
 clean:
 	rm -f ${BIN}
+
+# Setup local development environment.
+setup: deps
+	git config core.hooksPath ./.gitconfig/hooks
+
+# Install development dependencies.
+deps:
+	/bin/bash scripts/install_test_deps.sh
+

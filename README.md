@@ -7,6 +7,7 @@ Create databases and collections, read and write data, perform transactions,
 stream events and setup Tigris locally, all from the command line.
 
 # Documentation
+
 - [Quickstart](https://docs.tigrisdata.com/quickstart/with-cli)
 - [Working Locally](https://docs.tigrisdata.com/cli/working-locally)
 - [Command Reference](https://docs.tigrisdata.com/cli)
@@ -20,7 +21,9 @@ The tigris CLI tool can be installed as follows:
 ```shell
 curl -sSL https://tigris.dev/cli-macos | sudo tar -xz -C /usr/local/bin
 ```
+
 or
+
 ```shell
 brew install tigrisdata/tigris/tigris-cli
 ```
@@ -30,12 +33,15 @@ brew install tigrisdata/tigris/tigris-cli
 ```shell
 curl -sSL https://tigris.dev/cli-linux | sudo tar -xz -C /usr/local/bin
 ```
+
 or
+
 ```shell
 sudo snap install tigris
 ```
 
 ## Cross-platform using NPM
+
 ```shell
 sudo npm i -g @tigrisdata/tigris-cli
 ```
@@ -156,5 +162,14 @@ tigris transact --project=test \
 tigris local down
 ```
 
+# Development
+
+Run `make setup` it installs required test dependencies:
+- [golangci-lint](https://github.com/golangci/golangci-lint)
+- [shellcheck](https://github.com/koalaman/shellcheck)
+
+Use `make test-fast` and `make lint` for testing the changes.
+
 # License
+
 This software is licensed under the [Apache 2.0](LICENSE).
