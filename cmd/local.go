@@ -225,7 +225,7 @@ var serverUpCmd = &cobra.Command{
 			_, err := tclient.Get().CreateProject(ctx, config.DefaultConfig.Project)
 			util.Fatal(err, "creating project on start")
 
-			if config.DefaultConfig.Branch != "" && config.DefaultConfig.Branch != "main" {
+			if config.DefaultConfig.Branch != "" && config.DefaultConfig.Branch != DefaultBranch {
 				util.Infof("Creating branch: %s", config.DefaultConfig.Branch)
 				_, err := tclient.Get().UseDatabase(config.DefaultConfig.Project).CreateBranch(ctx, config.DefaultConfig.Branch)
 				util.Fatal(err, "creating branch on start")

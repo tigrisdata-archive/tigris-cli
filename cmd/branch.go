@@ -33,6 +33,8 @@ var (
 	createBranch bool
 
 	ErrBranchNotFound = fmt.Errorf("branch doesn't exist")
+
+	DefaultBranch = "main"
 )
 
 var branchCmd = &cobra.Command{
@@ -116,7 +118,7 @@ var showBranchCmd = &cobra.Command{
 			branch := config.DefaultConfig.Branch
 
 			if branch == "" {
-				branch = "main"
+				branch = DefaultBranch
 			}
 
 			util.Stdoutf("%s", branch)
