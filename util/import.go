@@ -21,6 +21,17 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func cleanupArrayNULLValuesLow(a []any) {
+	for _, v := range a {
+		switch val := v.(type) {
+		case map[string]any:
+			cleanupNULLValuesLow(val)
+		case []any:
+			cleanupArrayNULLValuesLow(val)
+		}
+	}
+}
+
 func cleanupNULLValuesLow(m map[string]any) {
 	for k, v := range m {
 		switch val := v.(type) {
@@ -30,6 +41,8 @@ func cleanupNULLValuesLow(m map[string]any) {
 			if len(val) == 0 {
 				log.Debug().Str("name", k).Msg("removed empty array")
 				delete(m, k)
+			} else {
+				cleanupArrayNULLValuesLow(val)
 			}
 		case nil:
 			log.Debug().Str("name", k).Msg("removed empty value")

@@ -178,6 +178,15 @@ func init() {
 	importCmd.Flags().StringVar(&CSVComment, "csv-comment", "",
 		"CSV comment")
 
+	importCmd.Flags().BoolVar(&schema.DetectByteArrays, "detect-byte-arrays", false,
+		"Try detect byte arrays fields")
+	importCmd.Flags().BoolVar(&schema.DetectUUIDs, "detect-uuids", true,
+		"Try detect UUID fields")
+	importCmd.Flags().BoolVar(&schema.DetectTimes, "detect-times", true,
+		"Try detect date time fields")
+	importCmd.Flags().BoolVar(&schema.DetectIntegers, "detect-integers", true,
+		"Try detect integer fields")
+
 	addProjectFlag(importCmd)
 	rootCmd.AddCommand(importCmd)
 }

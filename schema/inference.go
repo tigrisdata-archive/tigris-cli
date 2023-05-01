@@ -45,6 +45,11 @@ const (
 )
 
 var (
+	DetectByteArrays = false
+	DetectUUIDs      = true
+	DetectTimes      = true
+	DetectIntegers   = true
+
 	ErrIncompatibleSchema = fmt.Errorf("error incompatible schema")
 	ErrExpectedString     = fmt.Errorf("expected string type")
 	ErrExpectedNumber     = fmt.Errorf("expected json.Number")
@@ -61,25 +66,29 @@ func parseDateTime(s string) bool {
 	return false
 }
 
+func parseNumber(v any) (string, string, error) {
+	n, ok := v.(json.Number)
+	if !ok {
+		return "", "", ErrExpectedNumber
+	}
+
+	if _, err := n.Int64(); err != nil || !DetectIntegers {
+		_, err = n.Float64()
+		if err != nil {
+			return "", "", err
+		}
+
+		return typeNumber, "", nil
+	}
+
+	return typeInteger, "", nil
+}
+
 func translateStringType(v interface{}) (string, string, error) {
 	t := reflect.TypeOf(v)
 
 	if t.PkgPath() == "encoding/json" && t.Name() == "Number" {
-		n, ok := v.(json.Number)
-		if !ok {
-			return "", "", ErrExpectedNumber
-		}
-
-		if _, err := n.Int64(); err != nil {
-			_, err = n.Float64()
-			if err != nil {
-				return "", "", err
-			}
-
-			return typeNumber, "", nil
-		}
-
-		return typeInteger, "", nil
+		return parseNumber(v)
 	}
 
 	s, ok := v.(string)
@@ -87,17 +96,19 @@ func translateStringType(v interface{}) (string, string, error) {
 		return "", "", ErrExpectedString
 	}
 
-	if parseDateTime(s) {
+	if parseDateTime(s) && DetectTimes {
 		return typeString, formatDateTime, nil
 	}
 
-	if _, err := uuid.Parse(s); err == nil {
+	if _, err := uuid.Parse(s); err == nil && DetectUUIDs {
 		return typeString, formatUUID, nil
 	}
 
-	b := make([]byte, base64.StdEncoding.DecodedLen(len(s)))
-	if _, err := base64.StdEncoding.Decode(b, []byte(s)); err == nil {
-		return typeString, formatByte, nil
+	if len(s) != 0 && DetectByteArrays {
+		b := make([]byte, base64.StdEncoding.DecodedLen(len(s)))
+		if _, err := base64.StdEncoding.Decode(b, []byte(s)); err == nil {
+			return typeString, formatByte, nil
+		}
 	}
 
 	return typeString, "", nil
@@ -123,7 +134,8 @@ func translateType(v interface{}) (string, string, error) {
 	}
 }
 
-func extendedStringType(oldType string, oldFormat string, newType string, newFormat string) (string, string, error) {
+func extendedStringType(name string, oldType string, oldFormat string, newType string, newFormat string,
+) (string, string, error) {
 	if newFormat == "" {
 		switch {
 		case oldFormat == formatByte:
@@ -137,7 +149,7 @@ func extendedStringType(oldType string, oldFormat string, newType string, newFor
 		return oldType, oldFormat, nil
 	}
 
-	return "", "", ErrIncompatibleSchema
+	return "", "", fmt.Errorf("%w field: %s", ErrIncompatibleSchema, name)
 }
 
 // this is only matter for initial schema inference, where we have luxury to extend the type
@@ -147,7 +159,8 @@ func extendedStringType(oldType string, oldFormat string, newType string, newFor
 // byte -> string
 // time -> string
 // uuid => string.
-func extendedType(oldType string, oldFormat string, newType string, newFormat string) (string, string, error) {
+func extendedType(name string, oldType string, oldFormat string, newType string, newFormat string,
+) (string, string, error) {
 	if oldType == typeInteger && newType == typeNumber {
 		return newType, newFormat, nil
 	}
@@ -157,7 +170,7 @@ func extendedType(oldType string, oldFormat string, newType string, newFormat st
 	}
 
 	if oldType == typeString && newType == typeString {
-		if t, f, err := extendedStringType(oldType, oldFormat, newType, newFormat); err == nil {
+		if t, f, err := extendedStringType(name, oldType, oldFormat, newType, newFormat); err == nil {
 			return t, f, nil
 		}
 	}
@@ -166,13 +179,13 @@ func extendedType(oldType string, oldFormat string, newType string, newFormat st
 		return newType, newFormat, nil
 	}
 
-	log.Debug().Str("oldType", oldType).Str("newType", newType).Msg("incompatible schema")
-	log.Debug().Str("oldFormat", oldFormat).Str("newFormat", newFormat).Msg("incompatible schema")
+	log.Debug().Str("oldType", oldType).Str("newType", newType).Str("field_name", name).Msg("incompatible schema")
+	log.Debug().Str("oldFormat", oldFormat).Str("newFormat", newFormat).Str("field_name", name).Msg("incompatible schema")
 
-	return "", "", ErrIncompatibleSchema
+	return "", "", fmt.Errorf("%w field: %s", ErrIncompatibleSchema, name)
 }
 
-func traverseObject(existingField *schema.Field, newField *schema.Field, values map[string]any) error {
+func traverseObject(name string, existingField *schema.Field, newField *schema.Field, values map[string]any) error {
 	switch {
 	case existingField == nil:
 		newField.Fields = make(map[string]*schema.Field)
@@ -186,13 +199,13 @@ func traverseObject(existingField *schema.Field, newField *schema.Field, values 
 		log.Debug().Str("oldType", existingField.Type).Str("newType", newField.Type).Interface("values", values).
 			Msg("object converted to primitive")
 
-		return ErrIncompatibleSchema
+		return fmt.Errorf("%w field: %s", ErrIncompatibleSchema, name)
 	}
 
 	return traverseFields(newField.Fields, values, nil)
 }
 
-func traverseArray(existingField *schema.Field, newField *schema.Field, v any) error {
+func traverseArray(name string, existingField *schema.Field, newField *schema.Field, v any) error {
 	for i := 0; i < reflect.ValueOf(v).Len(); i++ {
 		t, format, err := translateType(reflect.ValueOf(v).Index(i).Interface())
 		if err != nil {
@@ -209,11 +222,11 @@ func traverseArray(existingField *schema.Field, newField *schema.Field, v any) e
 				log.Debug().Str("oldType", existingField.Type).Str("newType", newField.Type).Interface("values", v).
 					Msg("object converted to primitive")
 
-				return ErrIncompatibleSchema
+				return fmt.Errorf("%w field: %s", ErrIncompatibleSchema, name)
 			}
 		}
 
-		nt, nf, err := extendedType(newField.Items.Type, newField.Items.Format, t, format)
+		nt, nf, err := extendedType(name, newField.Items.Type, newField.Items.Format, t, format)
 		if err != nil {
 			return err
 		}
@@ -223,7 +236,7 @@ func traverseArray(existingField *schema.Field, newField *schema.Field, v any) e
 
 		if t == typeObject {
 			values, _ := reflect.ValueOf(v).Index(i).Interface().(map[string]any)
-			if err = traverseObject(newField.Items, newField.Items, values); err != nil {
+			if err = traverseObject(name, newField.Items, newField.Items, values); err != nil {
 				return err
 			}
 
@@ -247,12 +260,12 @@ func setAutoGenerate(autoGen []string, name string, field *schema.Field) {
 	}
 }
 
-func traverseFieldsLow(t string, format string, k string, f *schema.Field, v any, sch map[string]*schema.Field,
+func traverseFieldsLow(t string, format string, name string, f *schema.Field, v any, sch map[string]*schema.Field,
 ) (bool, error) {
 	switch {
 	case t == typeObject:
 		vm, _ := v.(map[string]any)
-		if err := traverseObject(sch[k], f, vm); err != nil {
+		if err := traverseObject(name, sch[name], f, vm); err != nil {
 			return false, err
 		}
 
@@ -265,15 +278,15 @@ func traverseFieldsLow(t string, format string, k string, f *schema.Field, v any
 			return true, nil // empty array does not reflect in the schema
 		}
 
-		if err := traverseArray(sch[k], f, v); err != nil {
+		if err := traverseArray(name, sch[name], f, v); err != nil {
 			return false, err
 		}
 
 		if f.Items == nil {
 			return true, nil // empty object
 		}
-	case sch[k] != nil:
-		nt, nf, err := extendedType(sch[k].Type, sch[k].Format, t, format)
+	case sch[name] != nil:
+		nt, nf, err := extendedType(name, sch[name].Type, sch[name].Format, t, format)
 		if err != nil {
 			return false, err
 		}
@@ -286,20 +299,20 @@ func traverseFieldsLow(t string, format string, k string, f *schema.Field, v any
 }
 
 func traverseFields(sch map[string]*schema.Field, fields map[string]any, autoGen []string) error {
-	for k, v := range fields {
+	for name, val := range fields {
 		// handle `null` JSON value
-		if v == nil {
+		if val == nil {
 			continue
 		}
 
-		t, format, err := translateType(v)
+		t, format, err := translateType(val)
 		if err != nil {
 			return err
 		}
 
 		f := &schema.Field{Type: t, Format: format}
 
-		skip, err := traverseFieldsLow(t, format, k, f, v, sch)
+		skip, err := traverseFieldsLow(t, format, name, f, val, sch)
 		if err != nil {
 			return err
 		}
@@ -308,9 +321,9 @@ func traverseFields(sch map[string]*schema.Field, fields map[string]any, autoGen
 			continue
 		}
 
-		setAutoGenerate(autoGen, k, f)
+		setAutoGenerate(autoGen, name, f)
 
-		sch[k] = f
+		sch[name] = f
 	}
 
 	return nil

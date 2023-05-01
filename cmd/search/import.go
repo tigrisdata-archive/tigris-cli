@@ -172,6 +172,15 @@ func init() {
 	importCmd.Flags().BoolVar(&NoCreate, "no-create-index", false,
 		"Do not create collection automatically if it doesn't exist")
 
+	importCmd.Flags().BoolVar(&schema.DetectByteArrays, "detect-byte-arrays", false,
+		"Try to detect byte arrays fields")
+	importCmd.Flags().BoolVar(&schema.DetectUUIDs, "detect-uuids", true,
+		"Try to detect UUID fields")
+	importCmd.Flags().BoolVar(&schema.DetectTimes, "detect-times", true,
+		"Try to detect date time fields")
+	importCmd.Flags().BoolVar(&schema.DetectIntegers, "detect-integers", true,
+		"Try to detect integer fields")
+
 	importCmd.Flags().StringVar(&CSVDelimiter, "csv-delimiter", "",
 		"CSV delimiter")
 	importCmd.Flags().BoolVar(&CSVTrimLeadingSpace, "csv-trim-leading-space", true,
