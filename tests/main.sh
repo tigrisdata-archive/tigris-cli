@@ -369,11 +369,11 @@ db_negative_tests() {
 }
 
 error() {
-	exp_out=$1
+	error_exp_out=$1
 	shift
-	out=$(set +x; "$@" 2>&1 || true)
-	out=${out//warning: GOCOVERDIR not set, no coverage data emitted /}
-	diff -u <(echo "$exp_out") <(echo "$out")
+	error_out=$(set +x; "$@" 2>&1 || true)
+	error_out=${error_out//warning: GOCOVERDIR not set, no coverage data emitted /}
+	diff -u <(echo "$error_exp_out") <(echo "$error_out")
 }
 
 # shellcheck disable=SC2086
