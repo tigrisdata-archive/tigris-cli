@@ -56,6 +56,11 @@ var (
 	ErrUnsupportedType    = fmt.Errorf("unsupported type")
 )
 
+func newInompatibleSchemaError(name, oldType, oldFormat, newType, newFormat string) error {
+	return fmt.Errorf("%w field: %s, old type: '%s:%s', new type: '%s:%s'", ErrIncompatibleSchema,
+		name, oldType, oldFormat, newType, newFormat)
+}
+
 func parseDateTime(s string) bool {
 	if _, err := time.Parse(time.RFC3339Nano, s); err == nil {
 		return true
@@ -137,6 +142,7 @@ func translateType(v interface{}) (string, string, error) {
 func extendedStringType(name string, oldType string, oldFormat string, newType string, newFormat string,
 ) (string, string, error) {
 	if newFormat == "" {
+		// Extend the narrow type to generic string
 		switch {
 		case oldFormat == formatByte:
 			return newType, newFormat, nil
@@ -145,11 +151,19 @@ func extendedStringType(name string, oldType string, oldFormat string, newType s
 		case oldFormat == formatDateTime:
 			return newType, newFormat, nil
 		}
-	} else if newFormat == formatByte && oldFormat == "" {
-		return oldType, oldFormat, nil
+	} else if oldFormat == "" {
+		// Prevent narrowing the string type
+		switch newFormat {
+		case formatByte:
+			return oldType, oldFormat, nil
+		case formatUUID:
+			return oldType, oldFormat, nil
+		case formatDateTime:
+			return oldType, oldFormat, nil
+		}
 	}
 
-	return "", "", fmt.Errorf("%w field: %s", ErrIncompatibleSchema, name)
+	return "", "", newInompatibleSchemaError(name, oldType, oldFormat, newType, newFormat)
 }
 
 // this is only matter for initial schema inference, where we have luxury to extend the type
@@ -169,7 +183,7 @@ func extendedType(name string, oldType string, oldFormat string, newType string,
 		return oldType, oldFormat, nil
 	}
 
-	if oldType == typeString && newType == typeString {
+	if oldType == typeString && newType == typeString && newFormat != oldFormat {
 		if t, f, err := extendedStringType(name, oldType, oldFormat, newType, newFormat); err == nil {
 			return t, f, nil
 		}
@@ -182,7 +196,7 @@ func extendedType(name string, oldType string, oldFormat string, newType string,
 	log.Debug().Str("oldType", oldType).Str("newType", newType).Str("field_name", name).Msg("incompatible schema")
 	log.Debug().Str("oldFormat", oldFormat).Str("newFormat", newFormat).Str("field_name", name).Msg("incompatible schema")
 
-	return "", "", fmt.Errorf("%w field: %s", ErrIncompatibleSchema, name)
+	return "", "", newInompatibleSchemaError(name, oldType, oldFormat, newType, newFormat)
 }
 
 func traverseObject(name string, existingField *schema.Field, newField *schema.Field, values map[string]any) error {
@@ -199,7 +213,7 @@ func traverseObject(name string, existingField *schema.Field, newField *schema.F
 		log.Debug().Str("oldType", existingField.Type).Str("newType", newField.Type).Interface("values", values).
 			Msg("object converted to primitive")
 
-		return fmt.Errorf("%w field: %s", ErrIncompatibleSchema, name)
+		return newInompatibleSchemaError(name, existingField.Type, "", newField.Type, "")
 	}
 
 	return traverseFields(newField.Fields, values, nil)
@@ -222,7 +236,7 @@ func traverseArray(name string, existingField *schema.Field, newField *schema.Fi
 				log.Debug().Str("oldType", existingField.Type).Str("newType", newField.Type).Interface("values", v).
 					Msg("object converted to primitive")
 
-				return fmt.Errorf("%w field: %s", ErrIncompatibleSchema, name)
+				return newInompatibleSchemaError(name, existingField.Type, "", newField.Type, "")
 			}
 		}
 

@@ -200,7 +200,7 @@ test_evolve_schema() {
   diff -w -u <(echo "$exp_out") <(echo "$out")
 
   # evolve schema
-  $cli import --project=db_import_test --append import_test1 '{ "id" : 3, "uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }'
+  $cli import --project=db_import_test --detect-byte-arrays --append import_test1 '{ "id" : 3, "uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1","time_field":"2022-11-04T16:17:23.967964263-07:00","binary_field":"cGVlay1hLWJvbwo=" }'
 
   exp_out='{
   "collection": "import_test1",
@@ -209,6 +209,10 @@ test_evolve_schema() {
       "id"
     ],
     "properties": {
+      "binary_field": {
+        "format": "byte",
+        "type": "string"
+      },
       "id": {
         "type": "integer"
       },
@@ -216,6 +220,10 @@ test_evolve_schema() {
         "type": "integer"
       },
       "str_field": {
+        "type": "string"
+      },
+      "time_field": {
+        "format": "date-time",
         "type": "string"
       },
       "uuid_field": {
@@ -226,6 +234,21 @@ test_evolve_schema() {
     "title": "import_test1"
   }
 }'
+
+  out=$($cli describe collection --project=db_import_test import_test1|jq -S .)
+  diff -w -u <(echo "$exp_out") <(echo "$out")
+
+  # Test that we are not narrowing existing string type
+  $cli import --project=db_import_test --append import_test1 '{ "id" : 4, "str_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }'
+  $cli import --project=db_import_test --append import_test1 '{ "id" : 5, "str_field" : "2022-11-04T16:17:23.967964263-07:00" }'
+  $cli import --project=db_import_test --detect-byte-arrays --append import_test1 '{ "id" : 6, "str_field" : "cGVlay1hLWJvbwo=" }'
+
+  error "error incompatible schema field: uuid_field, old type: 'string:uuid', new type: 'string:date-time'"  "$cli" import --project=db_import_test --append import_test1 '{ "id" : 7, "uuid_field" : "2022-11-04T16:17:23.967964263-07:00" }'
+  error "error incompatible schema field: uuid_field, old type: 'string:uuid', new type: 'string:byte'"  "$cli" import --detect-byte-arrays --project=db_import_test --append import_test1 '{ "id" : 7, "uuid_field" : "cGVlay1hLWJvbwo=" }'
+  error "error incompatible schema field: time_field, old type: 'string:date-time', new type: 'string:uuid'"  "$cli" import --project=db_import_test --append import_test1 '{ "id" : 7, "time_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }'
+  error "error incompatible schema field: time_field, old type: 'string:date-time', new type: 'string:byte'"  "$cli" import --detect-byte-arrays --project=db_import_test --append import_test1 '{ "id" : 7, "time_field" : "cGVlay1hLWJvbwo=" }'
+  error "error incompatible schema field: binary_field, old type: 'string:byte', new type: 'string:uuid'"  "$cli" import --detect-byte-arrays --project=db_import_test --append import_test1 '{ "id" : 7, "binary_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }'
+  error "error incompatible schema field: binary_field, old type: 'string:byte', new type: 'string:date-time'"  "$cli" import --detect-byte-arrays --project=db_import_test --append import_test1 '{ "id" : 7, "binary_field" : "2022-11-04T16:17:23.967964263-07:00" }'
 
   out=$($cli describe collection --project=db_import_test import_test1|jq -S .)
   diff -w -u <(echo "$exp_out") <(echo "$out")

@@ -17,7 +17,6 @@ package schema
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 	"unsafe"
 
@@ -321,7 +320,7 @@ func TestSchemaInferenceNegative(t *testing.T) {
 				[]byte(`{ "incompatible_field" : 1 }`),
 				[]byte(`{ "incompatible_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }`),
 			},
-			fmt.Errorf("%w field: %s", ErrIncompatibleSchema, "incompatible_field"),
+			newInompatibleSchemaError("incompatible_field", "integer", "", "string", "uuid"),
 		},
 		{
 			"incompatible_prim_to_object",
@@ -329,7 +328,7 @@ func TestSchemaInferenceNegative(t *testing.T) {
 				[]byte(`{ "incompatible_field" : 1 }`),
 				[]byte(`{ "incompatible_field" : { "field1": "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" } }`),
 			},
-			fmt.Errorf("%w field: %s", ErrIncompatibleSchema, "incompatible_field"),
+			newInompatibleSchemaError("incompatible_field", "integer", "", "object", ""),
 		},
 		{
 			"incompatible_object_to_prim",
@@ -337,7 +336,7 @@ func TestSchemaInferenceNegative(t *testing.T) {
 				[]byte(`{ "incompatible_field" : { "field1": "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" } }`),
 				[]byte(`{ "incompatible_field" : 1 }`),
 			},
-			fmt.Errorf("%w field: %s", ErrIncompatibleSchema, "incompatible_field"),
+			newInompatibleSchemaError("incompatible_field", "object", "", "integer", ""),
 		},
 		{
 			"incompatible_array_to_prim",
@@ -345,7 +344,7 @@ func TestSchemaInferenceNegative(t *testing.T) {
 				[]byte(`{ "incompatible_field" : ["1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1"] }`),
 				[]byte(`{ "incompatible_field" : 1 }`),
 			},
-			fmt.Errorf("%w field: %s", ErrIncompatibleSchema, "incompatible_field"),
+			newInompatibleSchemaError("incompatible_field", "array", "", "integer", ""),
 		},
 		{
 			"incompatible_prim_to_array",
@@ -353,14 +352,14 @@ func TestSchemaInferenceNegative(t *testing.T) {
 				[]byte(`{ "incompatible_field" : 1 }`),
 				[]byte(`{ "incompatible_field" : ["1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1"] }`),
 			},
-			fmt.Errorf("%w field: %s", ErrIncompatibleSchema, "incompatible_field"),
+			newInompatibleSchemaError("incompatible_field", "integer", "", "array", ""),
 		},
 		{
 			"incompatible_array_mixed",
 			[][]byte{
 				[]byte(`{ "incompatible_field" : ["1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1", 1] }`),
 			},
-			fmt.Errorf("%w field: %s", ErrIncompatibleSchema, "incompatible_field"),
+			newInompatibleSchemaError("incompatible_field", "string", "uuid", "integer", ""),
 		},
 		{
 			"incompatible_array",
@@ -368,14 +367,14 @@ func TestSchemaInferenceNegative(t *testing.T) {
 				[]byte(`{ "incompatible_field" : [ 1 ] }`),
 				[]byte(`{ "incompatible_field" : ["1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1"] }`),
 			},
-			fmt.Errorf("%w field: %s", ErrIncompatibleSchema, "incompatible_field"),
+			newInompatibleSchemaError("incompatible_field", "integer", "", "string", "uuid"),
 		},
 		{
 			"incompatible_array_object_mixed",
 			[][]byte{
 				[]byte(`{ "incompatible_field" : [ { "one" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }, { "one" : 1 } ] }`),
 			},
-			fmt.Errorf("%w field: %s", ErrIncompatibleSchema, "one"),
+			newInompatibleSchemaError("one", "string", "uuid", "integer", ""),
 		},
 		{
 			"incompatible_array_object",
@@ -383,7 +382,7 @@ func TestSchemaInferenceNegative(t *testing.T) {
 				[]byte(`{ "incompatible_field" : [ { "one" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" } ] }`),
 				[]byte(`{ "incompatible_field" : [ { "one" : 1 } ] }`),
 			},
-			fmt.Errorf("%w field: %s", ErrIncompatibleSchema, "one"),
+			newInompatibleSchemaError("one", "string", "uuid", "integer", ""),
 		},
 		{
 			"incompatible_object",
@@ -391,7 +390,7 @@ func TestSchemaInferenceNegative(t *testing.T) {
 				[]byte(`{ "incompatible_field" : { "one" : 1 } }`),
 				[]byte(`{ "incompatible_field" : { "one" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" } }`),
 			},
-			fmt.Errorf("%w field: %s", ErrIncompatibleSchema, "one"),
+			newInompatibleSchemaError("one", "integer", "", "string", "uuid"),
 		},
 	}
 
