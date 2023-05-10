@@ -17,7 +17,7 @@
     },
     "goBinary": {
         "name": "tigris",
-        "url": "https://github.com/tigrisdata/tigris-cli/releases/download/v{{version}}/tigris_{{version}}_{{platform}}_{{arch}}.tar.gz",
+        "url": "https://github.com/tigrisdata/tigris-cli/releases/download/v{{version}}/tigris_{{version}}_{{platform}}_{{arch}}.{{ext}}",
         "checksums": {
             "darwin_arm64": "{{darwin_arm64_checksum}}",
             "darwin_amd64": "{{darwin_amd64_checksum}}",
