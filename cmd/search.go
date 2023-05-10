@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
-	login "github.com/tigrisdata/tigris-cli/login"
+	"github.com/tigrisdata/tigris-cli/login"
 	"github.com/tigrisdata/tigris-cli/util"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"github.com/tigrisdata/tigris-client-go/search"
@@ -32,7 +32,7 @@ var (
 	searchFields  []string
 	filter        string
 	facet         string
-	sort          string
+	sort          []string
 	includeFields []string
 	excludeFields []string
 	page          int32
@@ -61,13 +61,13 @@ var dbSearchCmd = &cobra.Command{
 %[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}'
 
 # Sort the results by age in increasing order
-%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}' --sort '[{"age": "$asc"}]'
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}' --sort '{"age": "$asc"}'
 
 # Exclude sensitive information from results
-%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}' --sort '[{"age": "$asc"}]' -x "phoneNumber,address"
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}' --sort '{"age": "$asc"}' -x "phoneNumber,address"
 
 # Paginate the results, with 15 per page
-%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}' --sort '[{"age": "$asc"}]' -x "phoneNumber,address" -p 1 -c 15
+%[1]s %[2]s -q "Alice" -f "firstName,lastName" --filter '{"age": {"$gt": 23}}' --facet '{"currentCity": {"size": 10}}' --sort '{"age": "$asc"}' -x "phoneNumber,address" -p 1 -c 15
 
 # Find users with last name exactly matching "Wong"
 %[1]s %[2]s --filter '{"lastName": "Wong"}'
@@ -75,12 +75,18 @@ var dbSearchCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			var sortArr driver.SortOrder
+			if len(sort) > 0 {
+				for _, v := range sort {
+					sortArr = append(sortArr, json.RawMessage(v))
+				}
+			}
 			request := &driver.SearchRequest{
 				Q:             query,
 				SearchFields:  searchFields,
 				Filter:        driver.Filter(filter),
 				Facet:         driver.Facet(facet),
-				Sort:          driver.SortOrder(sort),
+				Sort:          sortArr,
 				IncludeFields: includeFields,
 				ExcludeFields: excludeFields,
 				Page:          page,
@@ -117,7 +123,7 @@ func init() {
 		"comma separated value of fields to project search query against")
 	dbSearchCmd.Flags().StringVar(&filter, "filter", "{}", "further refine the search results using filters")
 	dbSearchCmd.Flags().StringVar(&facet, "facet", "{}", "retrieve aggregate ")
-	dbSearchCmd.Flags().StringVar(&sort, "sort", "[]", "order to sort the results")
+	dbSearchCmd.Flags().StringSliceVar(&sort, "sort", nil, "order to sort the results")
 	dbSearchCmd.Flags().StringSliceVarP(&includeFields, "includeFields", "i", []string{},
 		"comma separated value of document fields to include in results")
 	dbSearchCmd.Flags().StringSliceVarP(&excludeFields, "excludeFields", "x", []string{},

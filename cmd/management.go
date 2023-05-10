@@ -28,6 +28,7 @@ import (
 
 var (
 	rotate bool
+	global bool
 
 	ErrWrongArgs   = fmt.Errorf("please provide name and description to update or use --rotate to rotate the secret")
 	ErrAppNotFound = fmt.Errorf("app key not found")
@@ -72,16 +73,28 @@ Check the docs for more information: https://docs.tigrisdata.com/overview/authen
 	Run: func(cmd *cobra.Command, args []string) {
 		login.Ensure(cmd.Context(), func(ctx context.Context) error {
 			description := ""
+
 			if len(args) > 1 {
 				description = args[1]
 			}
-			app, err := client.Get().CreateAppKey(ctx, config.GetProjectName(), args[0], description)
-			if err != nil {
-				return util.Error(err, "create app_key failed")
-			}
 
-			err = util.PrettyJSON(app)
-			util.Fatal(err, "create app_key")
+			if global {
+				app, err := client.Get().CreateGlobalAppKey(ctx, args[0], description)
+				if err != nil {
+					return util.Error(err, "create app_key failed")
+				}
+
+				err = util.PrettyJSON(app)
+				util.Fatal(err, "create app_key")
+			} else {
+				app, err := client.Get().CreateAppKey(ctx, config.GetProjectName(), args[0], description)
+				if err != nil {
+					return util.Error(err, "create app_key failed")
+				}
+
+				err = util.PrettyJSON(app)
+				util.Fatal(err, "create app_key")
+			}
 
 			return nil
 		})
@@ -94,7 +107,15 @@ var dropAppKeyCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		login.Ensure(cmd.Context(), func(ctx context.Context) error {
-			if err := client.Get().DeleteAppKey(ctx, config.GetProjectName(), args[0]); err != nil {
+			var err error
+
+			if global {
+				err = client.Get().DeleteGlobalAppKey(ctx, args[0])
+			} else {
+				err = client.Get().DeleteAppKey(ctx, config.GetProjectName(), args[0])
+			}
+
+			if err != nil {
 				return util.Error(err, "drop app_key failed")
 			}
 
@@ -134,7 +155,15 @@ Output:
 				if len(args) > 2 {
 					desc = args[2]
 				}
-				_, err := client.Get().UpdateAppKey(ctx, config.GetProjectName(), args[0], args[1], desc)
+
+				var err error
+
+				if global {
+					_, err = client.Get().UpdateGlobalAppKey(ctx, args[0], args[1], desc)
+				} else {
+					_, err = client.Get().UpdateAppKey(ctx, config.GetProjectName(), args[0], args[1], desc)
+				}
+
 				if err != nil {
 					return util.Error(err, "alter app_key failed")
 				}
@@ -142,13 +171,23 @@ Output:
 
 			// rotate only when explicitly requested
 			if rotate {
-				sec, err := client.Get().RotateAppKeySecret(ctx, config.GetProjectName(), args[0])
-				if err != nil {
-					return util.Error(err, "alter app_key failed")
-				}
+				if global {
+					sec, err := client.Get().RotateGlobalAppKeySecret(ctx, args[0])
+					if err != nil {
+						return util.Error(err, "alter global app_key failed")
+					}
 
-				err = util.PrettyJSON(sec)
-				util.Fatal(err, "alter app_key failed")
+					err = util.PrettyJSON(sec)
+					util.Fatal(err, "alter global app_key failed")
+				} else {
+					sec, err := client.Get().RotateAppKeySecret(ctx, config.GetProjectName(), args[0])
+					if err != nil {
+						return util.Error(err, "alter app_key failed")
+					}
+
+					err = util.PrettyJSON(sec)
+					util.Fatal(err, "alter app_key failed")
+				}
 			}
 
 			return nil
@@ -156,7 +195,41 @@ Output:
 	},
 }
 
+func getGlobalAppKey(ctx context.Context, filter string) (*driver.GlobalAppKey, error) {
+	resp, err := client.Get().ListGlobalAppKeys(ctx)
+	if err != nil {
+		return nil, util.Error(err, "list app_key failed")
+	}
+
+	for _, v := range resp {
+		if v.Name == filter {
+			return v, nil
+		}
+	}
+
+	return nil, ErrAppNotFound
+}
+
 func getAppKey(ctx context.Context, filter string) (*driver.AppKey, error) {
+	if global {
+		gk, err := getGlobalAppKey(ctx, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		return &driver.AppKey{
+			Id:          gk.Id,
+			Name:        gk.Name,
+			Description: gk.Description,
+			Secret:      gk.Secret,
+			CreatedAt:   gk.CreatedAt,
+			CreatedBy:   gk.CreatedBy,
+			UpdatedAt:   gk.UpdatedAt,
+			UpdatedBy:   gk.UpdatedBy,
+			Project:     "",
+		}, nil
+	}
+
 	resp, err := client.Get().ListAppKeys(ctx, config.GetProjectName())
 	if err != nil {
 		return nil, util.Error(err, "list app_key failed")
@@ -186,13 +259,23 @@ var listAppKeysCmd = &cobra.Command{
 				err = util.PrettyJSON(app)
 				util.Fatal(err, "list app_keys")
 			} else {
-				resp, err := client.Get().ListAppKeys(ctx, config.GetProjectName())
-				if err != nil {
-					return util.Error(err, "list app_keys failed")
-				}
+				if global {
+					resp, err := client.Get().ListGlobalAppKeys(ctx)
+					if err != nil {
+						return util.Error(err, "list app_keys failed")
+					}
 
-				err = util.PrettyJSON(resp)
-				util.Fatal(err, "list app_keys")
+					err = util.PrettyJSON(resp)
+					util.Fatal(err, "list app_keys")
+				} else {
+					resp, err := client.Get().ListAppKeys(ctx, config.GetProjectName())
+					if err != nil {
+						return util.Error(err, "list app_keys failed")
+					}
+
+					err = util.PrettyJSON(resp)
+					util.Fatal(err, "list app_keys")
+				}
 			}
 
 			return nil
@@ -235,8 +318,18 @@ var createNamespaceCmd = &cobra.Command{
 	},
 }
 
+func addGlobalAppKeyFlag(cmd *cobra.Command) {
+	cmd.Flags().BoolVarP(&global, "global", "g", false,
+		"App key is global. Can be used across projects. Suitable for automation.")
+}
+
 func init() {
 	alterAppKeyCmd.Flags().BoolVarP(&rotate, "rotate", "r", false, "Rotate app key secret")
+
+	addGlobalAppKeyFlag(alterAppKeyCmd)
+	addGlobalAppKeyFlag(createAppKeyCmd)
+	addGlobalAppKeyFlag(listAppKeysCmd)
+	addGlobalAppKeyFlag(dropAppKeyCmd)
 
 	addProjectFlag(dropAppKeyCmd)
 	addProjectFlag(createAppKeyCmd)
