@@ -112,6 +112,8 @@ func GetSearch() driver.SearchClient {
 
 // ManagementGet returns an instance of authentication API client.
 func ManagementGet() driver.Management {
+	initConfig(&config.DefaultConfig)
+
 	if M == nil {
 		ctx, cancel := util.GetContext(context.Background())
 		defer cancel()
@@ -126,6 +128,8 @@ func ManagementGet() driver.Management {
 }
 
 func ObservabilityGet() driver.Observability {
+	initConfig(&config.DefaultConfig)
+
 	if O == nil {
 		ctx, cancel := util.GetContext(context.Background())
 		defer cancel()
