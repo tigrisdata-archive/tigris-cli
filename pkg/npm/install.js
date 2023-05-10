@@ -128,11 +128,13 @@ function parsePackageJson() {
     binPath: '/tmp',
     version,
     checksums: packageJson.goBinary.checksums,
+    ext: 'tar.gz',
   };
 
   // Binary name on Windows has .exe suffix
   if (process.platform === 'win32') {
     opts.binName += '.exe';
+    opts.ext = 'zip';
   }
 
   // Interpolate variables in URL, if necessary
@@ -140,6 +142,7 @@ function parsePackageJson() {
   url = url.replace(/{{platform}}/g, PLATFORM_MAPPING[process.platform]);
   url = url.replace(/{{version}}/g, version);
   url = url.replace(/{{bin_name}}/g, opts.binName);
+  url = url.replace(/{{ext}}/g, opts.ext);
 
   opts.url = url;
 
