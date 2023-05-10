@@ -3,6 +3,9 @@
 [![Build Status](https://github.com/tigrisdata/tigrisdb/workflows/go-lint/badge.svg)]()
 [![Build Status](https://github.com/tigrisdata/tigrisdb/workflows/go-test/badge.svg)]()
 
+[![NPM](https://img.shields.io/npm/v/@tigrisdata/tigris-cli)]()
+[![tigris](https://snapcraft.io/tigris/badge.svg)](https://snapcraft.io/tigris)
+
 Create databases and collections, read and write data, perform transactions,
 stream events and setup Tigris locally, all from the command line.
 
