@@ -57,17 +57,17 @@ var (
 	instances = map[string]instance{
 		"api.dev.tigrisdata.cloud": {
 			clientID: "zXKltgV3JhGwUqOCUWNmtU7aX5TytKGx",
-			authHost: "https://tigrisdata-dev.us.auth0.com/",
+			authHost: "https://login-dev.tigrisdata.cloud/",
 			audience: "https://tigris-api-dev",
 		},
 		"api.perf.tigrisdata.cloud": {
 			clientID: "zXKltgV3JhGwUqOCUWNmtU7aX5TytKGx",
-			authHost: "https://tigrisdata-dev.us.auth0.com/",
+			authHost: "https://login-dev.tigrisdata.cloud/",
 			audience: "https://tigris-api-perf",
 		},
 		"api.preview.tigrisdata.cloud": {
 			clientID: "GS8PrHA1aYblUR73yitqomc40ZYZ81jF",
-			authHost: "https://tigrisdata.us.auth0.com/",
+			authHost: "https://auth.tigrisdata.cloud/",
 			audience: "https://tigris-api-preview",
 		},
 	}
