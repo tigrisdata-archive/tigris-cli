@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,36 +16,97 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"runtime"
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
-var DefaultConfig = Config{
-	URL: "https://dev.tigrisdata.cloud:443/api",
+var (
+	DefaultConfig = Config{}
+
+	DefaultURL = "api.preview.tigrisdata.cloud"
+	Domain     = "tigrisdata.cloud"
+
+	Project string
+
+	errUnableToReadProject = fmt.Errorf("please specify project name")
+)
+
+type Log struct {
+	Level string `json:"level" yaml:"level,omitempty"`
 }
 
 type Config struct {
-	Token   string `json:",omitempty"`
-	URL     string `json:"url,omitempty"`
-	Timeout time.Duration
+	ClientID     string        `json:"client_id" yaml:"client_id,omitempty" mapstructure:"client_id"`
+	ClientSecret string        `json:"client_secret" yaml:"client_secret,omitempty" mapstructure:"client_secret"`
+	Token        string        `json:"token" yaml:"token,omitempty"`
+	URL          string        `json:"url" yaml:"url,omitempty"`
+	UseTLS       bool          `json:"use_tls" yaml:"use_tls,omitempty" mapstructure:"use_tls"`
+	Timeout      time.Duration `json:"timeout" yaml:"timeout,omitempty"`
+	Protocol     string        `json:"protocol" yaml:"protocol,omitempty"`
+	Log          Log           `json:"log" yaml:"log,omitempty"`
+	Project      string        `json:"project" yaml:"project,omitempty"`
+	Branch       string        `json:"branch" yaml:"branch,omitempty"`
 }
 
+var DefaultName = "tigris-cli"
+
 var configPath = []string{
-	"/etc/tigrisdata/",
-	"$HOME/.tigrisdata",
+	"/etc/tigris/",
+	"$HOME/.tigris",
 	"./config/",
 	"./",
 }
 
-var envPrefix = "tigrisdb"
+var envPrefix = "tigris"
+
+func Save(name string, config interface{}) error {
+	var home string
+
+	if runtime.GOOS == "windows" {
+		home = os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+	} else {
+		home = os.Getenv("HOME")
+	}
+
+	// if home is not set write to current directory
+	path := "."
+	if home != "" {
+		path = home
+	}
+
+	path += "/.tigris/"
+	if err := os.MkdirAll(path, 0o700); err != nil {
+		return err
+	}
+
+	file := path + name + ".yaml"
+	if err := os.Rename(file, file+".bak"); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+	}
+
+	b, err := yaml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(file, b, 0o600)
+}
 
 func Load(name string, config interface{}) {
-	viper.SetConfigName(name)
+	viper.SetConfigName(name + ".yaml")
 	viper.SetConfigType("yaml")
 
 	for _, v := range configPath {
@@ -53,21 +114,13 @@ func Load(name string, config interface{}) {
 	}
 
 	// This is needed to automatically bind environment variables to config struct
-	b, err := yaml.Marshal(config)
+	// Viper will only bind environment variables to the keys it already knows about
+	b, err := json.Marshal(config)
 	if err != nil {
-		log.Err(err).Msg("marshal config")
-	}
-	//log.Debug().RawJSON("config", b).Msg("default config")
-	br := bytes.NewBuffer(b)
-	err = viper.MergeConfig(br)
-	if err != nil {
-		log.Err(err).Msg("merge config")
+		e(err, "marshal config")
 	}
 
-	//spew.Dump(viper.AllKeys())
-
-	// This is needed to replace periods with underscores when mapping environment variables to multi-level
-	// config keys. For example, this will allow foundationdb.cluster_file to be mapped to FOUNDATIONDB_CLUSTER_FILE
+	// This is needed to replace periods with underscores when mapping environment variables to multi-level config keys
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// The environment variables have a higher priority as compared to config values defined in the config file.
@@ -75,25 +128,43 @@ func Load(name string, config interface{}) {
 	viper.SetEnvPrefix(envPrefix)
 	viper.AutomaticEnv()
 
-	pflag.Parse()
-	err = viper.BindPFlags(pflag.CommandLine)
-	if err != nil {
-		log.Err(err).Msg("bind flags")
+	viper.SetConfigType("json")
+
+	br := bytes.NewBuffer(b)
+	if err = viper.MergeConfig(br); err != nil {
+		e(err, "merge config")
 	}
 
-	err = viper.ReadInConfig()
+	viper.SetConfigType("yaml")
+
+	err = viper.MergeInConfig()
 	if err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			//log.Warn().Err(err).Msgf("config file not found")
-		} else {
-			log.Fatal().Err(err).Msgf("error reading config")
+		var ep viper.ConfigFileNotFoundError
+		if !errors.As(err, &ep) {
+			e(err, "error reading config")
 		}
 	}
 
 	if err := viper.Unmarshal(&config); err != nil {
-		log.Fatal().Err(err).Msg("error unmarshalling config")
+		e(err, "error unmarshalling config")
+	}
+}
+
+func e(err error, _ string) {
+	fmt.Fprintf(os.Stderr, "%v\n", err)
+	os.Exit(1)
+}
+
+func GetProjectName() string {
+	// first user supplied flag
+	// second env variable
+	// third config file
+	if Project == "" {
+		Project = DefaultConfig.Project
+		if Project == "" {
+			e(errUnableToReadProject, "unable to read project")
+		}
 	}
 
-	//log.Debug().Interface("config", &config).Msg("final")
-	//	spew.Dump(viper.AllKeys())
+	return Project
 }

@@ -1,0 +1,20 @@
+{{- with .Collection}}
+package model
+{{if and .HasTime .HasUUID}}
+import (
+{{"\t"}}"time"
+
+{{"\t"}}"github.com/google/uuid"
+)
+{{else}}
+    {{- if .HasTime}}
+import "time"
+    {{else}}
+        {{- if .HasUUID}}
+import "github.com/google/uuid"
+        {{- end}}
+    {{end}}
+{{- end}}
+
+{{- .Schema}}
+{{- end}}

@@ -1,0 +1,32 @@
+name: go-lint
+on:
+  push:
+  workflow_call:
+    secrets:
+      CLIENT_DEPLOY_KEY:
+        required: true
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.19'
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+
+      - name: Run lints
+        run: |
+          sudo apt-get install shellcheck
+          make lint

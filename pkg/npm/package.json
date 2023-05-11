@@ -1,0 +1,47 @@
+{
+    "name": "@tigrisdata/tigris-cli",
+    "version": "1.0.0-beta.11",
+    "description": "Tigris data platfrom CLI",
+    "scripts": {
+        "postinstall": "node install.js install",
+        "preuninstall": "node install.js uninstall"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/tigrisdata/tigris-cli.git"
+    },
+    "author": "Yevgeniy Firsov",
+    "license": "Apache-2.0",
+    "bugs": {
+        "url": "https://github.com/tigrisdata/tigris-cli/issues"
+    },
+    "goBinary": {
+        "name": "tigris",
+        "url": "https://github.com/tigrisdata/tigris-cli/releases/download/v{{version}}/tigris_{{version}}_{{platform}}_{{arch}}.{{ext}}",
+        "checksums": {
+            "darwin_arm64": "{{darwin_arm64_checksum}}",
+            "darwin_amd64": "{{darwin_amd64_checksum}}",
+            "linux_arm64": "{{linux_arm64_checksum}}",
+            "linux_amd64": "{{linux_amd64_checksum}}",
+            "windows_arm64": "{{windows_arm64_checksum}}",
+            "windows_amd64": "{{windows_amd64_checksum}}"
+        }
+    },
+    "bin": {
+        "tigris": "./bin/tigris"
+    },
+    "files": [
+        "install.js"
+    ],
+    "homepage": "https://www.tigrisdata.com",
+    "dependencies": {
+        "mkdirp": "^1.0.4",
+        "node-fetch": "^2.6.7",
+        "tar": "^6.1.12"
+    },
+    "devDependencies": {
+        "eslint": "^8.27.0",
+        "eslint-config-airbnb-base": "^15.0.0",
+        "eslint-plugin-import": "^2.26.0"
+    }
+}

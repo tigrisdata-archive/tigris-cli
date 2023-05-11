@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,7 @@ import (
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "creates database or collection",
-	Long:  "creates database or collection",
+	Short: "Creates project, collection, namespace or app_key",
 	Args:  cobra.MinimumNArgs(1),
 }
 

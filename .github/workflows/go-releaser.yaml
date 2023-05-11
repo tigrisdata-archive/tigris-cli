@@ -1,0 +1,88 @@
+name: goreleaser
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch Git tags
+        run: git fetch --force --tags
+
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.19.2'
+          cache: true
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Genearate shell completions
+        run: |
+          make
+          mkdir -p .tmp
+          ./tigris completion bash >.tmp/bash.completions
+          ./tigris completion fish >.tmp/fish.completions
+          ./tigris completion zsh >.tmp/zsh.completions
+          make clean
+
+      - name: Goreleaser
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+
+      - name: Build Snap
+        uses: snapcore/action-build@v1
+        id: build
+        with:
+          path: pkg/snap
+
+      - name: Publish Snap
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: stable
+
+      - name: Upload to shorts.io
+        run: |
+          API_KEY=${{secrets.SHORTS_IO_KEY}} VERSION=${GITHUB_REF/refs\/tags\//} /bin/bash scripts/publish.sh
+
+      - name: Publish to NPM
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd pkg/npm
+          sh ../../scripts/update_npm_checksums.sh
+          npm version --no-git-tag-version ${GITHUB_REF/refs\/tags\//}
+          npm publish --access public
+          cd ../..
+
+      - name: Test installation
+        run: |
+          VERSION=${GITHUB_REF/refs\/tags\//} /bin/bash scripts/test_pkg_install.sh
+

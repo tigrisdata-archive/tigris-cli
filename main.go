@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,21 +15,17 @@
 package main
 
 import (
-	"github.com/rs/zerolog/log"
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/cmd"
-	"github.com/tigrisdata/tigrisdb-cli/config"
-	"github.com/tigrisdata/tigrisdb-cli/util"
+	_ "embed" // needed for templates embedding
+
+	"github.com/tigrisdata/tigris-cli/cmd"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 func main() {
-	util.LogConfigure()
+	config.Load(config.DefaultName, &config.DefaultConfig)
 
-	config.Load("tigrisdb-cli1", &config.DefaultConfig)
-
-	if err := client.Init(config.DefaultConfig); err != nil {
-		log.Fatal().Err(err).Msg("tigrisdb client initialization failed")
-	}
+	util.LogConfigure(&config.DefaultConfig.Log)
 
 	cmd.Execute()
 }

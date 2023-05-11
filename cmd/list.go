@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import (
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list databases of the project or list database collections",
-	Long:  "list databases of the project or list database collections",
+	Short: "Lists projects, collections or namespaces",
 	Args:  cobra.MinimumNArgs(1),
 }
 
 func init() {
+	addProjectFlag(listCmd)
 	rootCmd.AddCommand(listCmd)
 }

@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,32 +15,57 @@
 package cmd
 
 import (
-	"github.com/rs/zerolog/log"
+	"context"
+	"encoding/json"
+	"fmt"
+	"unsafe"
+
 	"github.com/spf13/cobra"
-	"github.com/tigrisdata/tigrisdb-cli/client"
-	"github.com/tigrisdata/tigrisdb-cli/util"
-	"github.com/tigrisdata/tigrisdb-client-go/driver"
+	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/iterate"
+	"github.com/tigrisdata/tigris-cli/login"
+	"github.com/tigrisdata/tigris-cli/util"
+	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-// insertCmd represents the insert command
 var insertCmd = &cobra.Command{
-	Use:   "insert",
-	Short: "insert documents",
-	Long:  `insert one or multiple documents`,
+	Use:   "insert {collection} {document}...|-",
+	Short: "Inserts document(s)",
+	Long:  "Inserts one or more documents into a collection.",
+	Example: fmt.Sprintf(`
+  # Insert a single document into the users collection
+  %[1]s insert --project=testdb users '{"id": 1, "name": "Alice Alan"}'
+
+  # Insert multiple documents into the users collection
+  %[1]s insert --project=testdb users \
+  '[
+    {"id": 20, "name": "Jania McGrory"},
+    {"id": 21, "name": "Bunny Instone"}
+  ]'
+
+  # Pass documents to insert via stdin
+  # $ cat /home/alice/user_records.json
+  # [
+  #  {"id": 20, "name": "Jania McGrory"},
+  #  {"id": 21, "name": "Bunny Instone"}
+  # ]
+  cat /home/alice/user_records.json | %[1]s insert --project=testdb users -
+`, rootCmd.Root().Name()),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := util.GetContext(cmd.Context())
-		defer cancel()
-		docs := make([]driver.Document, 0, len(args))
-		for _, v := range args[2:] {
-			docs = append(docs, driver.Document(v))
-		}
-		_, err := client.Get().Insert(ctx, args[0], args[1], docs, &driver.InsertOptions{})
-		if err != nil {
-			log.Fatal().Err(err).Msg("insert documents failed")
-		}
+		login.Ensure(cmd.Context(), func(ctx context.Context) error {
+			return iterate.Input(ctx, cmd, 1, args, func(ctx context.Context, args []string, docs []json.RawMessage) error {
+				ptr := unsafe.Pointer(&docs)
+				_, err := client.GetDB().Insert(ctx, args[0], *(*[]driver.Document)(ptr))
+
+				return util.Error(err, "insert documents")
+			})
+		})
 	},
 }
 
 func init() {
+	insertCmd.Flags().Int32VarP(&iterate.BatchSize, "batch-size", "b", iterate.BatchSize, "set batch size")
+	addProjectFlag(insertCmd)
 	rootCmd.AddCommand(insertCmd)
 }

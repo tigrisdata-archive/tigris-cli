@@ -1,4 +1,4 @@
-// Copyright 2022 Tigris Data, Inc.
+// Copyright 2022-2023 Tigris Data, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,34 +18,42 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/tigrisdata/tigris-cli/cmd/search"
+	"github.com/tigrisdata/tigris-cli/config"
+	"github.com/tigrisdata/tigris-cli/util"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "tigrisdb-cli",
-	Short: "tigrisdb-cli is a command line interface of TigrisDB database",
-	Long:  "tigrisdb-cli is a command line interface of TigrisDB database",
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Use:   "tigris",
+	Short: "tigris is a command line interface of Tigris data platform",
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+var dbCmd = &cobra.Command{
+	Use:     "db",
+	Short:   "Database related commands",
+	Aliases: []string{"database"},
+}
+
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
+	rootCmd.Flags().BoolVarP(&util.Quiet, "quiet", "q", false,
+		"Suppress informational messages")
 
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.tigrisdb-cli.yaml)")
+	rootCmd.AddCommand(search.RootCmd)
+	rootCmd.AddCommand(dbCmd)
+}
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+func addProjectFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringVarP(&config.DefaultConfig.Project,
+		"project", "p", "", "Specifies project: --project=my_proj1")
+
+	if cmd != branchCmd {
+		cmd.PersistentFlags().StringVar(&config.DefaultConfig.Branch,
+			"branch", "", "Specifies branch: --branch=my_br1")
+	}
 }

@@ -1,0 +1,58 @@
+linters:
+  enable-all: true
+  disable:
+    - musttag # It lints dependencies too. Enable when go client is fixed
+    - godox # TODO and FIXME in the code
+    - paralleltest
+    # zerolog config fails
+    # fix later
+    - reassign
+    # we prefer whitebox testing
+    - testpackage
+
+    # Not working with generics
+    # enable in the future
+    - contextcheck
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - wastedassign
+
+    # These are two strict or deprecated
+    - nosnakecase
+    - deadcode
+    - varcheck
+    - interfacer
+    - ifshort
+    - ireturn
+    - wrapcheck
+    - varnamelen
+    - gomnd
+    - tagliatelle
+    - gochecknoglobals
+    - exhaustivestruct
+    - exhaustruct
+    - golint
+    - maligned
+    - gochecknoinits
+    - scopelint
+linters-settings:
+  nlreturn:
+    block-size: 2
+  cyclop:
+    max-complexity: 12
+  goheader:
+    template: |-
+      Copyright {{ YEAR-RANGE }} Tigris Data, Inc.
+
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
