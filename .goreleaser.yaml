@@ -10,7 +10,7 @@ builds:
       - arm64
     binary: tigris
     flags:
-      - tags=release,tigris_grpc,tigris_http
+      - -tags=release,tigris_grpc,tigris_http
     ldflags:
       - -w -extldflags '-static'
       - -X 'github.com/tigrisdata/tigris-cli/util.Version={{.Version}}'
