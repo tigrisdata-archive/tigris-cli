@@ -48,6 +48,12 @@ type instance struct {
 var (
 	ErrStateMismatched  = fmt.Errorf("state is not matched")
 	ErrInstanceNotFound = fmt.Errorf("instance not found")
+
+	defaultInstance = instance{
+		clientID: "GS8PrHA1aYblUR73yitqomc40ZYZ81jF",
+		authHost: "https://auth.tigrisdata.cloud/",
+		audience: "https://tigris-api-prod",
+	}
 )
 
 var (
@@ -295,7 +301,11 @@ func CmdLow(_ context.Context, host string) error {
 
 	inst, ok := instances[host]
 	if !ok {
-		return util.Error(fmt.Errorf("%w: %s", ErrInstanceNotFound, host), "Instance config not found")
+		if !strings.HasSuffix(host, ".tigrisdata.cloud") {
+			return util.Error(fmt.Errorf("%w: %s", ErrInstanceNotFound, host), "Instance config not found")
+		}
+
+		inst = defaultInstance
 	}
 
 	p, err := oidc.NewProvider(context.Background(), inst.authHost)
