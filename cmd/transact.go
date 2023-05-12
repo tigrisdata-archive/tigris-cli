@@ -150,7 +150,7 @@ var transactCmd = &cobra.Command{
 All the read, write and schema operations are supported.`,
 	Example: fmt.Sprintf(`
   # Perform a transaction that inserts and updates in three collections
-  %[1]s tigris transact testdb \
+  %[1]s tigris transact myproj \
   '[
     {
       "insert": {

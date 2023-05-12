@@ -125,7 +125,7 @@ Automatically:
   * Evolve the schema as soon as it's backward compatible
 `,
 	Example: fmt.Sprintf(`
-  %[1]s import --project=testdb users --primary-key=id \
+  %[1]s import --project=myproj users --primary-key=id \
   '[
     {"id": 20, "name": "Jania McGrory"},
     {"id": 21, "name": "Bunny Instone"}

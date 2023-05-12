@@ -15,6 +15,10 @@
 package cmd
 
 import (
+	"fmt"
+	"path"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 	"github.com/tigrisdata/tigris-cli/util"
@@ -25,7 +29,23 @@ var docsCmd = &cobra.Command{
 	Short: "Generates CLI documentation in Markdown format",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		err := doc.GenMarkdownTree(rootCmd, args[0])
+		err := doc.GenMarkdownTreeCustom(rootCmd, args[0], func(name string) string {
+			name = path.Base(name)
+			name = strings.TrimSuffix(name, path.Ext(name))
+			name = strings.TrimPrefix(name, "tigris_")
+			name = strings.ReplaceAll(name, "_", "-")
+			title := strings.ReplaceAll(name, "-", " ")
+			title = strings.Title(title) //nolint:staticcheck
+
+			return fmt.Sprintf(`---
+id: %s
+title: %s
+slug: /sdkstools/cli/%s
+---
+`, name, title, name)
+		}, func(link string) string {
+			return link
+		})
 		util.Fatal(err, "generating Markdown documentation")
 	},
 }

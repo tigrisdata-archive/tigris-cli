@@ -2,13 +2,16 @@
 
 [![Build Status](https://github.com/tigrisdata/tigrisdb/workflows/go-lint/badge.svg)]()
 [![Build Status](https://github.com/tigrisdata/tigrisdb/workflows/go-test/badge.svg)]()
+[![Go Report Card](https://goreportcard.com/badge/github.com/tigrisdata/tigris-cli)](https://goreportcard.com/report/github.com/tigrisdata/tigris-cli)
+
+[![NPM](https://img.shields.io/npm/v/@tigrisdata/tigris-cli)](https://www.npmjs.com/package/@tigrisdata/tigris-cli)
+[![tigris](https://snapcraft.io/tigris/badge.svg)](https://snapcraft.io/tigris)
 
 Create databases and collections, read and write data, perform transactions,
 stream events and setup Tigris locally, all from the command line.
 
 # Documentation
 
-- [Quickstart](https://docs.tigrisdata.com/quickstart/with-cli)
 - [Working Locally](https://docs.tigrisdata.com/cli/working-locally)
 - [Command Reference](https://docs.tigrisdata.com/cli)
 
@@ -72,6 +75,7 @@ Available Commands:
   help           Help about any command
   import         Import documents into collection
   insert         Inserts document(s)
+  invitation     Invitation management commands
   list           Lists projects, collections or namespaces
   login          Authenticate on the Tigris instance
   logout         Logout from Tigris instance

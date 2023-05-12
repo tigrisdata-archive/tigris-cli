@@ -35,19 +35,19 @@ var replaceCmd = &cobra.Command{
 	Long:    "Inserts new documents or replaces existing documents.",
 	Example: fmt.Sprintf(`
   # Insert new documents
-  %[1]s replace --project=testdb users '{"id": 1, "name": "John Wong"}'
+  %[1]s replace --project=myproj users '{"id": 1, "name": "John Wong"}'
 
   # Replace existing document
   # Existing document with the following data will get replaced
   #  {"id": 20, "name": "Jania McGrory"}
-  %[1]s replace --project=testdb users '{"id": 20, "name": "Alice Alan"}'
+  %[1]s replace --project=myproj users '{"id": 20, "name": "Alice Alan"}'
 
   # Insert or replace multiple documents
   # Existing document with the following data will get replaced
   #  {"id": 20, "name": "Alice Alan"}
   #  {"id": 21, "name": "Bunny Instone"}
   # While the new document {"id": 19, "name": "New User"} will get inserted
-  %[1]s replace --project=testdb users \
+  %[1]s replace --project=myproj users \
   '[
     {"id": 19, "name": "New User"},
     {"id": 20, "name": "Replaced Alice Alan"},

@@ -71,7 +71,7 @@ var dbSearchCmd = &cobra.Command{
 
 # Find users with last name exactly matching "Wong"
 %[1]s %[2]s --filter '{"lastName": "Wong"}'
-`, rootCmd.Root().Name(), "search --project=testdb users"),
+`, rootCmd.Root().Name(), "search --project=myproj users"),
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		login.Ensure(cmd.Context(), func(ctx context.Context) error {

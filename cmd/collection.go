@@ -111,7 +111,7 @@ var createCollectionCmd = &cobra.Command{
 	Long:    "Creates collections with provided schema.",
 	Example: fmt.Sprintf(`
   # Pass the schema as a string
-  %[1]s create collection --project=testdb '{
+  %[1]s create collection --project=myproj '{
 	"title": "users",
 	"description": "Collection of documents with details of users",
 	"properties": {
@@ -150,11 +150,11 @@ var createCollectionCmd = &cobra.Command{
   #    "id"
   #  ]
   # }
-  %[1]s create collection --project=testdb </home/alice/users.json
+  %[1]s create collection --project=myproj </home/alice/users.json
 
   # Create collection with schema passed through stdin
-  cat /home/alice/users.json | %[1]s create collection testdb -
-  %[1]s describe collection --project=testdb users | jq .schema | %[1]s create collection testdb -
+  cat /home/alice/users.json | %[1]s create collection myproj -
+  %[1]s describe collection --project=myproj users | jq .schema | %[1]s create collection myproj -
 `, rootCmd.Root().Name()),
 	Run: func(cmd *cobra.Command, args []string) {
 		login.Ensure(cmd.Context(), func(ctx context.Context) error {
@@ -201,7 +201,7 @@ var alterCollectionCmd = &cobra.Command{
 	Long:  "Updates collection schema.",
 	Example: fmt.Sprintf(`
   # Pass the schema as a string
-  %[1]s alter collection --project=testdb '{
+  %[1]s alter collection --project=myproj '{
 	"title": "users",
 	"description": "Collection of documents with details of users",
 	"properties": {

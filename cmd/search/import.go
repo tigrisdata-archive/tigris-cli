@@ -88,7 +88,7 @@ var importCmd = &cobra.Command{
 Input is a stream or array of JSON documents to import.
 `,
 	Example: fmt.Sprintf(`
-  %[1]s search import --project=testdb users --create-index \
+  %[1]s search import --project=myproj users --create-index \
   '[
     {"id": 20, "name": "Jania McGrory"},
     {"id": 21, "name": "Bunny Instone"}
