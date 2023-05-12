@@ -35,6 +35,7 @@
     ],
     "homepage": "https://www.tigrisdata.com",
     "dependencies": {
+        "adm-zip": "^0.5.10",
         "mkdirp": "^1.0.4",
         "node-fetch": "^2.6.7",
         "tar": "^6.1.12"

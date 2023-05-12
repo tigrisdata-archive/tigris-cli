@@ -2,9 +2,13 @@
 
 /* eslint-disable no-console */
 
-const fetch = require('node-fetch'); const path = require('path');
-const tar = require('tar'); const mkdirp = require('mkdirp');
-const fs = require('fs'); const { execSync } = require('child_process');
+const fetch = require('node-fetch');
+const path = require('path');
+const tar = require('tar');
+const AdmZip = require('adm-zip'); // windows unzip
+const mkdirp = require('mkdirp');
+const fs = require('fs');
+const { execSync } = require('child_process');
 const crypto = require('crypto');
 const process = require('node:process');
 
@@ -20,6 +24,8 @@ const PLATFORM_MAPPING = {
   linux: 'linux',
   win32: 'windows',
 };
+
+const IS_WINDOWS = process.platform === 'win32';
 
 function getInstallationPath(callback) {
   const out = execSync('npm root');
@@ -132,7 +138,7 @@ function parsePackageJson() {
   };
 
   // Binary name on Windows has .exe suffix
-  if (process.platform === 'win32') {
+  if (IS_WINDOWS) {
     opts.binName += '.exe';
     opts.ext = 'zip';
   }
@@ -165,27 +171,44 @@ function install(callback) {
   mkdirp.sync(opts.binPath);
 
   console.log(`Downloading from URL: ${opts.url}`);
+
   fetch(opts.url).then((res) => {
     const hash = crypto.createHash('sha256').setEncoding('hex');
     res.body.pipe(hash).on('end', () => { hash.end(); });
-    res.body
-      .pipe(
-        tar.x(
-          {
-            C: opts.binPath,
-          },
-          ['tigris'],
-        ),
-      )
-      .on('end', () => {
-        verifyAndPlaceBinary(
-          opts.binName,
-          opts.binPath,
-          hash.read(),
-          opts.checksums,
-          callback,
-        );
-      });
+
+    const handleExtractComplete = () => {
+      verifyAndPlaceBinary(
+        opts.binName,
+        opts.binPath,
+        hash.read(),
+        opts.checksums,
+        callback,
+      );
+    };
+
+    if (IS_WINDOWS) {
+      // Numerous unzip Node stream supporting solutions were tried.
+      // However, none seem to unzip the .exe in a usable format.
+      // Therefore, saving to disk and then using a trusted unzipper
+      // that doesn't support streams to extract.
+      const tmpZip = path.join(opts.binPath, 'tigris-tmp.zip');
+      res.body
+        .pipe(fs.createWriteStream(tmpZip))
+        .on('finish', () => {
+          const zip = new AdmZip(tmpZip);
+          zip.extractAllTo(opts.binPath, true);
+          fs.unlinkSync(tmpZip);
+
+          handleExtractComplete();
+        });
+    } else {
+      res.body.pipe(tar.x(
+        {
+          C: opts.binPath,
+        },
+        ['tigris'],
+      )).on('end', handleExtractComplete);
+    }
   });
 
   return null;

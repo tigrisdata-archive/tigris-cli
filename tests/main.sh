@@ -64,10 +64,6 @@ export TIGRIS_URL="localhost:$TIGRIS_TEST_PORT"
 $cli server info
 $cli server version
 
-if [ "$OS" == 'Darwin' ]; then
-  export TIGRIS_TIMEOUT=35s
-fi
-
 test_config() {
   export TIGRIS_CLIENT_ID=test_id_1
   export TIGRIS_CLIENT_SECRET=test_secret_1
@@ -431,6 +427,10 @@ source "$BASEDIR/search/import.sh"
 
 main() { 
 	test_config
+
+	if [ "$OS" == 'Darwin' ]; then
+		export TIGRIS_TIMEOUT=35s
+	fi
 
 	# Exercise tests via HTTP
 	unset TIGRIS_PROTOCOL

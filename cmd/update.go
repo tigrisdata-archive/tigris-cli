@@ -31,7 +31,7 @@ var updateCmd = &cobra.Command{
 	Long:  "Updates the field values in documents according to provided filter.",
 	Example: fmt.Sprintf(`
   # Update the field "name" of user where the value of the id field is 2
-  %[1]s update --project=testdb users '{"id": 19}' '{"$set": {"name": "Updated New User"}}'
+  %[1]s update --project=myproj users '{"id": 19}' '{"$set": {"name": "Updated New User"}}'
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {

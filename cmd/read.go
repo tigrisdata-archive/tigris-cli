@@ -43,13 +43,13 @@ all the fields of the documents are selected.`,
   # Read a user document where id is 20
   # The output would be 
   #  {"id": 20, "name": "Jania McGrory"}
-  %[1]s read --project=testdb users '{"id": 20}'
+  %[1]s read --project=myproj users '{"id": 20}'
 
   # Read user documents where id is 2 or 4
   # The output would be
   #  {"id": 2, "name": "Alice Wong"}
   #  {"id": 4, "name": "Jigar Joshi"}
-  %[1]s read --project=testdb users '{"$or": [{"id": 2}, {"id": 4}]}'
+  %[1]s read --project=myproj users '{"$or": [{"id": 2}, {"id": 4}]}'
 
   # Read all documents in the user collection
   # The output would be
@@ -57,7 +57,7 @@ all the fields of the documents are selected.`,
   #  {"id": 4, "name": "Jigar Joshi"}
   #  {"id": 20, "name": "Jania McGrory"}
   #  {"id": 21, "name": "Bunny Instone"}
-  %[1]s read --project=testdb users
+  %[1]s read --project=myproj users
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

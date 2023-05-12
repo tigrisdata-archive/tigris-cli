@@ -34,10 +34,10 @@ var insertCmd = &cobra.Command{
 	Long:  "Inserts one or more documents into a collection.",
 	Example: fmt.Sprintf(`
   # Insert a single document into the users collection
-  %[1]s insert --project=testdb users '{"id": 1, "name": "Alice Alan"}'
+  %[1]s insert --project=myproj users '{"id": 1, "name": "Alice Alan"}'
 
   # Insert multiple documents into the users collection
-  %[1]s insert --project=testdb users \
+  %[1]s insert --project=myproj users \
   '[
     {"id": 20, "name": "Jania McGrory"},
     {"id": 21, "name": "Bunny Instone"}
@@ -49,7 +49,7 @@ var insertCmd = &cobra.Command{
   #  {"id": 20, "name": "Jania McGrory"},
   #  {"id": 21, "name": "Bunny Instone"}
   # ]
-  cat /home/alice/user_records.json | %[1]s insert --project=testdb users -
+  cat /home/alice/user_records.json | %[1]s insert --project=myproj users -
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

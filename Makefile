@@ -14,7 +14,7 @@ ${BIN}: ${GO_SRC} go.sum
 	CGO_ENABLED=0 go build ${BUILD_PARAM} .
 
 lint:
-	golangci-lint run --timeout=3m --fix
+	golangci-lint run --fix
 	shellcheck tests/*.sh
 	cd pkg/npm && TIGRIS_SKIP_VERIFY=1 npm i; npx eslint install.js
 	git checkout pkg/npm/bin/tigris # lints above overwrites placeholder with real binary

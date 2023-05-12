@@ -107,7 +107,7 @@ var createIndexCmd = &cobra.Command{
 	Long:    "Creates indexes with provided schema.",
 	Example: fmt.Sprintf(`
   # Pass the schema as a string
-  %[1]s create index --project=testdb '{
+  %[1]s create index --project=myproj '{
 	"title": "users",
 	"description": "Index of documents with details of users",
 	"properties": {
@@ -140,11 +140,11 @@ var createIndexCmd = &cobra.Command{
   #    }
   #  }
   # }
-  %[1]s create index --project=testdb </home/alice/users.json
+  %[1]s create index --project=myproj </home/alice/users.json
 
   # Create index with schema passed through stdin
-  cat /home/alice/users.json | %[1]s create index testdb -
-  %[1]s describe index --project=testdb users | jq .schema | %[1]s create index testdb -
+  cat /home/alice/users.json | %[1]s create index myproj -
+  %[1]s describe index --project=myproj users | jq .schema | %[1]s create index myproj -
 `, "tigris search"),
 	Run: func(cmd *cobra.Command, args []string) {
 		login.Ensure(cmd.Context(), func(ctx context.Context) error {

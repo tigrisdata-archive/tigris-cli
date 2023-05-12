@@ -31,10 +31,10 @@ var deleteCmd = &cobra.Command{
 	Long:  "Deletes documents according to the provided filter.",
 	Example: fmt.Sprintf(`
   # Delete a user where the value of the id field is 2
-  %[1]s delete --project=testdb users '{"id": 2}'
+  %[1]s delete --project=myproj users '{"id": 2}'
 
   # Delete users where the value of id field is 1 or 3
-  %[1]s delete --project=testdb users '{"$or": [{"id": 1}, {"id": 3}]}'
+  %[1]s delete --project=myproj users '{"$or": [{"id": 1}, {"id": 3}]}'
 `, rootCmd.Root().Name()),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
