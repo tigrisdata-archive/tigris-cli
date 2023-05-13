@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"unsafe"
 
@@ -54,6 +55,10 @@ var (
 	ErrCollectionShouldExist = fmt.Errorf("collection should exist to import CSV with no field names")
 	ErrNoAppend              = fmt.Errorf(
 		"collection exists. use --append if you need to add documents to existing collection")
+
+	ErrNoRecordsExpected = fmt.Errorf("no records expected in the collection after fixing numbers")
+
+	FirstRecord = true
 )
 
 func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMessage) error {
@@ -74,7 +79,66 @@ func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMe
 	return util.Error(err, "create or update collection")
 }
 
+func fixNumbers(ctx context.Context, coll string, docs []json.RawMessage) {
+	err := schema.Infer(&sch, coll, docs[0:1], PrimaryKey, AutoGenerate, 1)
+	util.Fatal(err, "infer schema")
+
+	if schema.HasArrayOfObjects {
+		b, err := json.Marshal(schema.DummyRecord)
+		util.Fatal(err, "marshal number fixer record")
+
+		_, err = client.GetDB().Insert(ctx, coll, []driver.Document{b})
+		util.Fatal(err, "insert")
+
+		_, err = client.GetDB().Delete(ctx, coll, driver.Filter("{}"))
+		util.Fatal(err, "delete")
+	}
+}
+
+func guaranteeFloatsInFirstRecord(ctx context.Context, coll string, docs []json.RawMessage) {
+	if !FirstRecord {
+		return
+	}
+
+	cnt, err := client.GetDB().Count(ctx, coll, driver.Filter("{}"))
+
+	var ep *driver.Error
+
+	if err != nil {
+		if errors.As(err, &ep) && ep.Code == api.Code_NOT_FOUND {
+			log.Debug().Msg("collection doesn't exits, skip fixing numbers")
+			return
+		}
+
+		util.Fatal(err, "get count")
+	}
+
+	if cnt == 0 {
+		schema.DetectArrayOfObjects = true
+		schema.DetectIntegers = false
+		schema.ReplaceNumber = true
+
+		fixNumbers(ctx, coll, docs)
+
+		schema.DetectArrayOfObjects = false
+		schema.DetectIntegers = true
+		schema.ReplaceNumber = false
+
+		cnt, err := client.GetDB().Count(ctx, coll, driver.Filter("{}"))
+		util.Fatal(err, "get count after")
+
+		if cnt != 0 {
+			util.Fatal(ErrNoRecordsExpected, "checking number of records after")
+		}
+	}
+
+	FirstRecord = false
+}
+
 func insertWithInference(ctx context.Context, coll string, docs []json.RawMessage) error {
+	// FIXME: This is temporary fix, should moved to server ASAP
+	guaranteeFloatsInFirstRecord(ctx, coll, docs)
+
 	ptr := unsafe.Pointer(&docs)
 
 	_, err := client.GetDB().Insert(ctx, coll, *(*[]driver.Document)(ptr))

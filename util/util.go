@@ -114,7 +114,7 @@ func Infof(format string, args ...interface{}) {
 }
 
 func Error(err error, msg string, args ...interface{}) error {
-	log.Err(err).CallerSkipFrame(3).Msgf(msg, args...)
+	log.Err(err).CallerSkipFrame(2).Msgf(msg, args...)
 
 	if err == nil {
 		return nil
