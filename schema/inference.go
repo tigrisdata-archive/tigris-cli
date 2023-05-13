@@ -54,6 +54,11 @@ var (
 	ErrExpectedString     = fmt.Errorf("expected string type")
 	ErrExpectedNumber     = fmt.Errorf("expected json.Number")
 	ErrUnsupportedType    = fmt.Errorf("unsupported type")
+
+	HasArrayOfObjects    bool
+	DummyRecord          map[string]any
+	DetectArrayOfObjects bool
+	ReplaceNumber        bool
 )
 
 func newInompatibleSchemaError(name, oldType, oldFormat, newType, newFormat string) error {
@@ -249,6 +254,12 @@ func traverseArray(name string, existingField *schema.Field, newField *schema.Fi
 		newField.Items.Format = nf
 
 		if t == typeObject {
+			if DetectArrayOfObjects {
+				log.Debug().Msg("detected array of objects")
+
+				HasArrayOfObjects = true
+			}
+
 			values, _ := reflect.ValueOf(v).Index(i).Interface().(map[string]any)
 			if err = traverseObject(name, newField.Items, newField.Items, values); err != nil {
 				return err
@@ -335,6 +346,10 @@ func traverseFields(sch map[string]*schema.Field, fields map[string]any, autoGen
 			continue
 		}
 
+		if t == typeNumber && ReplaceNumber {
+			fields[name] = 1.1
+		}
+
 		setAutoGenerate(autoGen, name, f)
 
 		sch[name] = f
@@ -371,6 +386,10 @@ func docToSchema(sch *schema.Schema, name string, data []byte, pk []string, auto
 	if sch.PrimaryKey == nil && f != nil && f.Format == formatUUID {
 		f.AutoGenerate = true
 		sch.PrimaryKey = []string{"id"}
+	}
+
+	if ReplaceNumber {
+		DummyRecord = m
 	}
 
 	return nil
