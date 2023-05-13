@@ -346,7 +346,7 @@ func traverseFields(sch map[string]*schema.Field, fields map[string]any, autoGen
 			continue
 		}
 
-		if t == typeNumber && ReplaceNumber {
+		if sch != nil && sch[name] != nil && sch[name].Type == typeNumber && ReplaceNumber {
 			fields[name] = 1.1
 		}
 
