@@ -115,13 +115,11 @@ func guaranteeFloatsInFirstRecord(ctx context.Context, coll string, docs []json.
 
 	if cnt == 0 {
 		schema.DetectArrayOfObjects = true
-		schema.DetectIntegers = false
 		schema.ReplaceNumber = true
 
 		fixNumbers(ctx, coll, docs)
 
 		schema.DetectArrayOfObjects = false
-		schema.DetectIntegers = true
 		schema.ReplaceNumber = false
 
 		cnt, err := client.GetDB().Count(ctx, coll, driver.Filter("{}"))
