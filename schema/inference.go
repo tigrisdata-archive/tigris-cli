@@ -55,10 +55,7 @@ var (
 	ErrExpectedNumber     = fmt.Errorf("expected json.Number")
 	ErrUnsupportedType    = fmt.Errorf("unsupported type")
 
-	HasArrayOfObjects    bool
-	DummyRecord          map[string]any
-	DetectArrayOfObjects bool
-	ReplaceNumber        bool
+	HasArrayOfObjects bool
 )
 
 func newInompatibleSchemaError(name, oldType, oldFormat, newType, newFormat string) error {
@@ -257,11 +254,9 @@ func traverseArray(name string, existingField *schema.Field, newField *schema.Fi
 		newField.Items.Format = nf
 
 		if t == typeObject {
-			if DetectArrayOfObjects {
-				log.Debug().Msg("detected array of objects")
+			log.Debug().Msg("detected array of objects")
 
-				HasArrayOfObjects = true
-			}
+			HasArrayOfObjects = true
 
 			values, _ := reflect.ValueOf(v).Index(i).Interface().(map[string]any)
 			if err = traverseObject(name, newField.Items, newField.Items, values); err != nil {
@@ -349,10 +344,6 @@ func traverseFields(sch map[string]*schema.Field, fields map[string]any, autoGen
 			continue
 		}
 
-		if sch != nil && sch[name] != nil && sch[name].Type == typeNumber && ReplaceNumber {
-			fields[name] = 1.1
-		}
-
 		setAutoGenerate(autoGen, name, f)
 
 		sch[name] = f
@@ -391,10 +382,6 @@ func docToSchema(sch *schema.Schema, name string, data []byte, pk []string, auto
 		sch.PrimaryKey = []string{"id"}
 	}
 
-	if ReplaceNumber {
-		DummyRecord = m
-	}
-
 	return nil
 }
 
@@ -405,6 +392,59 @@ func Infer(sch *schema.Schema, name string, docs []json.RawMessage, primaryKey [
 		err := docToSchema(sch, name, docs[i], primaryKey, autoGenerate)
 		if err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func GenerateInitDoc(sch *schema.Schema, doc json.RawMessage) ([]byte, error) {
+	if sch.Fields == nil {
+		return nil, nil
+	}
+
+	var initDoc map[string]interface{}
+
+	dec := json.NewDecoder(bytes.NewBuffer(doc))
+	dec.UseNumber()
+
+	if err := dec.Decode(&initDoc); err != nil {
+		return nil, err
+	}
+
+	for name := range sch.Fields {
+		if err := initDocTraverseFields(sch.Fields[name], initDoc, name); err != nil {
+			log.Debug().Err(err).Msg("init doc traverse fields")
+			return nil, err
+		}
+	}
+
+	return json.Marshal(initDoc)
+}
+
+func initDocTraverseFields(field *schema.Field, doc map[string]any, fieldName string) error {
+	switch field.Type {
+	case typeNumber:
+		doc[fieldName] = 0.0000001
+	case typeObject:
+		vo := map[string]any{}
+		for name := range field.Fields {
+			if err := initDocTraverseFields(field.Fields[name], vo, name); err != nil {
+				return err
+			}
+		}
+
+		doc[fieldName] = vo
+	case typeArray:
+		if field.Items.Type == typeObject {
+			vo := map[string]any{}
+			for name := range field.Items.Fields {
+				if err := initDocTraverseFields(field.Items.Fields[name], vo, name); err != nil {
+					return err
+				}
+			}
+
+			doc[fieldName] = []map[string]any{vo}
 		}
 	}
 
