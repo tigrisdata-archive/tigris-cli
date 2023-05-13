@@ -83,7 +83,6 @@ jobs:
           npm publish --access public --tag ${TAG:-latest}
           cd ../..
 
-      - name: Test installation
-        run: |
-          VERSION=${GITHUB_REF/refs\/tags\//} /bin/bash scripts/test_pkg_install.sh
+  test_installation:
+    uses: ./.github/workflows/test-pkg-install.yaml
 

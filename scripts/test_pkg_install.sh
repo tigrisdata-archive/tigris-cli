@@ -2,12 +2,16 @@
 
 set -ex
 
+VERSION=${GITHUB_REF_NAME}
+
 if [ -z "$VERSION" ]; then
 	echo "Set VERSION variable to test installation of"
 fi
 
 #Delete v prefix from v1.0.0-beta.X
 VERSION=${VERSION/#v}
+
+if [ -n "$UBUNTU" ]; then
 
 tigris version && exit 1 # expected to fail
 sudo snap install tigris
@@ -17,18 +21,33 @@ sudo snap remove tigris
 
 hash -r
 
+fi
+
+if [ -n "$UBUNTU" ] || [ -n "$MACOS" ]; then
+
+brew=/home/linuxbrew/.linuxbrew/bin/brew
+if [ -n "$MACOS" ]; then
+  brew=/usr/local/bin/brew
+fi
+
 curl -fsSL -o install.sh https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
 CI=1 /bin/bash install.sh
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+eval "$($brew shellenv)"
 
 tigris version && exit 1 # expected to fail
-/home/linuxbrew/.linuxbrew/bin/brew install tigrisdata/tigris/tigris-cli
+$brew install tigrisdata/tigris/tigris-cli
 which tigris
 tigris version
 tigris version | grep -e "$VERSION"
-/home/linuxbrew/.linuxbrew/bin/brew uninstall tigrisdata/tigris/tigris-cli
+$brew uninstall tigrisdata/tigris/tigris-cli
 
 hash -r
+
+fi
+
+if [ -n "$UBUNTU" ] || [ -n "$MACOS" ]; then
+  SUDO=sudo
+fi
 
 # Test local NPM install
 npx tigris version && exit 1 # expected to fail
@@ -40,10 +59,10 @@ npm uninstall @tigrisdata/tigris-cli
 # Test global NPM install
 npx tigris version && exit 1 # expected to fail
 tigris version && exit 1 # expected to fail
-sudo npm install -g @tigrisdata/tigris-cli
+$SUDO npm install -g @tigrisdata/tigris-cli
 tigris version
 tigris version | grep -e "$VERSION"
-sudo npm uninstall -g @tigrisdata/tigris-cli
+$SUDO npm uninstall -g @tigrisdata/tigris-cli
 
 hash -r
 

@@ -1,0 +1,28 @@
+name: test-pkg-installation
+
+on:
+  workflow_call:
+
+jobs:
+  test-pkg-install:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-13, windows-latest ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Ubuntu
+        run: UBUNTU=1 /bin/bash scripts/test_pkg_install.sh
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: macOS
+        run: MACOS=1 /bin/bash scripts/test_pkg_install.sh
+        if: matrix.os == 'macos-13'
+
+      - name: Windows
+        run: sh scripts/test_pkg_install.sh
+        if: false || matrix.os == 'windows-latest'
