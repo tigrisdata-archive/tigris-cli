@@ -87,11 +87,16 @@ func fixNumbers(ctx context.Context, coll string, docs []json.RawMessage) {
 		b, err := json.Marshal(schema.DummyRecord)
 		util.Fatal(err, "marshal number fixer record")
 
-		_, err = client.GetDB().Insert(ctx, coll, []driver.Document{b})
-		util.Fatal(err, "insert")
+		err = client.Transact(ctx, config.GetProjectName(), func(ctx context.Context, tx driver.Tx) error {
+			_, err = tx.Insert(ctx, coll, []driver.Document{b})
+			util.Fatal(err, "insert")
 
-		_, err = client.GetDB().Delete(ctx, coll, driver.Filter("{}"))
-		util.Fatal(err, "delete")
+			_, err = tx.Delete(ctx, coll, driver.Filter("{}"))
+			util.Fatal(err, "delete")
+
+			return nil
+		})
+		util.Fatal(err, "fix number transaction")
 	}
 }
 
@@ -121,13 +126,6 @@ func guaranteeFloatsInFirstRecord(ctx context.Context, coll string, docs []json.
 
 		schema.DetectArrayOfObjects = false
 		schema.ReplaceNumber = false
-
-		cnt, err := client.GetDB().Count(ctx, coll, driver.Filter("{}"))
-		util.Fatal(err, "get count after")
-
-		if cnt != 0 {
-			util.Fatal(ErrNoRecordsExpected, "checking number of records after")
-		}
 	}
 
 	FirstRecord = false
