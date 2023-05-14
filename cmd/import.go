@@ -80,11 +80,6 @@ func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMe
 }
 
 func writeInitRecord(ctx context.Context, coll string, docs []json.RawMessage) {
-	initDoc, err := schema.GenerateInitDoc(&sch, docs[0])
-	log.Debug().Interface("initDoc", string(initDoc)).Msg("generating init record")
-
-	util.Fatal(err, "init record generation")
-
 	if !FirstRecord {
 		return
 	}
@@ -107,6 +102,11 @@ func writeInitRecord(ctx context.Context, coll string, docs []json.RawMessage) {
 
 		return
 	}
+
+	initDoc, err := schema.GenerateInitDoc(&sch, docs[0])
+	log.Debug().Interface("initDoc", string(initDoc)).Msg("generating init record")
+
+	util.Fatal(err, "init record generation")
 
 	err = client.Transact(ctx, config.GetProjectName(), func(ctx context.Context, tx driver.Tx) error {
 		_, err = tx.Insert(ctx, coll, []driver.Document{initDoc})
