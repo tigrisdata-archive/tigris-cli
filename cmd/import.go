@@ -79,61 +79,52 @@ func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMe
 	return util.Error(err, "create or update collection")
 }
 
-func fixNumbers(ctx context.Context, coll string, docs []json.RawMessage) {
-	err := schema.Infer(&sch, coll, docs[0:1], PrimaryKey, AutoGenerate, 1)
-	util.Fatal(err, "infer schema")
+func writeInitRecord(ctx context.Context, coll string, docs []json.RawMessage) {
+	initDoc, err := schema.GenerateInitDoc(&sch, docs[0])
+	log.Debug().Interface("initDoc", string(initDoc)).Msg("generating init record")
 
-	if schema.HasArrayOfObjects {
-		b, err := json.Marshal(schema.DummyRecord)
-		util.Fatal(err, "marshal number fixer record")
+	util.Fatal(err, "init record generation")
 
-		err = client.Transact(ctx, config.GetProjectName(), func(ctx context.Context, tx driver.Tx) error {
-			_, err = tx.Insert(ctx, coll, []driver.Document{b})
-			util.Fatal(err, "insert")
-
-			_, err = tx.Delete(ctx, coll, driver.Filter("{}"))
-			util.Fatal(err, "delete")
-
-			return nil
-		})
-		util.Fatal(err, "fix number transaction")
-	}
-}
-
-func guaranteeFloatsInFirstRecord(ctx context.Context, coll string, docs []json.RawMessage) {
 	if !FirstRecord {
 		return
 	}
 
 	cnt, err := client.GetDB().Count(ctx, coll, driver.Filter("{}"))
-
-	var ep *driver.Error
-
 	if err != nil {
+		var ep *driver.Error
 		if errors.As(err, &ep) && ep.Code == api.Code_NOT_FOUND {
-			log.Debug().Msg("collection doesn't exits, skip fixing numbers")
+			log.Debug().Msg("collection doesn't exits, skipping init record")
 			return
 		}
 
 		util.Fatal(err, "get count")
 	}
 
-	if cnt == 0 {
-		schema.DetectArrayOfObjects = true
-		schema.ReplaceNumber = true
+	if cnt != 0 {
+		log.Debug().Msg("collection is not empty, skipping init record")
 
-		fixNumbers(ctx, coll, docs)
+		FirstRecord = false
 
-		schema.DetectArrayOfObjects = false
-		schema.ReplaceNumber = false
+		return
 	}
+
+	err = client.Transact(ctx, config.GetProjectName(), func(ctx context.Context, tx driver.Tx) error {
+		_, err = tx.Insert(ctx, coll, []driver.Document{initDoc})
+		util.Fatal(err, "insert init record")
+
+		_, err = tx.Delete(ctx, coll, driver.Filter("{}"))
+		util.Fatal(err, "delete init record")
+
+		return nil
+	})
+	util.Fatal(err, "init record transaction")
 
 	FirstRecord = false
 }
 
 func insertWithInference(ctx context.Context, coll string, docs []json.RawMessage) error {
 	// FIXME: This is temporary fix, should moved to server ASAP
-	guaranteeFloatsInFirstRecord(ctx, coll, docs)
+	writeInitRecord(ctx, coll, docs)
 
 	ptr := unsafe.Pointer(&docs)
 
