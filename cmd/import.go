@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"unsafe"
 
@@ -54,6 +55,10 @@ var (
 	ErrCollectionShouldExist = fmt.Errorf("collection should exist to import CSV with no field names")
 	ErrNoAppend              = fmt.Errorf(
 		"collection exists. use --append if you need to add documents to existing collection")
+
+	ErrNoRecordsExpected = fmt.Errorf("no records expected in the collection after fixing numbers")
+
+	FirstRecord = true
 )
 
 func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMessage) error {
@@ -74,7 +79,53 @@ func evolveSchema(ctx context.Context, db string, coll string, docs []json.RawMe
 	return util.Error(err, "create or update collection")
 }
 
+func writeInitRecord(ctx context.Context, coll string, docs []json.RawMessage) {
+	if !FirstRecord {
+		return
+	}
+
+	cnt, err := client.GetDB().Count(ctx, coll, driver.Filter("{}"))
+	if err != nil {
+		var ep *driver.Error
+		if errors.As(err, &ep) && ep.Code == api.Code_NOT_FOUND {
+			log.Debug().Msg("collection doesn't exits, skipping init record")
+			return
+		}
+
+		util.Fatal(err, "get count")
+	}
+
+	if cnt != 0 {
+		log.Debug().Msg("collection is not empty, skipping init record")
+
+		FirstRecord = false
+
+		return
+	}
+
+	initDoc, err := schema.GenerateInitDoc(&sch, docs[0])
+	log.Debug().Interface("initDoc", string(initDoc)).Msg("generating init record")
+
+	util.Fatal(err, "init record generation")
+
+	err = client.Transact(ctx, config.GetProjectName(), func(ctx context.Context, tx driver.Tx) error {
+		_, err = tx.Insert(ctx, coll, []driver.Document{initDoc})
+		util.Fatal(err, "insert init record")
+
+		_, err = tx.Delete(ctx, coll, driver.Filter("{}"))
+		util.Fatal(err, "delete init record")
+
+		return nil
+	})
+	util.Fatal(err, "init record transaction")
+
+	FirstRecord = false
+}
+
 func insertWithInference(ctx context.Context, coll string, docs []json.RawMessage) error {
+	// FIXME: This is temporary fix, should moved to server ASAP
+	writeInitRecord(ctx, coll, docs)
+
 	ptr := unsafe.Pointer(&docs)
 
 	_, err := client.GetDB().Insert(ctx, coll, *(*[]driver.Document)(ptr))

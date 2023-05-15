@@ -54,6 +54,8 @@ var (
 	ErrExpectedString     = fmt.Errorf("expected string type")
 	ErrExpectedNumber     = fmt.Errorf("expected json.Number")
 	ErrUnsupportedType    = fmt.Errorf("unsupported type")
+
+	HasArrayOfObjects bool
 )
 
 func newInompatibleSchemaError(name, oldType, oldFormat, newType, newFormat string) error {
@@ -71,15 +73,14 @@ func parseDateTime(s string) bool {
 	return false
 }
 
-func parseNumber(v any) (string, string, error) {
+func parseNumber(v any, existing *schema.Field) (string, string, error) {
 	n, ok := v.(json.Number)
 	if !ok {
 		return "", "", ErrExpectedNumber
 	}
 
-	if _, err := n.Int64(); err != nil || !DetectIntegers {
-		_, err = n.Float64()
-		if err != nil {
+	if _, err := n.Int64(); err != nil || (!DetectIntegers && (existing == nil || existing.Type != typeInteger)) {
+		if _, err = n.Float64(); err != nil {
 			return "", "", err
 		}
 
@@ -89,11 +90,15 @@ func parseNumber(v any) (string, string, error) {
 	return typeInteger, "", nil
 }
 
-func translateStringType(v interface{}) (string, string, error) {
+func needNarrowing(detect bool, existing *schema.Field, format string) bool {
+	return detect || existing != nil && existing.Format == format
+}
+
+func translateStringType(v any, existing *schema.Field) (string, string, error) {
 	t := reflect.TypeOf(v)
 
 	if t.PkgPath() == "encoding/json" && t.Name() == "Number" {
-		return parseNumber(v)
+		return parseNumber(v, existing)
 	}
 
 	s, ok := v.(string)
@@ -101,15 +106,15 @@ func translateStringType(v interface{}) (string, string, error) {
 		return "", "", ErrExpectedString
 	}
 
-	if parseDateTime(s) && DetectTimes {
+	if parseDateTime(s) && needNarrowing(DetectTimes, existing, formatDateTime) {
 		return typeString, formatDateTime, nil
 	}
 
-	if _, err := uuid.Parse(s); err == nil && DetectUUIDs {
+	if _, err := uuid.Parse(s); err == nil && needNarrowing(DetectUUIDs, existing, formatUUID) {
 		return typeString, formatUUID, nil
 	}
 
-	if len(s) != 0 && DetectByteArrays {
+	if len(s) != 0 && needNarrowing(DetectByteArrays, existing, formatByte) {
 		b := make([]byte, base64.StdEncoding.DecodedLen(len(s)))
 		if _, err := base64.StdEncoding.Decode(b, []byte(s)); err == nil {
 			return typeString, formatByte, nil
@@ -119,7 +124,7 @@ func translateStringType(v interface{}) (string, string, error) {
 	return typeString, "", nil
 }
 
-func translateType(v interface{}) (string, string, error) {
+func translateType(v any, existing *schema.Field) (string, string, error) {
 	t := reflect.TypeOf(v)
 
 	//nolint:golint,exhaustive
@@ -129,7 +134,7 @@ func translateType(v interface{}) (string, string, error) {
 	case reflect.Float64:
 		return typeNumber, "", nil
 	case reflect.String:
-		return translateStringType(v)
+		return translateStringType(v, existing)
 	case reflect.Slice, reflect.Array:
 		return typeArray, "", nil
 	case reflect.Map:
@@ -221,7 +226,7 @@ func traverseObject(name string, existingField *schema.Field, newField *schema.F
 
 func traverseArray(name string, existingField *schema.Field, newField *schema.Field, v any) error {
 	for i := 0; i < reflect.ValueOf(v).Len(); i++ {
-		t, format, err := translateType(reflect.ValueOf(v).Index(i).Interface())
+		t, format, err := translateType(reflect.ValueOf(v).Index(i).Interface(), existingField)
 		if err != nil {
 			return err
 		}
@@ -249,6 +254,10 @@ func traverseArray(name string, existingField *schema.Field, newField *schema.Fi
 		newField.Items.Format = nf
 
 		if t == typeObject {
+			log.Debug().Msg("detected array of objects")
+
+			HasArrayOfObjects = true
+
 			values, _ := reflect.ValueOf(v).Index(i).Interface().(map[string]any)
 			if err = traverseObject(name, newField.Items, newField.Items, values); err != nil {
 				return err
@@ -319,7 +328,7 @@ func traverseFields(sch map[string]*schema.Field, fields map[string]any, autoGen
 			continue
 		}
 
-		t, format, err := translateType(val)
+		t, format, err := translateType(val, sch[name])
 		if err != nil {
 			return err
 		}
@@ -383,6 +392,59 @@ func Infer(sch *schema.Schema, name string, docs []json.RawMessage, primaryKey [
 		err := docToSchema(sch, name, docs[i], primaryKey, autoGenerate)
 		if err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func GenerateInitDoc(sch *schema.Schema, doc json.RawMessage) ([]byte, error) {
+	if sch.Fields == nil {
+		return nil, nil
+	}
+
+	var initDoc map[string]interface{}
+
+	dec := json.NewDecoder(bytes.NewBuffer(doc))
+	dec.UseNumber()
+
+	if err := dec.Decode(&initDoc); err != nil {
+		return nil, err
+	}
+
+	for name := range sch.Fields {
+		if err := initDocTraverseFields(sch.Fields[name], initDoc, name); err != nil {
+			log.Debug().Err(err).Msg("init doc traverse fields")
+			return nil, err
+		}
+	}
+
+	return json.Marshal(initDoc)
+}
+
+func initDocTraverseFields(field *schema.Field, doc map[string]any, fieldName string) error {
+	switch field.Type {
+	case typeNumber:
+		doc[fieldName] = 0.0000001
+	case typeObject:
+		vo := map[string]any{}
+		for name := range field.Fields {
+			if err := initDocTraverseFields(field.Fields[name], vo, name); err != nil {
+				return err
+			}
+		}
+
+		doc[fieldName] = vo
+	case typeArray:
+		if field.Items.Type == typeObject {
+			vo := map[string]any{}
+			for name := range field.Items.Fields {
+				if err := initDocTraverseFields(field.Items.Fields[name], vo, name); err != nil {
+					return err
+				}
+			}
+
+			doc[fieldName] = []map[string]any{vo}
 		}
 	}
 

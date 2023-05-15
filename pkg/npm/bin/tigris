@@ -1,4 +1,1 @@
-#!/ usr / bin / env node
-
-/* eslint-disable no-console */
-console.error('This is placeholder, which should be replaced by installation process');
+# This is placeholder, which should be replaced by installation process
