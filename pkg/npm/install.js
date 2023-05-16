@@ -67,6 +67,14 @@ function verifyAndPlaceBinary(binName, binPath, hash, checksums, callback) {
       path.join(installationPath, binName),
     );
 
+    if (IS_WINDOWS) {
+      // Delete the placeholder so that `tigris.exe` is used.
+      // This will result in the PowerShell shim running the `.exe`
+      // rather than trying to run `tigris` which isn't a file that is
+      // compatible with Windows.
+      fs.unlinkSync(path.join(installationPath, 'tigris'));
+    }
+
     return null;
   });
 
@@ -147,7 +155,6 @@ function parsePackageJson() {
   url = url.replace(/{{arch}}/g, ARCH_MAPPING[process.arch]);
   url = url.replace(/{{platform}}/g, PLATFORM_MAPPING[process.platform]);
   url = url.replace(/{{version}}/g, version);
-  url = url.replace(/{{bin_name}}/g, opts.binName);
   url = url.replace(/{{ext}}/g, opts.ext);
 
   opts.url = url;
