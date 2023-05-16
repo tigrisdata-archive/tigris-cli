@@ -79,7 +79,8 @@ jobs:
           cd pkg/npm
           sh ../../scripts/update_npm_checksums.sh
           npm version --no-git-tag-version ${GITHUB_REF/refs\/tags\//}
-          npm publish --access public
+          TAG=$(echo $GITHUB_REF_NAME | grep -oP '^v\d+\.\d+\.\d+-?\K(\w+)?')
+          npm publish --access public --tag ${TAG:-latest}
           cd ../..
 
       - name: Test installation
