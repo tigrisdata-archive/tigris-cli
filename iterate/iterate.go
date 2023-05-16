@@ -222,7 +222,7 @@ func Input(ctx context.Context, cmd *cobra.Command, docsPosition int, args []str
 	} else if len(args) <= docsPosition && util.IsTTY(os.Stdin) {
 		_, _ = fmt.Fprintf(os.Stderr, "not enougn arguments\n")
 		_ = cmd.Usage()
-		os.Exit(1)
+		os.Exit(1) //nolint:revive
 	}
 
 	// stdin not a TTY or "-" is specified

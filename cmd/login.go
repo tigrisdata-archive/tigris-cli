@@ -51,7 +51,7 @@ tigris login dev
 		}
 
 		if err := login.CmdLow(cmd.Context(), host); err != nil {
-			os.Exit(1)
+			os.Exit(1) //nolint:revive
 		}
 	},
 }

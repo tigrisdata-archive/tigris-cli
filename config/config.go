@@ -67,7 +67,7 @@ var configPath = []string{
 
 var envPrefix = "tigris"
 
-func Save(name string, config interface{}) error {
+func Save(name string, config any) error {
 	var home string
 
 	if runtime.GOOS == "windows" {
@@ -105,7 +105,7 @@ func Save(name string, config interface{}) error {
 	return os.WriteFile(file, b, 0o600)
 }
 
-func Load(name string, config interface{}) {
+func Load(name string, config any) {
 	viper.SetConfigName(name + ".yaml")
 	viper.SetConfigType("yaml")
 
@@ -151,8 +151,8 @@ func Load(name string, config interface{}) {
 }
 
 func e(err error, _ string) {
-	fmt.Fprintf(os.Stderr, "%v\n", err)
-	os.Exit(1)
+	_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+	os.Exit(1) //nolint:revive
 }
 
 func GetProjectName() string {
