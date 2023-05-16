@@ -87,23 +87,23 @@ func DockerShowProgress(reader io.Reader) error {
 
 type cursor struct{}
 
-func (c *cursor) hide() {
+func (*cursor) hide() {
 	Stdoutf("\033[?25l")
 }
 
-func (c *cursor) show() {
+func (*cursor) show() {
 	Stdoutf("\033[?25h")
 }
 
-func (c *cursor) moveUp(rows int) {
+func (*cursor) moveUp(rows int) {
 	Stdoutf("\033[%dF", rows)
 }
 
-func (c *cursor) moveDown(rows int) {
+func (*cursor) moveDown(rows int) {
 	Stdoutf("\033[%dE", rows)
 }
 
-func (c *cursor) clearLine() {
+func (*cursor) clearLine() {
 	Stdoutf("\033[2K")
 }
 

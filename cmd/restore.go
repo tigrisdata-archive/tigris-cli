@@ -196,15 +196,15 @@ func restoreCollection(ctx context.Context, db, collection, path string) error {
 			docs = append(docs, v)
 		}
 
-		if i > 0 {
-			ptr := unsafe.Pointer(&docs)
-
-			_, err := client.Get().UseDatabase(restoreDB).Insert(ctx, collection, *(*[]driver.Document)(ptr))
-			if err != nil {
-				return util.Error(err, "insert document")
-			}
-		} else {
+		if i <= 0 {
 			break
+		}
+
+		ptr := unsafe.Pointer(&docs)
+
+		_, err := client.Get().UseDatabase(restoreDB).Insert(ctx, collection, *(*[]driver.Document)(ptr))
+		if err != nil {
+			return util.Error(err, "insert document")
 		}
 	}
 

@@ -204,14 +204,14 @@ func Ensure(cctx context.Context, fn func(ctx context.Context) error) {
 		os.Getenv(driver.EnvClientID) != "" || os.Getenv(driver.EnvClientSecret) != "" ||
 		config.DefaultConfig.ClientID != "" || config.DefaultConfig.ClientSecret != "" || !util.IsTTY(os.Stdin) {
 		util.PrintError(err)
-		os.Exit(1)
+		os.Exit(1) //nolint:revive
 	}
 
 	lctx, lcancel := util.GetContext(cctx)
 
 	if err = CmdLow(lctx, GetHost("")); err != nil {
 		lcancel()
-		os.Exit(1)
+		os.Exit(1) //nolint:revive
 	}
 
 	lcancel()
@@ -226,7 +226,7 @@ func Ensure(cctx context.Context, fn func(ctx context.Context) error) {
 
 	if err != nil {
 		util.PrintError(err)
-		os.Exit(1)
+		os.Exit(1) //nolint:revive
 	}
 }
 

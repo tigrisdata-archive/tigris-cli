@@ -51,7 +51,7 @@ type Op struct {
 }
 
 type TxOp struct {
-	Op                       `json:",inline"`
+	Op
 	Insert                   *Op `json:"insert"`
 	Replace                  *Op `json:"replace"`
 	InsertOrReplace          *Op `json:"insert_or_replace"`

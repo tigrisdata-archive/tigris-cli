@@ -133,7 +133,7 @@ func insertWithInference(ctx context.Context, coll string, docs []json.RawMessag
 		return nil // successfully inserted batch
 	}
 
-	//FIXME: errors.As(err, &ep) doesn't work
+	// FIXME: errors.As(err, &ep) doesn't work
 	//nolint:golint,errorlint
 	ep, ok := err.(*driver.Error)
 	if !ok || (ep.Code != api.Code_NOT_FOUND && ep.Code != errcode.InvalidArgument) ||

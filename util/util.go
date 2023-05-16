@@ -84,11 +84,11 @@ func GetContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, GetTimeout())
 }
 
-func Stdoutf(format string, args ...interface{}) {
+func Stdoutf(format string, args ...any) {
 	_, _ = fmt.Fprintf(os.Stdout, format, args...)
 }
 
-func Stderrf(format string, args ...interface{}) {
+func Stderrf(format string, args ...any) {
 	_, _ = fmt.Fprintf(os.Stderr, format, args...)
 }
 
@@ -107,13 +107,13 @@ func PrintError(err error) {
 	_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 }
 
-func Infof(format string, args ...interface{}) {
+func Infof(format string, args ...any) {
 	if !Quiet {
 		Stdoutf(format+"\n", args...)
 	}
 }
 
-func Error(err error, msg string, args ...interface{}) error {
+func Error(err error, msg string, args ...any) error {
 	log.Err(err).CallerSkipFrame(2).Msgf(msg, args...)
 
 	if err == nil {
@@ -123,7 +123,7 @@ func Error(err error, msg string, args ...interface{}) error {
 	return err
 }
 
-func Fatal(err error, msg string, args ...interface{}) {
+func Fatal(err error, msg string, args ...any) {
 	if err == nil {
 		_ = Error(err, msg, args...)
 		return
@@ -133,14 +133,14 @@ func Fatal(err error, msg string, args ...interface{}) {
 
 	_ = Error(err, msg, args...)
 
-	os.Exit(1)
+	os.Exit(1) //nolint:revive
 }
 
-func InternalError(err error, msg string, args ...interface{}) {
+func InternalError(err error, msg string, args ...any) {
 	Fatal(fmt.Errorf("%w please report a bug here: https://github.com/tigrisdata/tigris-cli/issues", err), msg, args...)
 }
 
-func ExecTemplate(w io.Writer, tmpl string, vars interface{}) {
+func ExecTemplate(w io.Writer, tmpl string, vars any) {
 	t, err := template.New("exec_template").Funcs(template.FuncMap{
 		"add": func(a, b int) int { return a + b },
 	}).Parse(tmpl)

@@ -100,7 +100,7 @@ var dbSearchCmd = &cobra.Command{
 
 			var resp driver.SearchResponse
 			for it.Next(&resp) {
-				r := &search.Result[interface{}]{}
+				r := &search.Result[any]{}
 				err := r.From(resp)
 				util.Fatal(err, "search result conversion")
 

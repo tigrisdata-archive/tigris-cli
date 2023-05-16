@@ -78,11 +78,11 @@ var pingCmd = &cobra.Command{
 	Short: "Checks connection to Tigris",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := pingLow(cmd.Context(), pingTimeout, 32*time.Millisecond, false); err != nil {
-			fmt.Fprintf(os.Stderr, "FAILED\n")
-			os.Exit(1)
+			_, _ = fmt.Fprintf(os.Stderr, "FAILED\n")
+			os.Exit(1) //nolint:revive
 		}
 
-		fmt.Fprintf(os.Stderr, "OK\n")
+		_, _ = fmt.Fprintf(os.Stderr, "OK\n")
 	},
 }
 

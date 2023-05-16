@@ -353,7 +353,7 @@ func traverseFields(sch map[string]*schema.Field, fields map[string]any, autoGen
 }
 
 func docToSchema(sch *schema.Schema, name string, data []byte, pk []string, autoGen []string) error {
-	var m map[string]interface{}
+	var m map[string]any
 
 	dec := json.NewDecoder(bytes.NewBuffer(data))
 	dec.UseNumber()
@@ -403,7 +403,7 @@ func GenerateInitDoc(sch *schema.Schema, doc json.RawMessage) ([]byte, error) {
 		return nil, nil
 	}
 
-	var initDoc map[string]interface{}
+	var initDoc map[string]any
 
 	dec := json.NewDecoder(bytes.NewBuffer(doc))
 	dec.UseNumber()
