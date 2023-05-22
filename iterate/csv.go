@@ -90,7 +90,9 @@ func readCSVBatch(reader *csv.Reader, names [][]string, batchSize int) []json.Ra
 		for k, v := range row {
 			d := findKey(fields, names, k)
 
-			f, err := strconv.ParseFloat(v, 64)
+			var f float64
+
+			f, err = strconv.ParseFloat(v, 64)
 
 			switch {
 			case err == nil:

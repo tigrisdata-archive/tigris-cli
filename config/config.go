@@ -48,12 +48,12 @@ type Config struct {
 	ClientSecret string        `json:"client_secret" yaml:"client_secret,omitempty" mapstructure:"client_secret"`
 	Token        string        `json:"token" yaml:"token,omitempty"`
 	URL          string        `json:"url" yaml:"url,omitempty"`
-	UseTLS       bool          `json:"use_tls" yaml:"use_tls,omitempty" mapstructure:"use_tls"`
-	Timeout      time.Duration `json:"timeout" yaml:"timeout,omitempty"`
 	Protocol     string        `json:"protocol" yaml:"protocol,omitempty"`
-	Log          Log           `json:"log" yaml:"log,omitempty"`
 	Project      string        `json:"project" yaml:"project,omitempty"`
 	Branch       string        `json:"branch" yaml:"branch,omitempty"`
+	Log          Log           `json:"log" yaml:"log,omitempty"`
+	Timeout      time.Duration `json:"timeout" yaml:"timeout,omitempty"`
+	UseTLS       bool          `json:"use_tls" yaml:"use_tls,omitempty" mapstructure:"use_tls"`
 }
 
 var DefaultName = "tigris-cli"

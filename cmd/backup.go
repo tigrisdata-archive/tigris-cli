@@ -101,8 +101,11 @@ func writeCollection(ctx context.Context, db, collection, file string) (int, err
 	}
 
 	writer := bufio.NewWriter(f)
+
 	for it.Next(&doc) {
-		b, err := writer.WriteString(string(doc) + "\n")
+		var b int
+
+		b, err = writer.WriteString(string(doc) + "\n")
 		bytes += b
 
 		util.Fatal(err, "error writing file %s", file)
@@ -135,8 +138,11 @@ func writeSchema(ctx context.Context, db, file string) (int, error) {
 	}
 
 	writer := bufio.NewWriter(f)
+
 	for _, v := range resp.Collections {
-		b, err := writer.WriteString(string(v.Schema) + "\n")
+		var b int
+
+		b, err = writer.WriteString(string(v.Schema) + "\n")
 		bytes += b
 
 		if err != nil {

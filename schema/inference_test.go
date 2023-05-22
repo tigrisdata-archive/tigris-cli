@@ -28,11 +28,11 @@ import (
 func TestSchemaInference(t *testing.T) {
 	cases := []struct {
 		name string
-		in   [][]byte
 		exp  *schema.Schema
+		in   [][]byte
 	}{
 		{
-			"types", [][]byte{
+			name: "types", in: [][]byte{
 				[]byte(`{
 	"str_field" : "str_value",
 	"int_field" : 1,
@@ -62,7 +62,7 @@ func TestSchemaInference(t *testing.T) {
     "prim_array" : [ "str" ],
     "array_uuid" : [ "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" ]
 }`),
-			}, &schema.Schema{
+			}, exp: &schema.Schema{
 				Name: "types",
 				Fields: map[string]*schema.Field{
 					"uuid_field":   {Type: "string", Format: "uuid"},
@@ -114,7 +114,7 @@ func TestSchemaInference(t *testing.T) {
 		},
 
 		{
-			"empty_obj_arr", [][]byte{
+			name: "empty_obj_arr", in: [][]byte{
 				[]byte(`{
 	"int_field" : 1,
 	"empty_object" : {},
@@ -123,7 +123,7 @@ func TestSchemaInference(t *testing.T) {
 	"array_with_empty_obj" : [ {} ],
 	"str_field" : "str_value"
 }`),
-			}, &schema.Schema{
+			}, exp: &schema.Schema{
 				Name: "empty_obj_arr",
 				Fields: map[string]*schema.Field{
 					"int_field": {Type: "integer"},
@@ -133,7 +133,7 @@ func TestSchemaInference(t *testing.T) {
 		},
 
 		{
-			"broaden_type", [][]byte{
+			name: "broaden_type", in: [][]byte{
 				[]byte(`{
 	"int_field" : 1,
 	"uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1",
@@ -170,7 +170,7 @@ func TestSchemaInference(t *testing.T) {
 		"binary_field": "notbase64"
 	} ]
 }`),
-			}, &schema.Schema{
+			}, exp: &schema.Schema{
 				Name: "broaden_type",
 				Fields: map[string]*schema.Field{
 					"uuid_field":   {Type: "string"},
@@ -199,7 +199,7 @@ func TestSchemaInference(t *testing.T) {
 			},
 		},
 		{
-			"broaden_array_type", [][]byte{
+			name: "broaden_array_type", in: [][]byte{
 				[]byte(`{
 	"array" : [ {
 		"int_field" : 1,
@@ -214,7 +214,7 @@ func TestSchemaInference(t *testing.T) {
 		"binary_field": "notbase64"
 	} ]
 }`),
-			}, &schema.Schema{
+			}, exp: &schema.Schema{
 				Name: "broaden_array_type",
 				Fields: map[string]*schema.Field{
 					"array": {
@@ -233,7 +233,7 @@ func TestSchemaInference(t *testing.T) {
 			},
 		},
 		{
-			"adding_fields", [][]byte{
+			name: "adding_fields", in: [][]byte{
 				[]byte(`{
 	"int_field" : 1,
 	"object" : {
@@ -252,7 +252,7 @@ func TestSchemaInference(t *testing.T) {
 		"uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1"
 	} ]
 }`),
-			}, &schema.Schema{
+			}, exp: &schema.Schema{
 				Name: "adding_fields",
 				Fields: map[string]*schema.Field{
 					"uuid_field": {Type: "string", Format: formatUUID},
@@ -275,9 +275,9 @@ func TestSchemaInference(t *testing.T) {
 			},
 		},
 		{
-			"adding_array_object_fields", [][]byte{
+			name: "adding_array_object_fields", in: [][]byte{
 				[]byte(`{ "array" : [ { "int_field" : 1 }, { "int_field_two" : 1 } ] }`),
-			}, &schema.Schema{
+			}, exp: &schema.Schema{
 				Name: "adding_array_object_fields",
 				Fields: map[string]*schema.Field{
 					"array": {
@@ -311,86 +311,86 @@ func TestSchemaInference(t *testing.T) {
 func TestSchemaInferenceNegative(t *testing.T) {
 	cases := []struct {
 		name string
-		in   [][]byte
 		err  error
+		in   [][]byte
 	}{
 		{
-			"incompatible_primitive",
-			[][]byte{
+			name: "incompatible_primitive",
+			in: [][]byte{
 				[]byte(`{ "incompatible_field" : 1 }`),
 				[]byte(`{ "incompatible_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }`),
 			},
-			newInompatibleSchemaError("incompatible_field", "integer", "", "string", "uuid"),
+			err: newInompatibleSchemaError("incompatible_field", "integer", "", "string", "uuid"),
 		},
 		{
-			"incompatible_prim_to_object",
-			[][]byte{
+			name: "incompatible_prim_to_object",
+			in: [][]byte{
 				[]byte(`{ "incompatible_field" : 1 }`),
 				[]byte(`{ "incompatible_field" : { "field1": "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" } }`),
 			},
-			newInompatibleSchemaError("incompatible_field", "integer", "", "object", ""),
+			err: newInompatibleSchemaError("incompatible_field", "integer", "", "object", ""),
 		},
 		{
-			"incompatible_object_to_prim",
-			[][]byte{
+			name: "incompatible_object_to_prim",
+			in: [][]byte{
 				[]byte(`{ "incompatible_field" : { "field1": "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" } }`),
 				[]byte(`{ "incompatible_field" : 1 }`),
 			},
-			newInompatibleSchemaError("incompatible_field", "object", "", "integer", ""),
+			err: newInompatibleSchemaError("incompatible_field", "object", "", "integer", ""),
 		},
 		{
-			"incompatible_array_to_prim",
-			[][]byte{
+			name: "incompatible_array_to_prim",
+			in: [][]byte{
 				[]byte(`{ "incompatible_field" : ["1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1"] }`),
 				[]byte(`{ "incompatible_field" : 1 }`),
 			},
-			newInompatibleSchemaError("incompatible_field", "array", "", "integer", ""),
+			err: newInompatibleSchemaError("incompatible_field", "array", "", "integer", ""),
 		},
 		{
-			"incompatible_prim_to_array",
-			[][]byte{
+			name: "incompatible_prim_to_array",
+			in: [][]byte{
 				[]byte(`{ "incompatible_field" : 1 }`),
 				[]byte(`{ "incompatible_field" : ["1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1"] }`),
 			},
-			newInompatibleSchemaError("incompatible_field", "integer", "", "array", ""),
+			err: newInompatibleSchemaError("incompatible_field", "integer", "", "array", ""),
 		},
 		{
-			"incompatible_array_mixed",
-			[][]byte{
+			name: "incompatible_array_mixed",
+			in: [][]byte{
 				[]byte(`{ "incompatible_field" : ["1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1", 1] }`),
 			},
-			newInompatibleSchemaError("incompatible_field", "string", "uuid", "integer", ""),
+			err: newInompatibleSchemaError("incompatible_field", "string", "uuid", "integer", ""),
 		},
 		{
-			"incompatible_array",
-			[][]byte{
+			name: "incompatible_array",
+			in: [][]byte{
 				[]byte(`{ "incompatible_field" : [ 1 ] }`),
 				[]byte(`{ "incompatible_field" : ["1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1"] }`),
 			},
-			newInompatibleSchemaError("incompatible_field", "integer", "", "string", "uuid"),
+			err: newInompatibleSchemaError("incompatible_field", "integer", "", "string", "uuid"),
 		},
 		{
-			"incompatible_array_object_mixed",
-			[][]byte{
+			name: "incompatible_array_object_mixed",
+			in: [][]byte{
 				[]byte(`{ "incompatible_field" : [ { "one" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }, { "one" : 1 } ] }`),
 			},
-			newInompatibleSchemaError("one", "string", "uuid", "integer", ""),
+			err: newInompatibleSchemaError("one", "string", "uuid", "integer", ""),
 		},
 		{
-			"incompatible_array_object",
-			[][]byte{
+			name: "incompatible_array_object",
+			in: [][]byte{
 				[]byte(`{ "incompatible_field" : [ { "one" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" } ] }`),
 				[]byte(`{ "incompatible_field" : [ { "one" : 1 } ] }`),
 			},
-			newInompatibleSchemaError("one", "string", "uuid", "integer", ""),
+			err: newInompatibleSchemaError("one", "string", "uuid", "integer", ""),
 		},
 		{
-			"incompatible_object",
-			[][]byte{
+			name: "incompatible_object",
+			in: [][]byte{
 				[]byte(`{ "incompatible_field" : { "one" : 1 } }`),
 				[]byte(`{ "incompatible_field" : { "one" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" } }`),
 			},
-			newInompatibleSchemaError("one", "integer", "", "string", "uuid"),
+			err: newInompatibleSchemaError("one", "integer", "", "string", "uuid"),
 		},
 	}
 
@@ -407,20 +407,20 @@ func TestSchemaInferenceNegative(t *testing.T) {
 func TestSchemaTags(t *testing.T) {
 	cases := []struct {
 		name         string
-		in           [][]byte
 		primaryKey   []string
 		autoGenerate []string
 		exp          *schema.Schema
+		in           [][]byte
 	}{
 		{
-			"pk_autogenerate",
-			[][]byte{
+			name: "pk_autogenerate",
+			in: [][]byte{
 				[]byte(`{ "uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1",
 "uuid_field1" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }`),
 			},
-			[]string{"uuid_field"},
-			[]string{"uuid_field1"},
-			&schema.Schema{
+			primaryKey:   []string{"uuid_field"},
+			autoGenerate: []string{"uuid_field1"},
+			exp: &schema.Schema{
 				Name: "pk_autogenerate",
 				Fields: map[string]*schema.Field{
 					"uuid_field":  {Type: "string", Format: "uuid"},
@@ -430,14 +430,14 @@ func TestSchemaTags(t *testing.T) {
 			},
 		},
 		{
-			"pk_autogenerate_multi",
-			[][]byte{
+			name: "pk_autogenerate_multi",
+			in: [][]byte{
 				[]byte(`{ "uuid_field" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1",
 "uuid_field1" : "1ed6ff32-4c0f-4553-9cd3-a2ea3d58e9d1" }`),
 			},
-			[]string{"uuid_field", "uuid_field1"},
-			[]string{"uuid_field1", "uuid_field"},
-			&schema.Schema{
+			primaryKey:   []string{"uuid_field", "uuid_field1"},
+			autoGenerate: []string{"uuid_field1", "uuid_field"},
+			exp: &schema.Schema{
 				Name: "pk_autogenerate_multi",
 				Fields: map[string]*schema.Field{
 					"uuid_field":  {Type: "string", Format: "uuid", AutoGenerate: true},

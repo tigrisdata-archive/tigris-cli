@@ -22,8 +22,8 @@ import (
 
 func TestContains(t *testing.T) {
 	tests := []struct {
-		list []string
 		item string
+		list []string
 		want bool
 	}{
 		{

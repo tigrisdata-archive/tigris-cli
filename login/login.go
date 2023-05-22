@@ -105,10 +105,10 @@ func getToken(auth *Authenticator, code string) *oauth2.Token {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	token, err := auth.Exchange(ctx, code)
+	tkn, err := auth.Exchange(ctx, code)
 	util.Fatal(err, "retrieving token")
 
-	return token
+	return tkn
 }
 
 func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, instanceURL string, state string) error {
