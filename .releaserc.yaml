@@ -1,9 +1,5 @@
 branches:
-  - name: rc
-    prerelease: true
-  - name: alpha
-    prerelease: true
-  - name: beta
+  - name: next
     prerelease: true
   - release
 plugins:
