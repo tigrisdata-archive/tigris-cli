@@ -17,30 +17,78 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/tigrisdata/tigris-cli/client"
+	"github.com/tigrisdata/tigris-cli/config"
 	"github.com/tigrisdata/tigris-cli/util"
 )
 
 var pingTimeout time.Duration
 
-func pingLow(cmdCtx context.Context, timeout time.Duration, initSleep time.Duration, linear bool) error {
+func pingCall(ctx context.Context, waitAuth bool) error {
+	var err error
+
+	if waitAuth {
+		_, err = client.D.ListProjects(ctx)
+	} else {
+		_, err = client.D.Health(ctx)
+	}
+
+	return err
+}
+
+func localURL(url string) bool {
+	return strings.HasPrefix(url, "localhost:") ||
+		strings.HasPrefix(url, "127.0.0.1:") ||
+		strings.HasPrefix(url, "http://localhost:") ||
+		strings.HasPrefix(url, "http://127.0.0.1:") ||
+		strings.HasPrefix(url, "[::1]") ||
+		strings.HasPrefix(url, "http://[::1]:")
+}
+
+func initPingProgressBar(init bool) *progressbar.ProgressBar {
+	if !init {
+		return nil
+	}
+
+	return progressbar.NewOptions64(
+		-1,
+		progressbar.OptionSetDescription("Waiting for OK response"),
+		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionSetWidth(10),
+		progressbar.OptionThrottle(65*time.Millisecond),
+		progressbar.OptionOnCompletion(func() {
+			_, _ = fmt.Fprint(os.Stderr, "\n")
+		}),
+		progressbar.OptionSpinnerType(int(rand.Int63()%76)), //nolint:gosec
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionFullWidth(),
+	)
+}
+
+func pingLow(cmdCtx context.Context, timeout time.Duration, sleep time.Duration, linear bool, waitAuth bool,
+	pgBar bool,
+) error {
 	ctx, cancel := util.GetContext(cmdCtx)
 
 	err := client.InitLow()
 	if err == nil {
-		_, err = client.D.Health(ctx)
+		err = pingCall(ctx, waitAuth)
 	}
 
 	_ = util.Error(err, "ping")
 
 	cancel()
 
+	pb := initPingProgressBar(pgBar)
+
 	end := time.Now().Add(timeout)
-	sleep := initSleep
 
 	for err != nil && timeout > 0 && time.Now().Add(sleep).Before(end) {
 		_ = util.Error(err, "ping sleep %v", sleep)
@@ -55,7 +103,9 @@ func pingLow(cmdCtx context.Context, timeout time.Duration, initSleep time.Durat
 		ctx, cancel = util.GetContext(cmdCtx)
 
 		if err = client.InitLow(); err == nil {
-			_, err = client.D.Health(ctx)
+			if err = pingCall(ctx, waitAuth); err == nil {
+				break
+			}
 		}
 
 		cancel()
@@ -68,6 +118,10 @@ func pingLow(cmdCtx context.Context, timeout time.Duration, initSleep time.Durat
 			sleep = rem
 			_ = util.Error(err, "ping sleep1 %v", sleep)
 		}
+
+		if pb != nil {
+			_ = pb.Add(int(sleep / time.Millisecond))
+		}
 	}
 
 	return err
@@ -77,12 +131,21 @@ var pingCmd = &cobra.Command{
 	Use:   "ping",
 	Short: "Checks connection to Tigris",
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := pingLow(cmd.Context(), pingTimeout, 32*time.Millisecond, false); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "FAILED\n")
-			os.Exit(1) //nolint:revive
+		var err error
+
+		_ = client.Init(&config.DefaultConfig)
+
+		waitForAuth := localURL(config.DefaultConfig.URL) && (config.DefaultConfig.Token != "" ||
+			config.DefaultConfig.ClientSecret != "")
+
+		if err = pingLow(cmd.Context(), pingTimeout, 32*time.Millisecond, localURL(config.DefaultConfig.URL),
+			waitForAuth, util.IsTTY(os.Stdout) && !util.Quiet); err == nil {
+			_, _ = fmt.Fprintf(os.Stderr, "OK\n")
+			return
 		}
 
-		_, _ = fmt.Fprintf(os.Stderr, "OK\n")
+		_, _ = fmt.Fprintf(os.Stderr, "FAILED\n")
+		os.Exit(1) //nolint:revive
 	},
 }
 

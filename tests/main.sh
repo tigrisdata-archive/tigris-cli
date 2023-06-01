@@ -53,7 +53,7 @@ fi
 
 #shellcheck disable=SC2154
 if [ -z "$noup" ]; then
-	TIGRIS_LOG_LEVEL=debug $cli local up "$TIGRIS_TEST_PORT"
+	TIGRIS_LOG_LEVEL=debug $cli dev start "$TIGRIS_TEST_PORT"
 	$cli local logs >/dev/null 2>&1
 fi
 

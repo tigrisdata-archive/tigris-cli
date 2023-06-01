@@ -185,7 +185,8 @@ func waitServerUp(port string) {
 	err := tclient.Init(&cfg)
 	util.Fatal(err, "init tigris client")
 
-	if err := pingLow(context.Background(), waitUpTimeout, pingSleepTimeout, true); err != nil {
+	if err = pingLow(context.Background(), waitUpTimeout, pingSleepTimeout, true, true,
+		util.IsTTY(os.Stdout) && !util.Quiet); err != nil {
 		util.Fatal(err, "tigris initialization failed")
 	}
 
@@ -236,7 +237,7 @@ var serverUpCmd = &cobra.Command{
 		}
 
 		if loginParam {
-			login.LocalLogin(net.JoinHostPort("localhost", port))
+			login.LocalLogin(net.JoinHostPort("localhost", port), "")
 		} else if port != "8081" {
 			util.Stdoutf("run 'export TIGRIS_URL=localhost:%s' for tigris cli to connect to the local instance\n", port)
 		}

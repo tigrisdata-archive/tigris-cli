@@ -35,7 +35,7 @@ jobs:
           node-version: 18
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Genearate shell completions
+      - name: Generate shell completions
         run: |
           make
           mkdir -p .tmp

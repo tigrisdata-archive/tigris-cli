@@ -46,10 +46,11 @@ func initConfig(inCfg *config.Config) {
 		Token:        inCfg.Token,
 		Protocol:     inCfg.Protocol,
 		Branch:       inCfg.Branch,
+		SkipLocalTLS: inCfg.SkipLocalTLS,
 	}
 
-	if inCfg.UseTLS || (cfg.URL == "" && cfg.Protocol == "") ||
-		strings.HasSuffix(cfg.URL, config.Domain) {
+	if !cfg.SkipLocalTLS && (inCfg.UseTLS || (cfg.URL == "" && cfg.Protocol == "") ||
+		strings.HasSuffix(cfg.URL, config.Domain)) {
 		cfg.TLS = &tls.Config{MinVersion: tls.VersionTLS12}
 	}
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/schema"
 )
 
+//nolint:maintidx
 func TestSchemaInference(t *testing.T) {
 	cases := []struct {
 		name string
@@ -65,47 +66,47 @@ func TestSchemaInference(t *testing.T) {
 			}, exp: &schema.Schema{
 				Name: "types",
 				Fields: map[string]*schema.Field{
-					"uuid_field":   {Type: "string", Format: "uuid"},
-					"time_field":   {Type: "string", Format: "date-time"},
-					"str_field":    {Type: "string"},
-					"bool_field":   {Type: "boolean"},
-					"float_field":  {Type: "number"},
-					"int_field":    {Type: "integer"},
-					"binary_field": {Type: "string", Format: "byte"},
-					"object": {Type: "object", Fields: map[string]*schema.Field{
-						"uuid_field":   {Type: "string", Format: "uuid"},
-						"time_field":   {Type: "string", Format: "date-time"},
-						"str_field":    {Type: "string"},
-						"bool_field":   {Type: "boolean"},
-						"float_field":  {Type: "number"},
-						"int_field":    {Type: "integer"},
-						"binary_field": {Type: "string", Format: "byte"},
+					"uuid_field":   {Type: schema.NewMultiType(typeString), Format: "uuid"},
+					"time_field":   {Type: schema.NewMultiType(typeString), Format: "date-time"},
+					"str_field":    {Type: schema.NewMultiType(typeString)},
+					"bool_field":   {Type: schema.NewMultiType(typeBoolean)},
+					"float_field":  {Type: schema.NewMultiType(typeNumber)},
+					"int_field":    {Type: schema.NewMultiType(typeInteger)},
+					"binary_field": {Type: schema.NewMultiType(typeString), Format: "byte"},
+					"object": {Type: schema.NewMultiType(typeObject), Fields: map[string]*schema.Field{
+						"uuid_field":   {Type: schema.NewMultiType(typeString), Format: "uuid"},
+						"time_field":   {Type: schema.NewMultiType(typeString), Format: "date-time"},
+						"str_field":    {Type: schema.NewMultiType(typeString)},
+						"bool_field":   {Type: schema.NewMultiType(typeBoolean)},
+						"float_field":  {Type: schema.NewMultiType(typeNumber)},
+						"int_field":    {Type: schema.NewMultiType(typeInteger)},
+						"binary_field": {Type: schema.NewMultiType(typeString), Format: "byte"},
 					}},
 					"array": {
-						Type: "array",
+						Type: schema.NewMultiType(typeArray),
 						Items: &schema.Field{
-							Type: "object",
+							Type: schema.NewMultiType(typeObject),
 							Fields: map[string]*schema.Field{
-								"uuid_field":   {Type: "string", Format: "uuid"},
-								"time_field":   {Type: "string", Format: "date-time"},
-								"str_field":    {Type: "string"},
-								"bool_field":   {Type: "boolean"},
-								"float_field":  {Type: "number"},
-								"int_field":    {Type: "integer"},
-								"binary_field": {Type: "string", Format: "byte"},
+								"uuid_field":   {Type: schema.NewMultiType(typeString), Format: "uuid"},
+								"time_field":   {Type: schema.NewMultiType(typeString), Format: "date-time"},
+								"str_field":    {Type: schema.NewMultiType(typeString)},
+								"bool_field":   {Type: schema.NewMultiType(typeBoolean)},
+								"float_field":  {Type: schema.NewMultiType(typeNumber)},
+								"int_field":    {Type: schema.NewMultiType(typeInteger)},
+								"binary_field": {Type: schema.NewMultiType(typeString), Format: "byte"},
 							},
 						},
 					},
 					"prim_array": {
-						Type: "array",
+						Type: schema.NewMultiType(typeArray),
 						Items: &schema.Field{
-							Type: "string",
+							Type: schema.NewMultiType(typeString),
 						},
 					},
 					"array_uuid": {
-						Type: "array",
+						Type: schema.NewMultiType(typeArray),
 						Items: &schema.Field{
-							Type:   typeString,
+							Type:   schema.NewMultiType(typeString),
 							Format: formatUUID,
 						},
 					},
@@ -126,8 +127,8 @@ func TestSchemaInference(t *testing.T) {
 			}, exp: &schema.Schema{
 				Name: "empty_obj_arr",
 				Fields: map[string]*schema.Field{
-					"int_field": {Type: "integer"},
-					"str_field": {Type: "string"},
+					"int_field": {Type: schema.NewMultiType(typeInteger)},
+					"str_field": {Type: schema.NewMultiType(typeString)},
 				},
 			},
 		},
@@ -173,25 +174,25 @@ func TestSchemaInference(t *testing.T) {
 			}, exp: &schema.Schema{
 				Name: "broaden_type",
 				Fields: map[string]*schema.Field{
-					"uuid_field":   {Type: "string"},
-					"time_field":   {Type: "string"},
-					"int_field":    {Type: "number"},
-					"binary_field": {Type: "string"},
-					"object": {Type: "object", Fields: map[string]*schema.Field{
-						"uuid_field":   {Type: "string"},
-						"time_field":   {Type: "string"},
-						"int_field":    {Type: "number"},
-						"binary_field": {Type: "string"},
+					"uuid_field":   {Type: schema.NewMultiType(typeString)},
+					"time_field":   {Type: schema.NewMultiType(typeString)},
+					"int_field":    {Type: schema.NewMultiType(typeNumber)},
+					"binary_field": {Type: schema.NewMultiType(typeString)},
+					"object": {Type: schema.NewMultiType(typeObject), Fields: map[string]*schema.Field{
+						"uuid_field":   {Type: schema.NewMultiType(typeString)},
+						"time_field":   {Type: schema.NewMultiType(typeString)},
+						"int_field":    {Type: schema.NewMultiType(typeNumber)},
+						"binary_field": {Type: schema.NewMultiType(typeString)},
 					}},
 					"array": {
-						Type: "array",
+						Type: schema.NewMultiType(typeArray),
 						Items: &schema.Field{
-							Type: "object",
+							Type: schema.NewMultiType(typeObject),
 							Fields: map[string]*schema.Field{
-								"uuid_field":   {Type: "string"},
-								"time_field":   {Type: "string"},
-								"int_field":    {Type: "number"},
-								"binary_field": {Type: "string"},
+								"uuid_field":   {Type: schema.NewMultiType(typeString)},
+								"time_field":   {Type: schema.NewMultiType(typeString)},
+								"int_field":    {Type: schema.NewMultiType(typeNumber)},
+								"binary_field": {Type: schema.NewMultiType(typeString)},
 							},
 						},
 					},
@@ -218,14 +219,14 @@ func TestSchemaInference(t *testing.T) {
 				Name: "broaden_array_type",
 				Fields: map[string]*schema.Field{
 					"array": {
-						Type: "array",
+						Type: schema.NewMultiType(typeArray),
 						Items: &schema.Field{
-							Type: "object",
+							Type: schema.NewMultiType(typeObject),
 							Fields: map[string]*schema.Field{
-								"uuid_field":   {Type: "string"},
-								"time_field":   {Type: "string"},
-								"int_field":    {Type: "number"},
-								"binary_field": {Type: "string"},
+								"uuid_field":   {Type: schema.NewMultiType(typeString)},
+								"time_field":   {Type: schema.NewMultiType(typeString)},
+								"int_field":    {Type: schema.NewMultiType(typeNumber)},
+								"binary_field": {Type: schema.NewMultiType(typeString)},
 							},
 						},
 					},
@@ -255,19 +256,19 @@ func TestSchemaInference(t *testing.T) {
 			}, exp: &schema.Schema{
 				Name: "adding_fields",
 				Fields: map[string]*schema.Field{
-					"uuid_field": {Type: "string", Format: formatUUID},
-					"int_field":  {Type: "integer"},
-					"object": {Type: "object", Fields: map[string]*schema.Field{
-						"uuid_field": {Type: "string", Format: formatUUID},
-						"int_field":  {Type: "integer"},
+					"uuid_field": {Type: schema.NewMultiType(typeString), Format: formatUUID},
+					"int_field":  {Type: schema.NewMultiType(typeInteger)},
+					"object": {Type: schema.NewMultiType(typeObject), Fields: map[string]*schema.Field{
+						"uuid_field": {Type: schema.NewMultiType(typeString), Format: formatUUID},
+						"int_field":  {Type: schema.NewMultiType(typeInteger)},
 					}},
 					"array": {
-						Type: "array",
+						Type: schema.NewMultiType(typeArray),
 						Items: &schema.Field{
-							Type: "object",
+							Type: schema.NewMultiType(typeObject),
 							Fields: map[string]*schema.Field{
-								"uuid_field": {Type: "string", Format: formatUUID},
-								"int_field":  {Type: "integer"},
+								"uuid_field": {Type: schema.NewMultiType(typeString), Format: formatUUID},
+								"int_field":  {Type: schema.NewMultiType(typeInteger)},
 							},
 						},
 					},
@@ -281,12 +282,12 @@ func TestSchemaInference(t *testing.T) {
 				Name: "adding_array_object_fields",
 				Fields: map[string]*schema.Field{
 					"array": {
-						Type: "array",
+						Type: schema.NewMultiType(typeArray),
 						Items: &schema.Field{
-							Type: "object",
+							Type: schema.NewMultiType(typeObject),
 							Fields: map[string]*schema.Field{
-								"int_field":     {Type: "integer"},
-								"int_field_two": {Type: "integer"},
+								"int_field":     {Type: schema.NewMultiType(typeInteger)},
+								"int_field_two": {Type: schema.NewMultiType(typeInteger)},
 							},
 						},
 					},
@@ -423,8 +424,8 @@ func TestSchemaTags(t *testing.T) {
 			exp: &schema.Schema{
 				Name: "pk_autogenerate",
 				Fields: map[string]*schema.Field{
-					"uuid_field":  {Type: "string", Format: "uuid"},
-					"uuid_field1": {Type: "string", Format: "uuid", AutoGenerate: true},
+					"uuid_field":  {Type: schema.NewMultiType(typeString), Format: "uuid"},
+					"uuid_field1": {Type: schema.NewMultiType(typeString), Format: "uuid", AutoGenerate: true},
 				},
 				PrimaryKey: []string{"uuid_field"},
 			},
@@ -440,8 +441,8 @@ func TestSchemaTags(t *testing.T) {
 			exp: &schema.Schema{
 				Name: "pk_autogenerate_multi",
 				Fields: map[string]*schema.Field{
-					"uuid_field":  {Type: "string", Format: "uuid", AutoGenerate: true},
-					"uuid_field1": {Type: "string", Format: "uuid", AutoGenerate: true},
+					"uuid_field":  {Type: schema.NewMultiType(typeString), Format: "uuid", AutoGenerate: true},
+					"uuid_field1": {Type: schema.NewMultiType(typeString), Format: "uuid", AutoGenerate: true},
 				},
 				PrimaryKey: []string{"uuid_field", "uuid_field1"},
 			},

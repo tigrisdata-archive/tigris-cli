@@ -79,7 +79,7 @@ func parseNumber(v any, existing *schema.Field) (string, string, error) {
 		return "", "", ErrExpectedNumber
 	}
 
-	if _, err := n.Int64(); err != nil || (!DetectIntegers && (existing == nil || existing.Type != typeInteger)) {
+	if _, err := n.Int64(); err != nil || (!DetectIntegers && (existing == nil || existing.Type.First() != typeInteger)) {
 		if _, err = n.Float64(); err != nil {
 			return "", "", err
 		}
@@ -208,17 +208,17 @@ func traverseObject(name string, existingField *schema.Field, newField *schema.F
 	switch {
 	case existingField == nil:
 		newField.Fields = make(map[string]*schema.Field)
-	case existingField.Type == typeObject:
+	case existingField.Type.First() == typeObject:
 		if existingField.Fields == nil {
 			newField.Fields = make(map[string]*schema.Field)
 		} else {
 			newField.Fields = existingField.Fields
 		}
 	default:
-		log.Debug().Str("oldType", existingField.Type).Str("newType", newField.Type).Interface("values", values).
-			Msg("object converted to primitive")
+		log.Debug().Str("oldType", existingField.Type.First()).Str("newType", newField.Type.First()).
+			Interface("values", values).Msg("object converted to primitive")
 
-		return newInompatibleSchemaError(name, existingField.Type, "", newField.Type, "")
+		return newInompatibleSchemaError(name, existingField.Type.First(), "", newField.Type.First(), "")
 	}
 
 	return traverseFields(newField.Fields, values, nil)
@@ -234,23 +234,23 @@ func traverseArray(name string, existingField *schema.Field, newField *schema.Fi
 		if i == 0 {
 			switch {
 			case existingField == nil:
-				newField.Items = &schema.Field{Type: t, Format: format}
-			case existingField.Type == typeArray:
+				newField.Items = &schema.Field{Type: schema.NewMultiType(t), Format: format}
+			case existingField.Type.First() == typeArray:
 				newField.Items = existingField.Items
 			default:
-				log.Debug().Str("oldType", existingField.Type).Str("newType", newField.Type).Interface("values", v).
+				log.Debug().Str("oldType", existingField.Type.First()).Str("newType", newField.Type.First()).Interface("values", v).
 					Msg("object converted to primitive")
 
-				return newInompatibleSchemaError(name, existingField.Type, "", newField.Type, "")
+				return newInompatibleSchemaError(name, existingField.Type.First(), "", newField.Type.First(), "")
 			}
 		}
 
-		nt, nf, err := extendedType(name, newField.Items.Type, newField.Items.Format, t, format)
+		nt, nf, err := extendedType(name, newField.Items.Type.First(), newField.Items.Format, t, format)
 		if err != nil {
 			return err
 		}
 
-		newField.Items.Type = nt
+		newField.Items.Type.Set(nt)
 		newField.Items.Format = nf
 
 		if t == typeObject {
@@ -309,12 +309,12 @@ func traverseFieldsLow(t string, format string, name string, f *schema.Field, v 
 			return true, nil // empty object
 		}
 	case sch[name] != nil:
-		nt, nf, err := extendedType(name, sch[name].Type, sch[name].Format, t, format)
+		nt, nf, err := extendedType(name, sch[name].Type.First(), sch[name].Format, t, format)
 		if err != nil {
 			return false, err
 		}
 
-		f.Type = nt
+		f.Type.Set(nt)
 		f.Format = nf
 	}
 
@@ -333,7 +333,7 @@ func traverseFields(sch map[string]*schema.Field, fields map[string]any, autoGen
 			return err
 		}
 
-		f := &schema.Field{Type: t, Format: format}
+		f := &schema.Field{Type: schema.NewMultiType(t), Format: format}
 
 		skip, err := traverseFieldsLow(t, format, name, f, val, sch)
 		if err != nil {
@@ -423,7 +423,7 @@ func GenerateInitDoc(sch *schema.Schema, doc json.RawMessage) ([]byte, error) {
 }
 
 func initDocTraverseFields(field *schema.Field, doc map[string]any, fieldName string) error {
-	switch field.Type {
+	switch field.Type.First() {
 	case typeNumber:
 		doc[fieldName] = 0.0000001
 	case typeObject:
@@ -436,7 +436,7 @@ func initDocTraverseFields(field *schema.Field, doc map[string]any, fieldName st
 
 		doc[fieldName] = vo
 	case typeArray:
-		if field.Items.Type == typeObject {
+		if field.Items.Type.First() == typeObject {
 			vo := map[string]any{}
 			for name := range field.Items.Fields {
 				if err := initDocTraverseFields(field.Items.Fields[name], vo, name); err != nil {
