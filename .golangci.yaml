@@ -39,6 +39,9 @@ linters:
     - gochecknoinits
     - scopelint
 linters-settings:
+  govet:
+    check-shadowing: true
+    enable-all: true
   nlreturn:
     block-size: 2
   cyclop:

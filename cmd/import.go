@@ -141,7 +141,7 @@ func insertWithInference(ctx context.Context, coll string, docs []json.RawMessag
 		return util.Error(err, "import documents (initial)")
 	}
 
-	if err := evolveSchema(ctx, config.GetProjectName(), coll, docs); err != nil {
+	if err = evolveSchema(ctx, config.GetProjectName(), coll, docs); err != nil {
 		return err
 	}
 
@@ -190,7 +190,7 @@ Automatically:
 				if !Append {
 					util.Fatal(ErrNoAppend, "describe collection")
 				}
-				err := json.Unmarshal(resp.Schema, &sch)
+				err = json.Unmarshal(resp.Schema, &sch)
 				util.Fatal(err, "unmarshal collection schema")
 			} else if CSVNoHeader {
 				util.Fatal(ErrCollectionShouldExist, "describe collection")

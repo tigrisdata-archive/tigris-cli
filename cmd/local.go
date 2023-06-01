@@ -46,6 +46,9 @@ var (
 
 	follow     bool
 	loginParam bool
+
+	waitUpTimeout    = 30 * time.Second
+	pingSleepTimeout = 10 * time.Millisecond
 )
 
 func getClient(ctx context.Context) *client.Client {
@@ -73,12 +76,12 @@ func getClient(ctx context.Context) *client.Client {
 	return cli
 }
 
-func stopContainer(client *client.Client, cname string) {
+func stopContainer(cl *client.Client, cname string) {
 	ctx := context.Background()
 
 	log.Debug().Msg("stopping local instance")
 
-	if err := client.ContainerStop(ctx, cname, container.StopOptions{}); err != nil {
+	if err := cl.ContainerStop(ctx, cname, container.StopOptions{}); err != nil {
 		if !errdefs.IsNotFound(err) {
 			util.Fatal(err, "error stopping container: %s", cname)
 		}
@@ -89,7 +92,7 @@ func stopContainer(client *client.Client, cname string) {
 		Force:         true,
 	}
 
-	if err := client.ContainerRemove(ctx, cname, opts); err != nil {
+	if err := cl.ContainerRemove(ctx, cname, opts); err != nil {
 		if !errdefs.IsNotFound(err) {
 			util.Fatal(err, "error stopping container: %s", cname)
 		}
@@ -182,7 +185,8 @@ func waitServerUp(port string) {
 	err := tclient.Init(&cfg)
 	util.Fatal(err, "init tigris client")
 
-	if err := pingLow(context.Background(), 30*time.Second, 10*time.Millisecond, true); err != nil {
+	if err = pingLow(context.Background(), waitUpTimeout, pingSleepTimeout, true, true,
+		util.IsTTY(os.Stdout) && !util.Quiet); err != nil {
 		util.Fatal(err, "tigris initialization failed")
 	}
 
@@ -233,7 +237,7 @@ var serverUpCmd = &cobra.Command{
 		}
 
 		if loginParam {
-			login.LocalLogin(net.JoinHostPort("localhost", port))
+			login.LocalLogin(net.JoinHostPort("localhost", port), "")
 		} else if port != "8081" {
 			util.Stdoutf("run 'export TIGRIS_URL=localhost:%s' for tigris cli to connect to the local instance\n", port)
 		}

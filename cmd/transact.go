@@ -51,7 +51,6 @@ type Op struct {
 }
 
 type TxOp struct {
-	Op
 	Insert                   *Op `json:"insert"`
 	Replace                  *Op `json:"replace"`
 	InsertOrReplace          *Op `json:"insert_or_replace"`
@@ -61,6 +60,7 @@ type TxOp struct {
 	CreateOrUpdateCollection *Op `json:"create_or_update_collection"`
 	DropCollection           *Op `json:"drop_collection"`
 	ListCollections          *Op `json:"list_collections"`
+	Op
 }
 
 var ErrUnknownOperationType = fmt.Errorf("unknown operation type")

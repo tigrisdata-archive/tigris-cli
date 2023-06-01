@@ -104,7 +104,7 @@ Input is a stream or array of JSON documents to import.
 				if !Append {
 					util.Fatal(ErrNoAppend, "describe collection")
 				}
-				err := json.Unmarshal(resp.Schema, &sch)
+				err = json.Unmarshal(resp.Schema, &sch)
 				util.Fatal(err, "unmarshal collection schema")
 				found = true
 			} else if CSVNoHeader {
@@ -125,7 +125,7 @@ Input is a stream or array of JSON documents to import.
 					ptr := unsafe.Pointer(&docs)
 
 					if UpdateSchema || (!found && !NoCreate) {
-						if err := evolveIdxSchema(ctx, name, docs); err != nil {
+						if err = evolveIdxSchema(ctx, name, docs); err != nil {
 							return err
 						}
 					}

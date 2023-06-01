@@ -61,24 +61,24 @@ type Config struct {
 	ProjectName     string
 	Example         string
 	Framework       string
-	Components      []string
-	Collections     []*api.CollectionDescription
 	Language        string
 	URL             string
 	ClientID        string
 	ClientSecret    string
+	Components      []string
+	Collections     []*api.CollectionDescription
 }
 
 type TmplVars struct {
 	URL                string
-	Collections        []Collection
-	Collection         Collection
 	ProjectName        string
 	ProjectNameCamel   string
 	PackageName        string
 	ClientID           string
 	ClientSecret       string
 	DatabaseBranchName string
+	Collections        []Collection
+	Collection         Collection
 }
 
 type JSONToLangType interface {
@@ -449,41 +449,44 @@ func cloneGitRepo(ctx context.Context, url string, path string) error {
 		Depth:         1,
 	})
 
-	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-		_ = util.Error(err, "updating existing repo url %v, dir %v", url, path)
-
-		var repo *git.Repository
-
-		if repo, err = git.PlainOpen(path); err != nil {
-			return util.Error(err, "OpenRepo url %v, dir %v", url, path)
-		}
-
-		// Fetched updated remote branch
-		err = repo.FetchContext(ctx, &git.FetchOptions{
-			Force: true, Depth: 1,
-			RefSpecs: []gitconfig.RefSpec{
-				gitconfig.RefSpec("+refs/heads/" + remoteBranch + ":refs/remotes/origin/" + remoteBranch),
-			},
-		})
-		if errors.Is(err, git.NoErrAlreadyUpToDate) {
-			log.Debug().Msg("templates repository is up-to-date")
-
-			err = nil
-		}
-
-		// Checking out just fetched remote branch
-		tr, err := repo.Worktree()
-		if err != nil {
-			return util.Error(err, "getting git worktree")
-		}
-
-		err = tr.Checkout(&git.CheckoutOptions{Branch: plumbing.NewRemoteReferenceName("origin", remoteBranch)})
-		if err != nil {
-			return util.Error(err, "checking out fetched branch")
-		}
+	if !errors.Is(err, git.ErrRepositoryAlreadyExists) {
+		return util.Error(err, "CloneGitRepo url %v, dir %v", url, path)
 	}
 
-	return util.Error(err, "CloneGitRepo url %v, dir %v", url, path)
+	_ = util.Error(err, "updating existing repo url %v, dir %v", url, path)
+
+	var repo *git.Repository
+
+	if repo, err = git.PlainOpen(path); err != nil {
+		return util.Error(err, "OpenRepo url %v, dir %v", url, path)
+	}
+
+	// Fetched updated remote branch
+	err = repo.FetchContext(ctx, &git.FetchOptions{
+		Force: true, Depth: 1,
+		RefSpecs: []gitconfig.RefSpec{
+			gitconfig.RefSpec("+refs/heads/" + remoteBranch + ":refs/remotes/origin/" + remoteBranch),
+		},
+	})
+	if err != nil {
+		if !errors.Is(err, git.NoErrAlreadyUpToDate) {
+			return util.Error(err, "fetch branch")
+		}
+
+		log.Debug().Msg("templates repository is up-to-date")
+	}
+
+	var tr *git.Worktree
+
+	// Checking out just fetched remote branch
+	tr, err = repo.Worktree()
+	if err != nil {
+		return util.Error(err, "getting git worktree")
+	}
+
+	err = tr.Checkout(&git.CheckoutOptions{Branch: plumbing.NewRemoteReferenceName("origin", remoteBranch)})
+
+	return util.Error(err, "checking out fetched branch")
 }
 
 func CloneGitRepo(ctx context.Context, url string, path string) {

@@ -105,10 +105,10 @@ func getToken(auth *Authenticator, code string) *oauth2.Token {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	token, err := auth.Exchange(ctx, code)
+	tkn, err := auth.Exchange(ctx, code)
 	util.Fatal(err, "retrieving token")
 
-	return token
+	return tkn
 }
 
 func callback(wg *sync.WaitGroup, server *http.Server, auth *Authenticator, instanceURL string, state string) error {
@@ -202,7 +202,8 @@ func Ensure(cctx context.Context, fn func(ctx context.Context) error) {
 	var ep *driver.Error
 	if !errors.As(err, &ep) || ep.Code != ecode.Unauthenticated ||
 		os.Getenv(driver.EnvClientID) != "" || os.Getenv(driver.EnvClientSecret) != "" ||
-		config.DefaultConfig.ClientID != "" || config.DefaultConfig.ClientSecret != "" || !util.IsTTY(os.Stdin) {
+		config.DefaultConfig.ClientID != "" || config.DefaultConfig.ClientSecret != "" || !util.IsTTY(os.Stdin) ||
+		isLocalConn(GetHost("")) {
 		util.PrintError(err)
 		os.Exit(1) //nolint:revive
 	}
@@ -269,14 +270,23 @@ func waitCallbackServerUp() {
 	}
 }
 
+func isUnixSock(url string) bool {
+	return len(url) > 0 && (url[0] == '/' || url[0] == '.')
+}
+
+func isLocalConn(host string) bool {
+	return host == "local" || host == "dev" || strings.HasPrefix(host, "localhost") ||
+		isUnixSock(host)
+}
+
 func localLogin(host string) bool {
-	if host == "local" || host == "dev" || strings.HasPrefix(host, "localhost") {
+	if isLocalConn(host) {
 		// handle the cases without a port
 		if host == "local" || host == "dev" || host == "localhost" {
 			host = "localhost:8081"
 		}
 
-		LocalLogin(host)
+		LocalLogin(host, "")
 
 		return true
 	}
@@ -368,10 +378,10 @@ func CmdLow(_ context.Context, host string) error {
 	return util.Error(callbackErr, "callback error")
 }
 
-func LocalLogin(host string) {
+func LocalLogin(host string, token string) {
 	config.DefaultConfig.ClientSecret = ""
 	config.DefaultConfig.ClientID = ""
-	config.DefaultConfig.Token = ""
+	config.DefaultConfig.Token = token
 	config.DefaultConfig.URL = host
 
 	err := config.Save(config.DefaultName, config.DefaultConfig)
