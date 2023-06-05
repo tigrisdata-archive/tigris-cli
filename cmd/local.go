@@ -20,6 +20,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -200,10 +201,19 @@ var serverUpCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cli := getClient(cmd.Context())
 
-		port := "8081"
+		configPort := "8081"
+		u := strings.Split(config.DefaultConfig.URL, ":")
+		if len(u) == 2 {
+			configPort = u[1]
+		}
+
+		var port string
 		if len(args) > 0 {
 			port = args[0]
+		} else { // only using DefaultConfig when port not specified in command line
+			port = configPort
 		}
+
 		rport := port + ":8081"
 
 		if len(args) > 1 {
@@ -238,7 +248,7 @@ var serverUpCmd = &cobra.Command{
 
 		if loginParam {
 			login.LocalLogin(net.JoinHostPort("localhost", port), "")
-		} else if port != "8081" {
+		} else if port != configPort { // inform user when specified ports are different
 			util.Stdoutf("run 'export TIGRIS_URL=localhost:%s' for tigris cli to connect to the local instance\n", port)
 		}
 	},
