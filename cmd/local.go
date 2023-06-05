@@ -333,6 +333,14 @@ func setupToken() {
 	cfg.Protocol = "http"
 }
 
+func getLocalURL(local bool, port string, dataDir string) string {
+	if local && !tokenAdminAuth && config.DefaultConfig.Token == "" {
+		return dataDir + "/server/unix.sock"
+	}
+
+	return net.JoinHostPort("localhost", port)
+}
+
 func localUp(cmd *cobra.Command, args []string, local bool) {
 	cli := getClient(cmd.Context())
 
@@ -347,11 +355,7 @@ func localUp(cmd *cobra.Command, args []string, local bool) {
 
 	cfg := &config.DefaultConfig
 
-	if local && !tokenAdminAuth && cfg.Token == "" {
-		cfg.URL = dataDir + "/server/unix.sock"
-	} else {
-		cfg.URL = net.JoinHostPort("localhost", port)
-	}
+	cfg.URL = getLocalURL(local, port, dataDir)
 
 	waitServerUp(cfg.URL, false)
 

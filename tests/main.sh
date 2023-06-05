@@ -445,7 +445,6 @@ main() {
 
 	if [ -z "$TIGRIS_CLI_TEST_FAST" ]; then
 		test_scaffold
-		test_persistence
 	fi
 
 	# Exercise tests via GRPC
@@ -474,6 +473,10 @@ main() {
 	$cli config show | grep "protocol: http"
 	$cli config show | grep "url: grpc://localhost:$TIGRIS_TEST_PORT"
 	db_tests
+
+	if [ -z "$TIGRIS_CLI_TEST_FAST" ]; then
+		test_persistence
+	fi
 }
 
 main

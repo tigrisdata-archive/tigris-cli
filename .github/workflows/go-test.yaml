@@ -14,10 +14,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: '1.20'
 
       - run: sudo apt-get install jq
         if: matrix.os == 'ubuntu-latest'
@@ -37,8 +33,43 @@ jobs:
       - name: Run tests
         run: |
           mkdir /tmp/tigris_cli_coverdata
-          GOCOVERDIR=/tmp/tigris_cli_coverdata/ BUILD_PARAM=-cover TIGRIS_CLI_TEST_FAST=1 make test
+          SUDO=sudo GOCOVERDIR=/tmp/tigris_cli_coverdata/ BUILD_PARAM=-cover TIGRIS_CLI_TEST_FAST=1 make test
           go tool covdata textfmt -i=/tmp/tigris_cli_coverdata/ -o coverage.out
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+
+  # FIXME: same as above, with TIGRIS_CLI_TEST_FAST=1 removed.
+  # Work on unifying.
+  test-all:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macOS-latest ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - run: sudo apt-get install jq
+        if: matrix.os == 'ubuntu-latest'
+
+      - if: matrix.os == 'macOS-latest'
+        run: |
+          brew install jq colima docker docker-compose tree
+          colima start
+          mkdir -p ~/.docker/cli-plugins
+          ln -sfn $(brew --prefix)/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose
+
+      - run: chocolatey install jq
+        if: matrix.os == 'windows-latest'
+
+      - run: npm install -g @go-task/cli
+
+      - name: Run tests
+        run: |
+          mkdir /tmp/tigris_cli_coverdata_all
+          SUDO=sudo GOCOVERDIR=/tmp/tigris_cli_coverdata_all/ BUILD_PARAM=-cover make test
+          go tool covdata textfmt -i=/tmp/tigris_cli_coverdata_all/ -o coverage.out
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3

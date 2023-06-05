@@ -275,7 +275,10 @@ func isUnixSock(url string) bool {
 }
 
 func isLocalConn(host string) bool {
-	return host == "local" || host == "dev" || strings.HasPrefix(host, "localhost") ||
+	return host == "local" || host == "dev" || host == "localhost" ||
+		strings.HasPrefix(host, "localhost:") ||
+		strings.HasPrefix(host, "127.0.0.1:") ||
+		strings.HasPrefix(host, "[::1]:") ||
 		isUnixSock(host)
 }
 

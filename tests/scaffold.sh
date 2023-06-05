@@ -16,7 +16,7 @@ $cli config show
 env|grep TIGRIS
 
 #if [ -z "$noup" ]; then
-#  $cli local up
+#  $cli dev start
 #fi
 
 # first parameter is path
@@ -84,7 +84,7 @@ clean() {
 
 scaffold() {
   if [ -z "$noup" ]; then
-    $cli local up "$TIGRIS_TEST_PORT"
+    $cli dev start "$TIGRIS_TEST_PORT"
   fi
 
   clean
@@ -99,7 +99,7 @@ scaffold() {
     --output-directory="$outdir"
 
   if [ -z "$noup" ]; then
-    $cli local down
+    $cli dev stop
   fi
 }
 
@@ -121,7 +121,7 @@ test_gin_go() {
 
   # instance was stopped by the 'task' target, bring it back
   if [ -z "$noup" ]; then
-    $cli local up "$TIGRIS_TEST_PORT"
+    $cli dev start "$TIGRIS_TEST_PORT"
   fi
 
   clean
@@ -210,6 +210,6 @@ test_scaffold() {
   test_nextjs_typescript
 
   if [ -z "$noup" ]; then
-    $cli local up "$TIGRIS_TEST_PORT"
+    $cli dev start "$TIGRIS_TEST_PORT"
   fi
 }

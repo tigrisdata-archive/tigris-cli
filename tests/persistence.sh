@@ -1,28 +1,25 @@
 #!/bin/bash
 
-set -ex
-PS4='${LINENO}: '
-
 if [ -z "$cli" ]; then
-	cli="$(pwd)/tigris"
+	cli="./tigris"
 fi
 
 if [ -z "$TIGRIS_TEST_PORT" ]; then
 	TIGRIS_TEST_PORT=8090
 fi
 
-cli="$SUDO $cli"
-
 DATA_DIR=/tmp/tigris-cli-local-test
 
 test_persistence_low() {
-  rm -rf $DATA_DIR
-  rm "$HOME/.tigris/tigris-cli.yaml"
+  $SUDO rm -rf $DATA_DIR
+  rm -f "$HOME/.tigris/tigris-cli.yaml"
 
   #shellcheck disable=SC2086
   $cli local up --data-dir=$DATA_DIR $1 $2
   [ -f $DATA_DIR/initialized ] || exit 1
 
+env|grep TIGRIS
+  $cli config show
   $cli create project persistence_test
   $cli list projects|grep persistence_test
 
@@ -44,6 +41,6 @@ test_persistence_low() {
 }
 
 test_persistence() {
-  HOME=/tmp/ test_persistence_low
-  HOME=/tmp/ TIGRIS_URL=localhost:$TIGRIS_TEST_PORT test_persistence_low --token-admin-auth "$TIGRIS_TEST_PORT"
+  TIGRIS_URL="" HOME=/tmp/ cli="$SUDO $cli" test_persistence_low
+  TIGRIS_URL="" HOME=/tmp/ cli="$SUDO $cli" TIGRIS_URL=localhost:$TIGRIS_TEST_PORT test_persistence_low --token-admin-auth "$TIGRIS_TEST_PORT"
 }
