@@ -5,7 +5,13 @@ on:
       - "release"
       - "next"
 jobs:
+  test:
+    uses: ./.github/workflows/go-test.yaml
+  lint:
+    uses: ./.github/workflows/go-lint.yaml
+
   release:
+    needs: [test, lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

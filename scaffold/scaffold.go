@@ -186,7 +186,7 @@ func writeCollection(_ *TmplVars, w *bufio.Writer, collection *api.CollectionDes
 	s, js, jss := decodeSchemas(collection.Schema, lang)
 
 	if w != nil {
-		_, err := w.Write([]byte(s))
+		_, err := w.WriteString(s)
 		util.Fatal(err, "write to writer")
 	}
 

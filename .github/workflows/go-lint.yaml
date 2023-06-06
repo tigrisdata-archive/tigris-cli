@@ -1,12 +1,10 @@
 name: go-lint
 on:
-  push:
   workflow_call:
-    secrets:
-      CLIENT_DEPLOY_KEY:
-        required: true
-permissions:
-  contents: read
+  pull_request:
+  push:
+    branches:
+      - "main"
 jobs:
   lint:
     runs-on: ubuntu-latest
