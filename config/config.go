@@ -51,7 +51,7 @@ type Config struct {
 	Protocol     string `json:"protocol"      yaml:"protocol,omitempty"`
 	Project      string `json:"project"       yaml:"project,omitempty"`
 	Branch       string `json:"branch"        yaml:"branch,omitempty"`
-	DataDir      string `json:"data_dir"      yaml:"data_dir,omitempty"`
+	DataDir      string `json:"data_dir"      mapstructure:"data_dir"      yaml:"data_dir,omitempty"`
 
 	Log          Log           `json:"log"            yaml:"log,omitempty"`
 	Timeout      time.Duration `json:"timeout"        yaml:"timeout,omitempty"`

@@ -110,8 +110,8 @@ func ensureLocalTemplates(base string, lang string, envVar string, repoURL strin
 	if os.Getenv(envVar) != "" {
 		// Do not allow remote path substitution
 		_, err := url.ParseRequestURI(os.Getenv(envVar))
-		if err == nil && !os.IsPathSeparator(repoURL[0]) {
-			util.Fatal(ErrTemplatesInvalidPath, "get examples path from env")
+		if err == nil && !os.IsPathSeparator(os.Getenv(envVar)[0]) {
+			util.Fatal(ErrTemplatesInvalidPath, "get examples path from env: %s", os.Getenv(envVar))
 		}
 
 		repoURL = os.Getenv(envVar)

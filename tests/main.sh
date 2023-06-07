@@ -261,7 +261,7 @@ EOF
 {"Key1": "vK300", "Field1": 30}'
 	diff -w -u <(echo "$exp_out") <(echo "$out")
 
-  db_branch_tests
+	db_branch_tests
 
 	db_negative_tests
 	db_errors_tests
@@ -272,7 +272,7 @@ EOF
 }
 
 db_branch_tests() {
-  $cli drop collection --project=db1 coll_br1 || true
+	$cli drop collection --project=db1 coll_br1 || true
 
 	echo '[{ "title" : "coll_br1", "properties": { "Key1": { "type": "string" }, "Field1": { "type": "integer" } }, "primary_key": ["Key1"] }]' | $cli create collection --project=db1 -
 
@@ -282,7 +282,7 @@ db_branch_tests() {
 
 	$cli branch list --project=db1 | grep br1 && exit 1
 
-  $cli branch --project=db1 create br1
+	$cli branch --project=db1 create br1
 
 	$cli branch list --project=db1 | grep br1
 
@@ -424,6 +424,8 @@ source "$BASEDIR/backup.sh"
 source "$BASEDIR/scaffold.sh"
 # shellcheck disable=SC1091,SC1090
 source "$BASEDIR/search/import.sh"
+# shellcheck disable=SC1091,SC1090
+source "$BASEDIR/persistence.sh"
 
 main() { 
 	test_config
@@ -471,6 +473,10 @@ main() {
 	$cli config show | grep "protocol: http"
 	$cli config show | grep "url: grpc://localhost:$TIGRIS_TEST_PORT"
 	db_tests
+
+	if [ -z "$TIGRIS_CLI_TEST_FAST" ]; then
+		test_persistence
+	fi
 }
 
 main

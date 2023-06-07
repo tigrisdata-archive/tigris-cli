@@ -19,9 +19,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -188,4 +190,19 @@ func ListDir(root string) map[string]bool {
 	}
 
 	return list
+}
+
+func EmptyDir(dir string) bool {
+	f, err := os.Open(dir)
+	if err != nil {
+		return false
+	}
+
+	_, err = f.ReadDir(1)
+
+	return errors.Is(err, io.EOF)
+}
+
+func IsWindows() bool {
+	return runtime.GOOS == "windows"
 }
